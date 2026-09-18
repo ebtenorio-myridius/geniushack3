@@ -65,6 +65,9 @@ operational dashboards.
 
 For end-user instructions, see the [user manual](docs/manual/user-manual.md).
 
+For command-line startup and testing steps, see the
+[implementation runbook](docs/implementations/run-app-and-test.md).
+
 ## Deliberate design choices worth defending in the presentation
 
 - **Extraction is an LLM call. Scoring is not.** `services/risk_scoring.py` is
