@@ -58,10 +58,12 @@ The required repository areas are present:
 - `/ops` - deployment, monitoring, and token-usage notes
 - `/docs/presentation` - deck outline, demo script, and judging evidence matrix
 
-The presentation pack is in [docs/presentation](docs/presentation). It is
-written against the current implementation and calls out planned capabilities
-such as committee voting, policy retrieval, authentication, and live LLM
-evaluation rather than presenting them as completed features.
+The presentation pack is in [docs/presentation](docs/presentation). It reflects
+the current implementation and identifies remaining production increments such
+as real authentication, multi-member quorum, residual-risk controls, and
+operational dashboards.
+
+For end-user instructions, see the [user manual](docs/manual/user-manual.md).
 
 ## Deliberate design choices worth defending in the presentation
 
