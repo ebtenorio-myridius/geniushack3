@@ -1,2 +1,3 @@
 -r requirements.txt
 reportlab==4.2.2
+python-pptx==1.0.2
