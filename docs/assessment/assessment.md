@@ -20,7 +20,7 @@ PDF
 -> committee decision
 ```
 
-The app addresses the central problem substantially and is suitable for a credible demonstration. It is not yet a production-ready banking platform. The largest remaining submission risks are stale documentation, lack of Git history, prototype-level authentication, incomplete supervisory-framework grounding, and limited evidence that AI was used throughout all six delivery stages.
+The app addresses the central problem substantially and is suitable for a credible demonstration. It is not yet a production-ready banking platform. The largest remaining risks are prototype-level authentication, incomplete residual-risk/control modeling, single-member committee decisions, limited measured cost optimization, and limited preservation of the actual AI output/review trail for the requirements and design stages.
 
 Estimated current rubric position: approximately **59.25/100**. This is an engineering estimate, not an official judging score. The increase reflects verified policy citations, explicit six-stage delivery evidence, improved scoring signals, synchronized governance documentation, and 19 passing tests.
 
@@ -79,10 +79,12 @@ Partial or missing:
 Evidence:
 
 - `docs/requirements/spec.md`
-- `docs/requirements/README.md`
+- `docs/requirements/open-questions.md`
 - `docs/requirements/supervisory-frameworks.md`
+- `ai/prompts/sdlc_delivery.md`
+- `docs/sdlc/ai-delivery-evidence.md`
 
-The repository expands the brief into personas, workflow, acceptance criteria, and scope. It does not yet preserve the actual AI prompts, generated outputs, human edits, and approval history used during requirements discovery.
+The repository expands the brief into personas, workflow, acceptance criteria, scope, open-question decisions, human gates, and reusable AI instructions. It still does not preserve a complete transcript of generated outputs and human approval history from the requirements phase.
 
 ### Stage 02: Design
 
@@ -93,8 +95,9 @@ Evidence:
 - `docs/architecture/overview.md`
 - `docs/architecture/data-model.md`
 - `docs/architecture/decisions.md`
+- `docs/sdlc/ai-delivery-evidence.md`
 
-The architecture, data model, workflow, and AI/deterministic boundary are documented. Evidence of AI-generated alternatives, design critiques, UX decisions, and rejected designs is limited.
+The architecture, data model, workflow, AI/deterministic boundary, and design-stage AI guidance are documented. Evidence of AI-generated alternatives, design critiques, UX decisions, and rejected designs is limited.
 
 ### Stage 03: Development
 
@@ -149,7 +152,6 @@ The free-first local Docker deployment is documented. Docker was not available i
 
 Missing for production:
 
-- CI build pipeline;
 - database migrations;
 - TLS and reverse proxy configuration;
 - production secret manager;
@@ -217,37 +219,39 @@ Present in the workspace:
 
 ### Submission gap
 
-`docs/presentation/deck.md` is an outline, not a final PowerPoint, PDF, or slide deck. A real presentation artifact must still be created.
-
-The workspace is not currently a Git repository. The page explicitly says commit history is part of the evidence. A GitHub repository with meaningful incremental commits is still required.
+The final editable PowerPoint deck is present at
+`docs/presentation/Risk_Assessment_Workbench_Genius_Hacks_2026.pptx`, generated
+from `tools/generate_presentation.py`. The pushed repository contains three
+meaningful commits covering the initial submission, rubric improvements, and
+presentation deck.
 
 ## 5. Required Documents
 
 | Artifact | Current status |
 |---|---|
 | Expanded requirements | Present in `docs/requirements/spec.md` |
-| Open questions | Placeholder-level content in `docs/requirements/README.md`; should be expanded |
-| Supervisory-framework research | Plan present; cited, approved mapping incomplete |
+| Open questions | Present in `docs/requirements/open-questions.md` |
+| Supervisory-framework research | Official sources and prototype mapping present; FCRM approval remains |
 | Architecture overview | Present |
 | Data model | Present, but residual-risk/control model is incomplete |
 | Decision log | Present |
-| Governance gates | Present, but portions are stale and should reflect current committee implementation |
+| Governance gates | Present and synchronized with current committee implementation |
 | Evaluation definitions | Present in `evals/README.md` and runner |
 | Synthetic datasets | Present in JSON and generated PDFs |
 | Evaluation results | Present in `evals/results/` |
-| Automated tests | Present; 17 pass |
+| Automated tests | Present; 19 pass |
 | Deployment approach | Present in `ops/` |
 | Monitoring approach | Present, but no dashboard or alerts |
 | Token analysis | Present, but measured cost analysis is limited |
 | Prompt and agent configuration | Present in `/ai` |
-| Presentation | Outline only; final deck still needed |
-| Commit history | Missing from current workspace |
+| Presentation | Editable PPTX present, with outline and demo script |
+| Commit history | Present in the pushed repository: three meaningful commits |
 
 ## 6. Other Page Details That Matter
 
 ### Commit history
 
-The page says a repository that appears fully formed in a single commit tells the panel little about how the team worked. Create meaningful incremental commits and preserve prompt/evaluation iterations.
+The page says a repository that appears fully formed in a single commit tells the panel little about how the team worked. This repository now has separate commits for the initial submission, rubric improvements, and presentation deck. Continue preserving prompt/evaluation iterations.
 
 ### Synthetic data only
 
@@ -296,18 +300,16 @@ The test suite reported one ReportLab deprecation warning. It does not currently
 
 ## 8. Priority Actions Before Submission
 
-1. Preserve meaningful incremental Git history in the pushed repository.
-2. Create the final presentation deck in PDF or PowerPoint format.
-3. Obtain FCRM approval for the cited supervisory-framework mapping and scoring taxonomy.
-4. Add controls, control effectiveness, residual-risk scoring, remediation conditions, and source-page evidence.
-5. Replace demo headers with real authentication if claiming production readiness.
-6. Add multi-member committee votes, quorum, and conflict-of-interest handling.
-7. Add a measured token/cost report and optimization comparison.
-8. Preserve prompt/evaluation failure iterations as dated artifacts.
-9. Verify `.env`, SQLite databases, API keys, caches, and generated local state are excluded from the GitHub submission.
+1. Obtain FCRM approval for the cited supervisory-framework mapping and scoring taxonomy.
+2. Add controls, control effectiveness, residual-risk scoring, remediation conditions, and source-page evidence.
+3. Replace demo headers with real authentication if claiming production readiness.
+4. Add multi-member committee votes, quorum, and conflict-of-interest handling.
+5. Add a measured token/cost report and optimization comparison.
+6. Preserve prompt/evaluation failure iterations as dated artifacts.
+7. Verify `.env`, SQLite databases, API keys, caches, and generated local state are excluded from the GitHub submission.
 
 ## Final Verdict
 
 The app is a strong, testable prototype and a credible demonstration of the core Risk Assessment Workbench idea. It substantially addresses the problem statement and demonstrates meaningful AI, deterministic scoring, governance, evaluation, and operations work.
 
-It should be presented as a governed prototype rather than a production banking platform. The highest scoring upside now comes from submission evidence: Git history, a finished deck, explicit AI use across all six delivery stages, published-framework grounding, and documented iteration from evaluation failures.
+It should be presented as a governed prototype rather than a production banking platform. The highest scoring upside now comes from the remaining domain and production evidence: approved framework mapping, controls and residual risk, real authentication, multi-member governance, measured cost optimization, and preserved AI-output review history across requirements and design.
