@@ -19,6 +19,12 @@ _CATEGORY_WEIGHTS = {
 }
 
 _HIGH_RISK_GEOGRAPHY_KEYWORDS = {"russia", "iran", "north korea", "syria", "myanmar"}
+_HIGH_IMPACT_RISK_TERMS = {
+    "rapid funds movement",
+    "sanctions exposure",
+    "new lending product",
+    "cross-border payment flows",
+}
 
 
 def _score_customer_and_geography(req: ExtractedChangeRequest) -> RiskCategoryScore:
@@ -53,6 +59,12 @@ def _score_product_and_channel(req: ExtractedChangeRequest) -> RiskCategoryScore
     if len(req.products_involved) > 1:
         score = min(5, score + 1)
         rationale += f"; touches {len(req.products_involved)} products"
+
+    explicit_terms = {factor.lower() for factor in req.stated_risk_factors}
+    high_impact_terms = explicit_terms & _HIGH_IMPACT_RISK_TERMS
+    if high_impact_terms:
+        score = min(5, score + 1)
+        rationale += f"; explicit high-impact factors: {', '.join(sorted(high_impact_terms))}"
 
     return RiskCategoryScore(category="Product & Channel", score=score, rationale=rationale)
 

@@ -97,7 +97,7 @@
     <div class="review-form">
         <h3>Policy evidence</h3>
         {% for evidence in policy_evidence %}
-        <p><strong>{{ evidence.title }}</strong> · {{ evidence.section }}<br>{{ evidence.excerpt }}</p>
+        <p><strong>{{ evidence.title }}</strong> · {{ evidence.section }}<br>{{ evidence.excerpt }}<br><small>Source: {{ evidence.source_path }}</small></p>
         {% endfor %}
     </div>
     {% endif %}

@@ -16,24 +16,25 @@ changing history.
 
 ### Committee review
 
-High and critical cases are flagged for committee review. Committee decision
-endpoints and role-based authorization remain the next implementation
-increment. No automated approval or rejection is permitted.
+High and critical cases are flagged for committee review. An analyst submits
+the finalized case, a committee-role user can view the queue, and a committee
+decision records approve, reject, defer, or approve-with-conditions plus
+rationale and conditions. No automated approval or rejection is permitted.
 
 ### Audit requirement
 
-Case creation and analyst actions are written as timestamped workflow events.
-Production must make the event log append-only at the database permission
-layer and include authenticated identity.
+Case creation, extraction edits, analyst actions, committee submission, and
+committee decisions are written as timestamped workflow events. Production
+must make the event log append-only at the database permission layer and
+replace demo headers with authenticated identity.
 
 This is where human-in-the-loop review gates and their rationale live —
 15% of the rubric, scored on "what risk is this gate controlling, and why
 is it placed here?"
 
-The current scaffold has one gate already implicit: the extraction result
-is rendered as an editable review, not applied automatically. Document it
-here properly, plus the gates you add as the workflow grows (analyst
-finalization, committee vote, override/dissent handling).
+The demo implements extraction review, analyst editing/finalization, and
+committee decision gates. Multi-member quorum, conflict-of-interest handling,
+and residual-risk controls remain production increments.
 
 Suggested structure: one entry per gate —
 - What it checks

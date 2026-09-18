@@ -10,7 +10,7 @@
 
 `Submitted -> Extracted -> Analyst Review -> Analyst Finalized -> Committee Review -> Decisioned`
 
-The current implementation delivers `Submitted -> Extracted -> Analyst Review`, including a durable case record and analyst accept/reject event.
+The current implementation delivers `Submitted -> Extracted -> Analyst Review -> Analyst Finalized -> Committee Review -> Decisioned`, including durable case records, versioned analyst edits, policy evidence, role checks, and audit events.
 
 ## Acceptance criteria
 
@@ -24,4 +24,7 @@ The current implementation delivers `Submitted -> Extracted -> Analyst Review`, 
 
 ## Scope decisions
 
-The first vertical slice prioritizes traceability and human control over broad feature coverage. Policy retrieval, committee voting, residual-risk controls, and role authentication are the next increments.
+The current demo prioritizes traceability and human control. Policy evidence,
+committee decisions, demo role checks, and telemetry are implemented. Multi-
+member quorum, residual-risk controls, and production identity remain the next
+increments.

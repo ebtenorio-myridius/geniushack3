@@ -2,13 +2,13 @@
 
 | Criterion | Weight | Current repository evidence | Status |
 |---|---:|---|---|
-| AI harness and agent orchestration | 30% | Structured extraction in `src/app/services/llm_service.py`; prompt and model config in `/ai`; deterministic scoring boundary | Partial; no policy retrieval or multi-agent workflow |
-| SDLC automation | 20% | Requirements, architecture, development, tests, Docker, deployment and operations artifacts across the repository | Partial; no CI pipeline or complete committee workflow |
-| Human-in-the-loop and governance | 15% | Draft-only result, persisted case ID, analyst accept/reject, required rationale, workflow events | Partial; committee vote and authorization remain |
-| Evaluation framework | 10% | Eight synthetic cases, PDF fixture, schema/scoring contract tests, documented next metrics | Partial; no live LLM baseline yet |
-| Context engineering and requirement expansion | 10% | Expanded specification, prompt instructions, untrusted-document boundary, framework research plan | Partial; no retrieval citations or source spans |
-| Production readiness | 5% | Docker, Compose volume, environment config, upload limit, MIME check, `/healthz` | Partial; no auth, migrations, retries, or production telemetry |
-| Token efficiency | 5% | `gpt-4o-mini`, bounded input, token-usage plan | Partial; no measured usage report |
+| AI harness and agent orchestration | 30% | Structured extraction, versioned prompts, targeted policy evidence, telemetry, and deterministic workflow boundary | Partial; no multi-agent orchestration or production RAG |
+| SDLC automation | 20% | Six-stage AI delivery guidance, human gates, CI, requirements/design/development/testing/deployment/ops artifacts | Partial; delivery evidence is documented rather than fully automated |
+| Human-in-the-loop and governance | 15% | Analyst edit/finalize, committee queue and decisions, required rationale, workflow events, demo role gates | Partial; real identity, quorum, and immutable DB enforcement remain |
+| Evaluation framework | 10% | Eight synthetic cases/PDFs, live runner, retries, field accuracy, risk agreement, latency, regression tests | Demonstrated baseline; accuracy improvement remains an iteration goal |
+| Context engineering and requirement expansion | 10% | Open-question decisions, untrusted-document boundary, targeted policy citations, published source mapping | Partial; source spans and approved production taxonomy remain |
+| Production readiness | 5% | Docker, Compose volume, CI, upload limits, MIME check, `/healthz`, free-first runbook | Partial; production identity, migrations, object storage, and alerting remain |
+| Token efficiency | 5% | `gpt-4o-mini`, bounded input, captured token fields, explicit evaluation telemetry | Partial; cost report and optimization comparison remain |
 | Engineering judgement | 5% | Structured outputs for extraction and deterministic scoring/workflow for decisions | Strong prototype; scoring weights still need governance |
 
 ## Evidence rules

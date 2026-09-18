@@ -98,6 +98,7 @@ class PolicyEvidence(BaseModel):
     section: str
     excerpt: str
     relevance: str
+    source_path: str = "docs/policies/unknown.md"
 
 
 class AnalystReview(BaseModel):

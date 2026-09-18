@@ -22,7 +22,7 @@ PDF
 
 The app addresses the central problem substantially and is suitable for a credible demonstration. It is not yet a production-ready banking platform. The largest remaining submission risks are stale documentation, lack of Git history, prototype-level authentication, incomplete supervisory-framework grounding, and limited evidence that AI was used throughout all six delivery stages.
 
-Estimated current rubric position: approximately **49/100**. This is an engineering estimate, not an official judging score.
+Estimated current rubric position: approximately **59.25/100**. This is an engineering estimate, not an official judging score. The increase reflects verified policy citations, explicit six-stage delivery evidence, improved scoring signals, synchronized governance documentation, and 19 passing tests.
 
 ## 1. Problem Statement Compliance
 
@@ -63,7 +63,7 @@ Implemented:
 Partial or missing:
 
 - control effectiveness and residual-risk scoring;
-- complete published supervisory-framework mapping;
+- FCRM approval of the published supervisory-framework mapping;
 - immutable audit enforcement at the database permission layer;
 - real identity and role management;
 - multi-member committee voting and quorum;
@@ -129,7 +129,7 @@ Current measured live baseline:
 - 8/8 successful calls after retry handling;
 - 66.2% normalized field accuracy;
 - 87.5% risk-level agreement;
-- 17 automated tests passing.
+- 19 automated tests passing.
 
 The evaluation exposes real extraction weaknesses, which is useful evidence. The repository should more explicitly record each failure, prompt change, and subsequent result.
 
@@ -181,15 +181,15 @@ Missing:
 
 | Criterion | Weight | Estimated satisfaction | Contribution | Evidence and gaps |
 |---|---:|---:|---:|---|
-| AI harness and agent orchestration | 30% | 40% | 12.0 | Structured extraction, prompts, policy lookup, context boundary, telemetry. No multi-agent orchestration or full policy RAG. |
-| SDLC automation | 20% | 35% | 7.0 | Requirements, architecture, development, tests, deployment, and ops artifacts exist. AI participation evidence across each stage is incomplete. |
-| Human-in-the-loop and governance | 15% | 65% | 9.75 | Analyst edit/finalize, rationale, committee queue, decisions, role checks, and audit events. Real identity, immutable enforcement, and quorum are missing. |
-| Evaluation framework | 10% | 70% | 7.0 | Eight fixtures, eight PDFs, live evaluation, metrics, retries, and regression tests. Field accuracy needs improvement and iteration history needs expansion. |
-| Context engineering and requirements | 10% | 50% | 5.0 | Expanded specification, prompt rules, synthetic policy evidence, and untrusted-document boundary. Published source mapping and source spans are incomplete. |
-| Production readiness | 5% | 40% | 2.0 | Docker, Compose, upload limits, health endpoint, SQLite volume, telemetry. No production identity, migrations, object storage, malware scanning, or backup automation. |
-| Token efficiency | 5% | 50% | 2.5 | `gpt-4o-mini`, bounded input, token telemetry, and evaluation latency. No cost dashboard or documented optimization experiment. |
-| Engineering judgement | 5% | 75% | 3.75 | Strong separation of probabilistic extraction from deterministic scoring and workflow. Prototype scoring rules still need formal governance. |
-| **Estimated total** | **100%** |  | **49.0** |  |
+| AI harness and agent orchestration | 30% | 50% | 15.0 | Structured extraction, versioned prompts, targeted policy evidence, context boundary, telemetry, and deterministic workflow. No multi-agent orchestration or production RAG. |
+| SDLC automation | 20% | 50% | 10.0 | Six-stage AI delivery guidance, human gates, CI, and requirements/design/development/testing/deployment/ops artifacts. |
+| Human-in-the-loop and governance | 15% | 75% | 11.25 | Analyst edit/finalize, versioning, committee queue/decisions, rationale, role gates, and audit events. Real identity, quorum, and immutable DB enforcement remain. |
+| Evaluation framework | 10% | 75% | 7.5 | Eight fixtures/PDFs, live runner, retries, field accuracy, risk agreement, latency, and 19 regression tests. |
+| Context engineering and requirements | 10% | 65% | 6.5 | Open-question decisions, explicit extraction rules, untrusted-document boundary, targeted citations, and published source mapping. |
+| Production readiness | 5% | 45% | 2.25 | Docker, Compose, CI, upload limits, health endpoint, telemetry, and free-first runbook. Production identity, migrations, object storage, and alerting remain. |
+| Token efficiency | 5% | 55% | 2.75 | `gpt-4o-mini`, bounded input, captured token fields, and evaluation latency. Cost comparison remains. |
+| Engineering judgement | 5% | 80% | 4.0 | Strong AI/deterministic boundary, narrow risk-signal rules, explicit gates, and reproducible evaluation. Residual-risk governance remains. |
+| **Estimated total** | **100%** |  | **59.25** |  |
 
 ## 4. What Must Be Submitted
 
@@ -284,7 +284,7 @@ The page requires a credible deployment and operations approach. A running deplo
 
 Executed checks:
 
-- full automated suite: **17 passed**;
+- full automated suite: **19 passed**;
 - Python compilation for application, tests, tools, and evals: passed;
 - eight generated PDF inputs: validated through the app's PDF extractor;
 - live evaluation: 8/8 successful calls after retries;
@@ -296,16 +296,15 @@ The test suite reported one ReportLab deprecation warning. It does not currently
 
 ## 8. Priority Actions Before Submission
 
-1. Create a real Git repository and meaningful incremental commit history.
+1. Preserve meaningful incremental Git history in the pushed repository.
 2. Create the final presentation deck in PDF or PowerPoint format.
-3. Update stale documentation that still describes committee workflow, policy retrieval, roles, and telemetry as future work.
-4. Add cited published supervisory-framework sources and map each scoring category to them.
-5. Add controls, control effectiveness, residual risk, remediation conditions, and source citations.
-6. Replace demo headers with real authentication if claiming production readiness.
-7. Add multi-member committee votes, quorum, and conflict-of-interest handling.
-8. Add a measured token/cost report and optimization comparison.
-9. Preserve prompt/evaluation failure iterations as dated artifacts.
-10. Verify `.env`, SQLite databases, API keys, caches, and generated local state are excluded from the GitHub submission.
+3. Obtain FCRM approval for the cited supervisory-framework mapping and scoring taxonomy.
+4. Add controls, control effectiveness, residual-risk scoring, remediation conditions, and source-page evidence.
+5. Replace demo headers with real authentication if claiming production readiness.
+6. Add multi-member committee votes, quorum, and conflict-of-interest handling.
+7. Add a measured token/cost report and optimization comparison.
+8. Preserve prompt/evaluation failure iterations as dated artifacts.
+9. Verify `.env`, SQLite databases, API keys, caches, and generated local state are excluded from the GitHub submission.
 
 ## Final Verdict
 

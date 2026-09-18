@@ -22,9 +22,9 @@
 
 `Submitted -> Extracted -> Analyst Review -> Analyst Finalized -> Committee Review -> Decisioned`
 
-**Current vertical slice**
+**Current implementation**
 
-`Submitted -> Extracted -> Analyst Review`
+`Submitted -> Extracted -> Analyst Review -> Analyst Finalized -> Committee Review -> Decisioned`
 
 See `docs/requirements/spec.md`.
 
@@ -64,7 +64,7 @@ flowchart LR
 - High and critical assessments are flagged for committee review.
 - No approval or rejection is performed automatically.
 
-**Current limitation:** committee voting and role-based authorization are next increments.
+**Current limitation:** the demo uses header-based roles and a single committee decision; real identity and multi-member quorum are production increments.
 
 ### Slide 6 - Risk scoring
 
@@ -88,7 +88,7 @@ The scorer produces category scores, rationales, an overall score, risk level, a
 - Contract tests validate schema parsing and deterministic score outcomes.
 - PDF fixture `evals/data/sample_change_request.pdf` exercises every extraction field.
 
-**Next measurement:** run live extraction and calculate field-level accuracy against the hand-authored expected JSON.
+**Measured baseline:** 8/8 successful calls after retries, 66.2% normalized field accuracy, 87.5% risk-level agreement. Results are recorded in `evals/results/latest.json`.
 
 ### Slide 8 - SDLC evidence
 
@@ -110,7 +110,7 @@ The scorer produces category scores, rationales, an overall score, risk level, a
 - Environment-based API configuration.
 - Durable SQLite volume for the demo; Postgres is the production target.
 - `/healthz` supports a basic health check.
-- Planned metrics include model latency, failures, low-confidence extraction, overrides, escalations, and token usage.
+- Telemetry records model latency, failures, prompt version, input/output token counts, and success status.
 
 **Production gaps:** authentication, authorization, migrations, source-document storage, retries/timeouts, and measured telemetry.
 
@@ -123,7 +123,8 @@ The scorer produces category scores, rationales, an overall score, risk level, a
 5. Enter a synthetic analyst identity and rationale.
 6. Accept or reject the draft.
 7. Show the persisted workflow status.
-8. Explain how the audit event supports later review.
+8. Submit a high-risk case to the committee queue and record a conditional decision.
+9. Explain how the audit events and extraction version support later review.
 
 ### Slide 11 - Failure handling
 
@@ -138,6 +139,6 @@ The scorer produces category scores, rationales, an overall score, risk level, a
 
 **What is demonstrated today:** governed intake, AI-assisted extraction, deterministic scoring, persistence, analyst review, synthetic evaluation, and delivery evidence.
 
-**Next increments:** policy retrieval with citations, controls and residual risk, committee voting, authentication, live LLM eval metrics, and token telemetry.
+**Next increments:** published-framework approval, controls and residual risk, real authentication, multi-member quorum, and operational dashboards.
 
 **Closing message:** the system prepares evidence and makes reasoning visible; humans remain accountable for decisions.
