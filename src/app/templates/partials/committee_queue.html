@@ -1,0 +1,22 @@
+<section class="panel">
+    <h2>Committee review queue</h2>
+    {% if cases %}
+    {% for case in cases %}
+    <article class="queue-item">
+        <h3>{{ case.extracted.change_title }}</h3>
+        <p>Case {{ case.case_id }} · {{ case.assessment.risk_level.value }} risk</p>
+        <form hx-post="/intake/{{ case.case_id }}/committee/decision" hx-target="#committee-result" hx-headers='{"X-Demo-User":"committee-1","X-Demo-Role":"committee"}'>
+            <input type="hidden" name="actor" value="committee-1">
+            <input name="rationale" required placeholder="Committee rationale">
+            <input name="conditions" placeholder="Conditions, if applicable">
+            <button class="button" name="decision" value="approve">Approve</button>
+            <button class="button button--secondary" name="decision" value="reject">Reject</button>
+            <button class="button" name="decision" value="approve_with_conditions">Approve with conditions</button>
+        </form>
+    </article>
+    {% endfor %}
+    {% else %}
+    <p class="panel__hint">No cases are waiting for committee review.</p>
+    {% endif %}
+    <div id="committee-result"></div>
+</section>

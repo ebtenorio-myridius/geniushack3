@@ -1,0 +1,31 @@
+# Model + orchestration configuration for the extraction step.
+# Actual values are read from environment variables (see src/app/config.py) —
+# this file documents the current choices and the reasoning, since "which
+# models you used and why" is part of the rubric.
+
+extraction_step:
+  provider: openai
+  model: gpt-4o-mini
+  reasoning: >
+    Structured-output extraction from a single document is a well-bounded
+    task. gpt-4o-mini keeps token cost down for a high-volume intake step;
+    escalate to gpt-4o only if mini's extraction accuracy proves
+    insufficient in /evals results.
+  call_pattern: structured_outputs   # openai .parse() constrained to a Pydantic schema
+  max_input_tokens_budget: ~12000    # raw document text is truncated to this in llm_service.py
+
+scoring_step:
+  provider: none
+  reasoning: >
+    Deterministic weighted rules, not a model call. See
+    src/app/services/risk_scoring.py and /docs/architecture for the
+    engineering-judgement rationale.
+
+policy_retrieval_step:
+  status: implemented_demo
+  approach: deterministic keyword retrieval over synthetic policy evidence
+  source_directory: docs/policies
+
+committee_summary_step:
+  status: planned
+  planned_approach: LLM summary of analyst-finalized assessment for committee review

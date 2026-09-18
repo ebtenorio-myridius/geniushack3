@@ -1,0 +1,16 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./src:/code/src
+      - ./ai:/code/ai
+      - risk_workbench_data:/code/data
+    environment:
+      DATABASE_PATH: /code/data/risk_workbench.db
+
+volumes:
+  risk_workbench_data:

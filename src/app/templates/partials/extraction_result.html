@@ -1,0 +1,113 @@
+<section class="panel panel--result">
+    <div class="case-header">
+        <div>
+            <h2>{{ extracted.change_title }}</h2>
+            <p class="case-header__source">Source: {{ filename }}</p>
+            <p class="case-header__source">Case: {{ case_id }}</p>
+        </div>
+        <span class="badge badge--{{ assessment.risk_level.value }}">{{ assessment.risk_level.value }} risk</span>
+    </div>
+
+    <div class="grid-two">
+        <div>
+            <h3>Extracted fields <span class="confidence">confidence {{ "%.0f"|format(extracted.extraction_confidence * 100) }}%</span></h3>
+            <dl class="fact-list">
+                <dt>Change type</dt>
+                <dd>{{ extracted.change_type.value.replace("_", " ") }}</dd>
+
+                <dt>Business unit</dt>
+                <dd>{{ extracted.business_unit }}</dd>
+
+                <dt>Description</dt>
+                <dd>{{ extracted.description }}</dd>
+
+                <dt>Geographies</dt>
+                <dd>{{ extracted.geographies_involved | join(", ") if extracted.geographies_involved else "None stated" }}</dd>
+
+                <dt>Customer segments</dt>
+                <dd>{{ extracted.customer_segments_involved | join(", ") if extracted.customer_segments_involved else "None stated" }}</dd>
+
+                <dt>Vendor involved</dt>
+                <dd>{{ extracted.vendor_name if extracted.vendor_involved else "No" }}</dd>
+
+                <dt>Products</dt>
+                <dd>{{ extracted.products_involved | join(", ") if extracted.products_involved else "None stated" }}</dd>
+
+                <dt>Stated risk factors</dt>
+                <dd>
+                    {% if extracted.stated_risk_factors %}
+                    <ul>
+                        {% for factor in extracted.stated_risk_factors %}
+                        <li>{{ factor }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    None stated
+                    {% endif %}
+                </dd>
+            </dl>
+        </div>
+
+        <div>
+            <h3>Draft risk score <span class="confidence">{{ assessment.scoring_method }}</span></h3>
+            <table class="score-table">
+                <thead>
+                    <tr><th>Category</th><th>Score</th><th>Rationale</th></tr>
+                </thead>
+                <tbody>
+                    {% for cs in assessment.category_scores %}
+                    <tr>
+                        <td>{{ cs.category }}</td>
+                        <td class="score-table__score">{{ cs.score }}/5</td>
+                        <td>{{ cs.rationale }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <p class="overall-score">Overall: {{ assessment.overall_score }} / 5</p>
+            {% if assessment.requires_committee_review %}
+            <p class="flag flag--warn">Flagged for committee review under current thresholds.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <form class="review-form" hx-post="/intake/{{ case_id }}/review" hx-target="#review-result" hx-headers='{"X-Demo-User":"analyst-1","X-Demo-Role":"analyst"}'>
+        <h3>Analyst review</h3>
+        <label class="field"><span class="field__label">Analyst</span><input name="actor" required placeholder="Synthetic analyst"></label>
+        <label class="field"><span class="field__label">Rationale</span><textarea name="rationale" required rows="3" placeholder="Confirm evidence and explain any disagreement"></textarea></label>
+        <button class="button" name="decision" value="analyst_accepted" type="submit">Accept draft</button>
+        <button class="button button--secondary" name="decision" value="analyst_rejected" type="submit">Reject draft</button>
+    </form>
+    <form class="review-form" hx-post="/intake/{{ case_id }}/edit" hx-target="#review-result" hx-headers='{"X-Demo-User":"analyst-1","X-Demo-Role":"analyst"}'>
+        <h3>Edit extraction and rescore</h3>
+        <input name="change_title" value="{{ extracted.change_title }}" required>
+        <input name="change_type" value="{{ extracted.change_type.value }}" required>
+        <input name="business_unit" value="{{ extracted.business_unit }}" required>
+        <textarea name="description" required rows="2">{{ extracted.description }}</textarea>
+        <input name="geographies_involved" value="{{ extracted.geographies_involved | join(', ') }}" placeholder="Geographies, comma separated">
+        <input name="customer_segments_involved" value="{{ extracted.customer_segments_involved | join(', ') }}" placeholder="Customer segments, comma separated">
+        <input name="vendor_name" value="{{ extracted.vendor_name or '' }}" placeholder="Vendor name">
+        <input name="products_involved" value="{{ extracted.products_involved | join(', ') }}" placeholder="Products, comma separated">
+        <input name="stated_risk_factors" value="{{ extracted.stated_risk_factors | join(', ') }}" placeholder="Risk factors, comma separated">
+        <input name="actor" value="analyst-1" required>
+        <textarea name="rationale" required rows="2" placeholder="Explain the edit"></textarea>
+        <button class="button" type="submit">Save edit and rescore</button>
+    </form>
+    {% if policy_evidence %}
+    <div class="review-form">
+        <h3>Policy evidence</h3>
+        {% for evidence in policy_evidence %}
+        <p><strong>{{ evidence.title }}</strong> · {{ evidence.section }}<br>{{ evidence.excerpt }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <div id="review-result"></div>
+    {% if assessment.requires_committee_review and status.value == 'analyst_finalized' %}
+    <form class="review-form" hx-post="/intake/{{ case_id }}/committee/submit" hx-target="#review-result" hx-headers='{"X-Demo-User":"analyst-1","X-Demo-Role":"analyst"}'>
+        <h3>Submit to committee</h3>
+        <input type="hidden" name="actor" value="analyst-1">
+        <textarea name="rationale" required rows="2" placeholder="Explain why committee review is required"></textarea>
+        <button class="button" type="submit">Submit committee review</button>
+    </form>
+    {% endif %}
+</section>

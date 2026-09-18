@@ -1,0 +1,3 @@
+<section class="flag flag--{{ 'warn' if case.status.value == 'analyst_rejected' else 'success' }}">
+    Case {{ case.case_id }} is now {{ case.status.value.replace('_', ' ') }}. The analyst action and rationale were recorded.
+</section>

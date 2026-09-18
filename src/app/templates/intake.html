@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Intake — Risk Assessment Workbench{% endblock %}
+
+{% block content %}
+<ol class="steps">
+    <li class="steps__item steps__item--active">1. Upload change request</li>
+    <li class="steps__item">2. Review extraction</li>
+    <li class="steps__item">3. Analyst finalizes</li>
+</ol>
+
+<section class="panel">
+    <h1>Submit a change request</h1>
+    <p class="panel__hint">
+        Upload the change-request document as a PDF. The system will extract
+        the relevant fields and produce a draft risk score for an analyst to
+        review — nothing here is approved automatically.
+    </p>
+
+    <form
+        hx-post="/intake/upload"
+        hx-encoding="multipart/form-data"
+        hx-target="#result"
+        hx-indicator="#submitting"
+    >
+        <label class="field">
+            <span class="field__label">Change request document (PDF)</span>
+            <input type="file" name="file" accept="application/pdf" required>
+        </label>
+
+        <button type="submit" class="button">Submit for extraction</button>
+        <span id="submitting" class="htmx-indicator">Reading document and drafting extraction…</span>
+    </form>
+</section>
+
+<div id="result"></div>
+{% endblock %}
