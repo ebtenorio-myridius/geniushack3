@@ -1,246 +1,56 @@
 {
   "case_count": 8,
-  "successful_cases": 8,
-  "field_accuracy": 0.662,
-  "risk_agreement": 0.875,
+  "successful_cases": 0,
+  "field_accuracy": 0,
+  "risk_agreement": 0,
   "results": [
     {
       "case_id": "SYN-001",
-      "success": true,
-      "correct_fields": 8,
-      "total_fields": 10,
-      "field_accuracy": 0.8,
-      "risk_level": "low",
-      "expected_risk_level": "low",
-      "risk_agreement": true,
-      "latency_ms": 3228,
-      "actual": {
-        "change_title": "Refresh online banking account dashboard",
-        "change_type": "feature_change",
-        "business_unit": "Consumer Banking",
-        "description": "Update the layout and accessibility labels on the existing online banking account dashboard.",
-        "geographies_involved": [],
-        "customer_segments_involved": [],
-        "vendor_involved": false,
-        "vendor_name": null,
-        "products_involved": [
-          "online banking"
-        ],
-        "stated_risk_factors": [],
-        "extraction_confidence": 0.9
-      }
+      "success": false,
+      "error_type": "APIConnectionError",
+      "latency_ms": 224
     },
     {
       "case_id": "SYN-002",
-      "success": true,
-      "correct_fields": 7,
-      "total_fields": 10,
-      "field_accuracy": 0.7,
-      "risk_level": "medium",
-      "expected_risk_level": "medium",
-      "risk_agreement": true,
-      "latency_ms": 2404,
-      "actual": {
-        "change_title": "Extend Treasury Portal to Small Non-Profits",
-        "change_type": "new_customer_segment",
-        "business_unit": "Commercial Banking",
-        "description": "Extending the existing treasury portal to small non-profit organizations in the US.",
-        "geographies_involved": [
-          "United States"
-        ],
-        "customer_segments_involved": [
-          "small non-profit organizations"
-        ],
-        "vendor_involved": false,
-        "vendor_name": null,
-        "products_involved": [
-          "treasury portal"
-        ],
-        "stated_risk_factors": [],
-        "extraction_confidence": 0.9
-      }
+      "success": false,
+      "error_type": "APIConnectionError",
+      "latency_ms": 68
     },
     {
       "case_id": "SYN-003",
-      "success": true,
-      "correct_fields": 7,
-      "total_fields": 10,
-      "field_accuracy": 0.7,
-      "risk_level": "critical",
-      "expected_risk_level": "critical",
-      "risk_agreement": true,
-      "latency_ms": 3390,
-      "actual": {
-        "change_title": "New Cross-Border Remittance and Foreign-Exchange Product",
-        "change_type": "new_product",
-        "business_unit": "Payments",
-        "description": "Payments proposes a new cross-border remittance and foreign-exchange product for non-resident customers.",
-        "geographies_involved": [
-          "Iran",
-          "Germany",
-          "Poland"
-        ],
-        "customer_segments_involved": [
-          "non-resident customers"
-        ],
-        "vendor_involved": true,
-        "vendor_name": "Acme Payments Processing",
-        "products_involved": [],
-        "stated_risk_factors": [
-          "sanctions exposure",
-          "cross-border payment flows",
-          "new customer type"
-        ],
-        "extraction_confidence": 0.9
-      }
+      "success": false,
+      "error_type": "APIConnectionError",
+      "latency_ms": 62
     },
     {
       "case_id": "SYN-004",
-      "success": true,
-      "correct_fields": 6,
-      "total_fields": 10,
-      "field_accuracy": 0.6,
-      "risk_level": "medium",
-      "expected_risk_level": "medium",
-      "risk_agreement": true,
-      "latency_ms": 2514,
-      "actual": {
-        "change_title": "Onboard Northstar Document Services",
-        "change_type": "vendor_onboarding",
-        "business_unit": "Wealth Management",
-        "description": "Onboarding Northstar Document Services to digitize archival statements and process existing client documents.",
-        "geographies_involved": [
-          "United States"
-        ],
-        "customer_segments_involved": [],
-        "vendor_involved": true,
-        "vendor_name": "Northstar Document Services",
-        "products_involved": [],
-        "stated_risk_factors": [],
-        "extraction_confidence": 0.9
-      }
+      "success": false,
+      "error_type": "APIConnectionError",
+      "latency_ms": 65
     },
     {
       "case_id": "SYN-005",
-      "success": true,
-      "correct_fields": 5,
-      "total_fields": 10,
-      "field_accuracy": 0.5,
-      "risk_level": "medium",
-      "expected_risk_level": "medium",
-      "risk_agreement": true,
-      "latency_ms": 3008,
-      "actual": {
-        "change_title": "Pilot for New Mobile Deposit Feature",
-        "change_type": "feature_change",
-        "business_unit": "Consumer Banking",
-        "description": "Proposal for a pilot of a new mobile deposit feature, targeting existing retail customers and new business customers.",
-        "geographies_involved": [
-          "Canada"
-        ],
-        "customer_segments_involved": [
-          "existing retail customers",
-          "new business customers"
-        ],
-        "vendor_involved": true,
-        "vendor_name": null,
-        "products_involved": [],
-        "stated_risk_factors": [],
-        "extraction_confidence": 0.75
-      }
+      "success": false,
+      "error_type": "APIConnectionError",
+      "latency_ms": 273
     },
     {
       "case_id": "SYN-006",
-      "success": true,
-      "correct_fields": 6,
-      "total_fields": 10,
-      "field_accuracy": 0.6,
-      "risk_level": "low",
-      "expected_risk_level": "low",
-      "risk_agreement": true,
-      "latency_ms": 2848,
-      "actual": {
-        "change_title": "Add Manual Review Queue for Unusual CNP Transactions",
-        "change_type": "process_change",
-        "business_unit": "Payments",
-        "description": "Adding a manual review queue for unusual card-not-present transactions in the United States.",
-        "geographies_involved": [
-          "United States"
-        ],
-        "customer_segments_involved": [],
-        "vendor_involved": false,
-        "vendor_name": null,
-        "products_involved": [],
-        "stated_risk_factors": [],
-        "extraction_confidence": 0.9
-      }
+      "success": false,
+      "error_type": "APIConnectionError",
+      "latency_ms": 62
     },
     {
       "case_id": "SYN-007",
-      "success": true,
-      "correct_fields": 7,
-      "total_fields": 10,
-      "field_accuracy": 0.7,
-      "risk_level": "medium",
-      "expected_risk_level": "medium",
-      "risk_agreement": true,
-      "latency_ms": 2673,
-      "actual": {
-        "change_title": "Change in Account-Opening Process for Checking Products",
-        "change_type": "process_change",
-        "business_unit": "Consumer Banking",
-        "description": "Changing the account-opening process for existing checking products.",
-        "geographies_involved": [
-          "United States",
-          "Canada",
-          "Mexico"
-        ],
-        "customer_segments_involved": [],
-        "vendor_involved": false,
-        "vendor_name": null,
-        "products_involved": [
-          "checking products"
-        ],
-        "stated_risk_factors": [
-          "cross-border identity verification",
-          "different documentary requirements",
-          "operational handoffs"
-        ],
-        "extraction_confidence": 0.9
-      }
+      "success": false,
+      "error_type": "APIConnectionError",
+      "latency_ms": 61
     },
     {
       "case_id": "SYN-008",
-      "success": true,
-      "correct_fields": 7,
-      "total_fields": 10,
-      "field_accuracy": 0.7,
-      "risk_level": "medium",
-      "expected_risk_level": "high",
-      "risk_agreement": false,
-      "latency_ms": 2867,
-      "actual": {
-        "change_title": "New Instant Invoice-Financing Product",
-        "change_type": "new_product",
-        "business_unit": "Commercial Banking",
-        "description": "A new instant invoice-financing product delivered through the branch and online channels for small and medium-sized enterprises.",
-        "geographies_involved": [
-          "United Kingdom"
-        ],
-        "customer_segments_involved": [
-          "small and medium-sized enterprises"
-        ],
-        "vendor_involved": false,
-        "vendor_name": null,
-        "products_involved": [
-          "instant invoice-financing"
-        ],
-        "stated_risk_factors": [
-          "rapid funds movement",
-          "new lending product"
-        ],
-        "extraction_confidence": 0.9
-      }
+      "success": false,
+      "error_type": "APIConnectionError",
+      "latency_ms": 88
     }
   ]
 }
