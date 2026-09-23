@@ -12,7 +12,7 @@ This guide covers local operation and free or free-to-start hosting for the curr
 | Oracle Cloud Always Free VM | None | Persistent VM disk | Free persistent demo |
 | Cloud Run + Supabase PostgreSQL | Replace SQLite storage layer and add migrations | PostgreSQL | More durable hosted prototype |
 
-The default recommendation is **Render for a short-lived public demo** and **Oracle Cloud Always Free for a persistent deployment without changing the current SQLite implementation**. For either option, use synthetic PDFs only.
+The default recommendation for a free remote demo is **Render Free Web Service + GitHub + the existing Dockerfile**. It requires no application changes and provides a public HTTPS URL. Use **Oracle Cloud Always Free** instead when cases must survive restarts without first migrating away from SQLite. For either option, use synthetic PDFs only.
 
 OpenAI model calls are not free. Hosting may be free while extraction still incurs OpenAI API usage charges. A fully local Ollama provider requires an LLM provider adapter that this repository does not currently implement. See [the free-first deployment notes](../ops/free-first-deployment.md).
 
@@ -98,9 +98,14 @@ docker compose down -v
 
 Render is the quickest public preview because it can build the repository's Dockerfile and provides HTTPS. Its free web service sleeps after inactivity and has an ephemeral filesystem. Any local SQLite database and uploaded files are lost after restart, redeploy, or sleep.
 
+This is the recommended target for a hackathon or judge demo. It is free to
+host, but OpenAI extraction remains metered API usage. The first request after
+the service has been idle may take about a minute while Render starts it.
+
 ### Dashboard setup
 
-1. Push the repository to a private GitHub repository without `.env`.
+1. Push the repository to GitHub without `.env`. A private repository is
+   preferred when the source should not be public.
 2. Create a new **Web Service** in the [Render dashboard](https://dashboard.render.com/).
 3. Select the repository and choose **Docker** as the runtime.
 4. Use the repository root as the Docker build context.
@@ -111,8 +116,30 @@ Render is the quickest public preview because it can build the repository's Dock
    - `DATABASE_PATH` set to `risk_workbench.db`
    - `PROMPT_VERSION` set to `extract_change_request_v1`
 7. Deploy and wait for the build to finish.
-8. Open the generated HTTPS URL and verify `/healthz`.
-9. Upload only `evals/data/sample_change_request.pdf` or another synthetic PDF.
+8. Open the generated HTTPS URL and verify:
+
+   ```text
+   https://<your-service>.onrender.com/healthz
+   ```
+
+   The expected response is:
+
+   ```json
+   {"status":"ok"}
+   ```
+
+9. Open the root URL, wait for the service to start if it was sleeping, and
+   upload only `evals/data/sample_change_request.pdf` or another synthetic PDF.
+10. Confirm that extraction, analyst review, and committee workflow work before
+    the demo.
+
+Do not upload `.env` to GitHub or paste an OpenAI key into the repository. If a
+key has already been exposed, revoke it and create a replacement before adding
+it to Render's secret environment-variable field.
+
+The Render deployment is disposable: cases stored in `risk_workbench.db` may
+disappear after a restart or redeploy. This is acceptable for a demo. Export
+or screenshot any evidence needed for judging before stopping the service.
 
 Do not use Render's free PostgreSQL for durable records: the current Render free database expires after 30 days. Use Supabase PostgreSQL or another durable database after adapting the storage service.
 
