@@ -574,12 +574,105 @@ Anonymous users do not see the identity line.
 ### Validation
 Focused checks passed for all three demo roles. Full test suite passed.
 
+## 2026-09-24 - Hide Header Identity on Switch Role Page
+
+### Request
+When clicking **Sign in / switch role**, the current identity line should disappear. This should apply to Product Owner, Analyst, and Committee users.
+
+### Actions
+Updated:
+- `src/app/templates/base.html`
+- `src/app/routers/intake.py`
+
+### Result
+The login/switch-role page now hides the header identity line even if a demo user cookie is still present. Normal workbench pages still show the signed-in user and role.
+
+### Validation
+Focused checks confirmed:
+
+- login page hides identity for Product Owner, Analyst, and Committee users;
+- intake page still shows identity for all three roles;
+- full test suite passed.
+
+## 2026-09-24 - Three-Member Committee Voting Matrix
+
+### Request
+The user noted that a committee should logically have three members and provided a decision matrix:
+
+```text
+Approvals  Rejections  Result
+3          0           Approved
+2          1           Approved
+1          2           Rejected
+0          3           Rejected
+1          0           Pending
+1          1           Pending
+2          0           Pending (waiting for 3rd vote)
+```
+
+### Actions
+Added committee demo users:
+
+```text
+committee-1
+committee-2
+committee-3
+```
+
+Updated:
+- `src/app/services/auth.py`
+- `src/app/services/case_store.py`
+- `src/app/routers/intake.py`
+- `src/app/templates/login.html`
+- `src/app/templates/committee_case.html`
+- `src/app/templates/partials/committee_queue.html`
+- `tests/test_case_store.py`
+
+### Implementation Details
+Added a persisted `committee_votes` table with one vote per committee member per case.
+
+The committee decision flow now:
+
+1. Keeps the case in `committee_review` while fewer than three approve/reject votes are present.
+2. Prevents the same committee member from voting twice on the same case.
+3. Derives the voting actor from the logged-in committee cookie rather than trusting a hidden form field.
+4. Records each vote as a workflow event.
+5. Finalizes the case as `decisioned` after the third counted vote.
+
+Voting interpretation:
+
+- `approve` counts as approval.
+- `approve_with_conditions` counts as approval and preserves conditions.
+- `reject` counts as rejection.
+- `defer` remains a decision label for already-decisioned display, but committee voting accepts approve/reject/approve-with-conditions for the current three-vote matrix.
+
+### Result
+Committee pages now show:
+
+- vote count summary;
+- approvals and rejections;
+- number of votes cast out of three;
+- pending/approved/rejected result;
+- each committee member's vote and rationale.
+
+### Validation
+Focused validations confirmed:
+
+- `committee-1`, `committee-2`, and `committee-3` can vote as distinct committee users;
+- `approve`, `approve`, `reject` finalizes as Approved;
+- duplicate voting by the same committee member is rejected;
+- case remains pending with fewer than three counted votes;
+- focused case store tests passed: `6 passed`;
+- full test suite passed: `24 passed`.
+
 ## Current Demo Roles
 
 ```text
 product-owner-1     Product owner
 analyst-1           FCRM analyst
 committee-1         Risk committee member
+committee-2         Risk committee member
+committee-3         Risk committee member
 ```
 
 ## Current Known Office Limitation
