@@ -5,6 +5,44 @@
     <article class="queue-item">
         <h3>{{ case.extracted.change_title }}</h3>
         <p>Case {{ case.case_id }} · {{ case.assessment.risk_level.value }} risk</p>
+        <dl class="fact-list committee-facts">
+            <dt>Change type</dt>
+            <dd>{{ case.extracted.change_type.value.replace("_", " ") }}</dd>
+            <dt>Business unit</dt>
+            <dd>{{ case.extracted.business_unit }}</dd>
+            <dt>Description</dt>
+            <dd>{{ case.extracted.description }}</dd>
+            <dt>Geographies</dt>
+            <dd>{{ case.extracted.geographies_involved | join(", ") if case.extracted.geographies_involved else "None stated" }}</dd>
+            <dt>Customer segments</dt>
+            <dd>{{ case.extracted.customer_segments_involved | join(", ") if case.extracted.customer_segments_involved else "None stated" }}</dd>
+            <dt>Vendor</dt>
+            <dd>{{ case.extracted.vendor_name if case.extracted.vendor_involved else "None" }}</dd>
+            <dt>Products</dt>
+            <dd>{{ case.extracted.products_involved | join(", ") if case.extracted.products_involved else "None stated" }}</dd>
+            <dt>Stated risk factors</dt>
+            <dd>{{ case.extracted.stated_risk_factors | join(", ") if case.extracted.stated_risk_factors else "None stated" }}</dd>
+        </dl>
+        <h4>Risk assessment</h4>
+        <table class="score-table">
+            <thead><tr><th>Category</th><th>Score</th><th>Rationale</th></tr></thead>
+            <tbody>
+            {% for score in case.assessment.category_scores %}
+                <tr><td>{{ score.category }}</td><td>{{ score.score }}/5</td><td>{{ score.rationale }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <p class="overall-score">Overall: {{ case.assessment.overall_score }} / 5 · {{ case.assessment.scoring_method }}</p>
+        {% if case.policy_evidence %}
+        <h4>Policy evidence</h4>
+        {% for evidence in case.policy_evidence %}
+        <p class="panel__hint"><strong>{{ evidence.title }}</strong> · {{ evidence.section }}<br>{{ evidence.excerpt }}<br><small>Source: {{ evidence.source_path }}</small></p>
+        {% endfor %}
+        {% endif %}
+        <h4>Review history</h4>
+        {% for event in (events_by_case | default({})).get(case.case_id, []) %}
+        <p class="panel__hint"><strong>{{ event.event_type.replace("_", " ") }}</strong> · {{ event.actor }} · {{ event.occurred_at }}<br>{{ event.rationale }}</p>
+        {% endfor %}
         <form hx-post="/intake/{{ case.case_id }}/committee/decision" hx-target="#committee-result" hx-headers='{"X-Demo-User":"committee-1","X-Demo-Role":"committee"}'>
             <input type="hidden" name="actor" value="committee-1">
             <input name="rationale" required placeholder="Committee rationale">
