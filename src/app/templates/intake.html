@@ -12,8 +12,13 @@
 <section class="panel">
     <nav class="dashboard-nav">
         <strong>Demo workspaces</strong>
+        {% if demo_role == "analyst" %}
         <a href="/intake/analyst/dashboard/demo">Analyst dashboard</a>
+        {% elif demo_role == "committee" %}
         <a href="/intake/committee/dashboard/demo">Committee dashboard</a>
+        {% else %}
+        <a href="/intake/login">Sign in to choose a workspace</a>
+        {% endif %}
     </nav>
     <h1>Submit a change request</h1>
     <p class="panel__hint">

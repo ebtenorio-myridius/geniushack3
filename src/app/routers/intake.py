@@ -57,7 +57,8 @@ async def logout():
 
 @router.get("", response_class=HTMLResponse)
 async def intake_form(request: Request):
-    return templates.TemplateResponse(request, "intake.html", {})
+    user, role = _identity(request)
+    return templates.TemplateResponse(request, "intake.html", {"demo_user": user, "demo_role": role})
 
 
 def _queue_context(cases):
