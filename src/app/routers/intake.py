@@ -27,7 +27,7 @@ def _identity(request: Request) -> tuple[str | None, str | None]:
 
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
-    return templates.TemplateResponse(request, "login.html", {})
+    return templates.TemplateResponse(request, "login.html", {"hide_header_identity": True})
 
 
 @router.post("/login")
@@ -37,7 +37,7 @@ async def login(request: Request, role: UserRole = Form(...), user: str = Form(.
         return templates.TemplateResponse(
             request,
             "login.html",
-            {"error": "Use product-owner-1, analyst-1, or committee-1 for the matching demo role."},
+            {"error": "Use product-owner-1, analyst-1, or committee-1 for the matching demo role.", "hide_header_identity": True},
             status_code=403,
         )
     destinations = {

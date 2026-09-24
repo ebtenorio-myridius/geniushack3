@@ -12,7 +12,7 @@
         <div class="wrap">
             <span class="site-header__title">Risk Assessment Workbench</span>
             <span class="site-header__subtitle">Change request intake for Financial Crimes Risk Management</span>
-            {% if current_demo_user and current_demo_role_label %}
+            {% if not hide_header_identity and current_demo_user and current_demo_role_label %}
             <span class="site-header__identity">Signed in as {{ current_demo_user }} · {{ current_demo_role_label }}</span>
             {% endif %}
             <a class="site-header__login" href="/intake/login">Sign in / switch role</a>
