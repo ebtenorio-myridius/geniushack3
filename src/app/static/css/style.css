@@ -208,6 +208,8 @@ textarea, input[type="text"] {
 
 .case-table-wrap { overflow-x: auto; }
 .case-table { min-width: 680px; }
+.case-table a { color: var(--accent); font-weight: 600; text-decoration: none; }
+.case-table a:hover { text-decoration: underline; }
 
 .htmx-indicator {
     display: none;

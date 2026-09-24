@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Committee Case Review — Risk Assessment Workbench{% endblock %}
+
+{% block content %}
+<nav class="dashboard-nav">
+    <strong>Committee workspace</strong>
+    <a href="/intake/committee/dashboard/demo">Cases to review</a>
+    <a href="/intake/committee/decisioned">Decisioned cases</a>
+</nav>
+
+<section class="panel panel--result">
+    <div class="case-header">
+        <div>
+            <h1>{{ case.extracted.change_title }}</h1>
+            <p class="case-header__source">Case {{ case.case_id }} · {{ case.filename }}</p>
+        </div>
+        <span class="badge badge--{{ case.assessment.risk_level.value }}">{{ case.assessment.risk_level.value }} risk</span>
+    </div>
+
+    <div class="grid-two">
+        <div>
+            <h3>Finalized change details</h3>
+            <dl class="fact-list">
+                <dt>Change type</dt><dd>{{ case.extracted.change_type.value.replace("_", " ") }}</dd>
+                <dt>Business unit</dt><dd>{{ case.extracted.business_unit }}</dd>
+                <dt>Description</dt><dd>{{ case.extracted.description }}</dd>
+                <dt>Geographies</dt><dd>{{ case.extracted.geographies_involved | join(", ") if case.extracted.geographies_involved else "None stated" }}</dd>
+                <dt>Customer segments</dt><dd>{{ case.extracted.customer_segments_involved | join(", ") if case.extracted.customer_segments_involved else "None stated" }}</dd>
+                <dt>Vendor</dt><dd>{{ case.extracted.vendor_name if case.extracted.vendor_involved else "None" }}</dd>
+                <dt>Products</dt><dd>{{ case.extracted.products_involved | join(", ") if case.extracted.products_involved else "None stated" }}</dd>
+                <dt>Risk factors</dt><dd>{{ case.extracted.stated_risk_factors | join(", ") if case.extracted.stated_risk_factors else "None stated" }}</dd>
+            </dl>
+        </div>
+        <div>
+            <h3>Risk assessment</h3>
+            <table class="score-table">
+                <thead><tr><th>Category</th><th>Score</th><th>Rationale</th></tr></thead>
+                <tbody>{% for score in case.assessment.category_scores %}<tr><td>{{ score.category }}</td><td>{{ score.score }}/5</td><td>{{ score.rationale }}</td></tr>{% endfor %}</tbody>
+            </table>
+            <p class="overall-score">Overall: {{ case.assessment.overall_score }} / 5</p>
+        </div>
+    </div>
+
+    {% if case.policy_evidence %}
+    <h3>Policy evidence</h3>
+    {% for evidence in case.policy_evidence %}
+    <p class="panel__hint"><strong>{{ evidence.title }}</strong> · {{ evidence.section }}<br>{{ evidence.excerpt }}<br><small>Source: {{ evidence.source_path }}</small></p>
+    {% endfor %}
+    {% endif %}
+
+    <h3>Review history</h3>
+    {% for event in events %}
+    <p class="panel__hint"><strong>{{ event.event_type.replace("_", " ") }}</strong> · {{ event.actor }} · {{ event.occurred_at }}<br>{{ event.rationale }}</p>
+    {% endfor %}
+
+    {% if case.status.value == 'committee_review' %}
+    <form class="review-form" hx-post="/intake/{{ case.case_id }}/committee/decision" hx-target="#committee-result" hx-headers='{"X-Demo-User":"committee-1","X-Demo-Role":"committee"}'>
+        <h3>Committee decision</h3>
+        <input type="hidden" name="actor" value="committee-1">
+        <input name="rationale" required placeholder="Committee rationale">
+        <input name="conditions" placeholder="Conditions, if applicable">
+        <button class="button" name="decision" value="approve">Approve</button>
+        <button class="button button--secondary" name="decision" value="reject">Reject</button>
+        <button class="button" name="decision" value="defer">Defer</button>
+        <button class="button" name="decision" value="approve_with_conditions">Approve with conditions</button>
+    </form>
+    {% else %}
+    <p class="flag flag--success">This case is already decisioned.</p>
+    {% endif %}
+    <div id="committee-result"></div>
+</section>
+{% endblock %}
