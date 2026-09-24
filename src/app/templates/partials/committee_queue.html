@@ -43,8 +43,12 @@
         {% for event in (events_by_case | default({})).get(case.case_id, []) %}
         <p class="panel__hint"><strong>{{ event.event_type.replace("_", " ") }}</strong> · {{ event.actor }} · {{ event.occurred_at }}<br>{{ event.rationale }}</p>
         {% endfor %}
-        <form hx-post="/intake/{{ case.case_id }}/committee/decision" hx-target="#committee-result" hx-headers='{"X-Demo-User":"committee-1","X-Demo-Role":"committee"}'>
-            <input type="hidden" name="actor" value="committee-1">
+        {% set vote_summary = (vote_summary_by_case | default({})).get(case.case_id) %}
+        {% if vote_summary %}
+        <h4>Committee vote status</h4>
+        <p class="panel__hint">{{ vote_summary.approvals }} approvals · {{ vote_summary.rejections }} rejections · {{ vote_summary.votes_cast }}/{{ vote_summary.votes_needed }} votes cast · Result: {{ vote_summary.result }}</p>
+        {% endif %}
+        <form hx-post="/intake/{{ case.case_id }}/committee/decision" hx-target="#committee-result">
             <input name="rationale" required placeholder="Committee rationale">
             <input name="conditions" placeholder="Conditions, if applicable">
             <button class="button" name="decision" value="approve">Approve</button>

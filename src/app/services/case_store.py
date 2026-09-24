@@ -9,6 +9,7 @@ from src.app.models.schemas import (
     AnalystReview,
     CaseRecord,
     CaseStatus,
+    CommitteeDecision,
     CommitteeReview,
     ExtractedChangeRequest,
     PolicyEvidence,
@@ -61,6 +62,16 @@ class CaseStore:
                         actor TEXT NOT NULL,
                         rationale TEXT NOT NULL,
                         occurred_at TEXT NOT NULL,
+                        FOREIGN KEY(case_id) REFERENCES cases(case_id)
+                    );
+                    CREATE TABLE IF NOT EXISTS committee_votes (
+                        case_id TEXT NOT NULL,
+                        actor TEXT NOT NULL,
+                        decision TEXT NOT NULL,
+                        rationale TEXT NOT NULL,
+                        conditions TEXT NOT NULL,
+                        occurred_at TEXT NOT NULL,
+                        PRIMARY KEY(case_id, actor),
                         FOREIGN KEY(case_id) REFERENCES cases(case_id)
                     );
                     CREATE TABLE IF NOT EXISTS telemetry (
@@ -183,6 +194,72 @@ class CaseStore:
         if review.conditions:
             rationale = f"{rationale} Conditions: {review.conditions}"
         return self._transition(case_id, CaseStatus.committee_review, CaseStatus.decisioned, review.actor, f"{review.decision.value}: {rationale}")
+
+    def cast_committee_vote(self, case_id: str, review: CommitteeReview) -> CaseRecord:
+        if review.decision == CommitteeDecision.defer:
+            raise ValueError("Committee voting accepts approve, reject, or approve with conditions")
+        now = datetime.now(timezone.utc)
+        with closing(self._connect()) as connection:
+            with connection:
+                row = connection.execute("SELECT status FROM cases WHERE case_id = ?", (case_id,)).fetchone()
+                if row is None:
+                    raise KeyError(case_id)
+                if row["status"] != CaseStatus.committee_review.value:
+                    raise ValueError("Case must be committee_review before committee voting")
+                existing = connection.execute(
+                    "SELECT 1 FROM committee_votes WHERE case_id = ? AND actor = ?",
+                    (case_id, review.actor),
+                ).fetchone()
+                if existing is not None:
+                    raise ValueError("Committee member has already voted on this case")
+                connection.execute(
+                    "INSERT INTO committee_votes VALUES (?, ?, ?, ?, ?, ?)",
+                    (case_id, review.actor, review.decision.value, review.rationale, review.conditions, now.isoformat()),
+                )
+                vote_rationale = review.rationale
+                if review.conditions:
+                    vote_rationale = f"{vote_rationale} Conditions: {review.conditions}"
+                self._record_event(connection, case_id, "committee_vote", review.actor, f"{review.decision.value}: {vote_rationale}")
+
+                votes = connection.execute(
+                    "SELECT decision, rationale, conditions FROM committee_votes WHERE case_id = ? ORDER BY occurred_at",
+                    (case_id,),
+                ).fetchall()
+                approvals = sum(1 for vote in votes if vote["decision"] in (CommitteeDecision.approve.value, CommitteeDecision.approve_with_conditions.value))
+                rejections = sum(1 for vote in votes if vote["decision"] == CommitteeDecision.reject.value)
+                counted_votes = approvals + rejections
+                if counted_votes >= 3:
+                    if approvals >= 2:
+                        final_decision = CommitteeDecision.approve_with_conditions.value if any(vote["decision"] == CommitteeDecision.approve_with_conditions.value or vote["conditions"] for vote in votes) else CommitteeDecision.approve.value
+                    else:
+                        final_decision = CommitteeDecision.reject.value
+                    connection.execute(
+                        "UPDATE cases SET status = ?, updated_at = ? WHERE case_id = ?",
+                        (CaseStatus.decisioned.value, now.isoformat(), case_id),
+                    )
+                    self._record_event(connection, case_id, CaseStatus.decisioned.value, "committee", f"{final_decision}: Vote result {approvals} approvals, {rejections} rejections")
+        return self.get_case(case_id)
+
+    def list_committee_votes(self, case_id: str) -> list[dict]:
+        with closing(self._connect()) as connection:
+            rows = connection.execute(
+                "SELECT actor, decision, rationale, conditions, occurred_at FROM committee_votes WHERE case_id = ? ORDER BY occurred_at",
+                (case_id,),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def committee_vote_summary(self, case_id: str) -> dict:
+        votes = self.list_committee_votes(case_id)
+        approvals = sum(1 for vote in votes if vote["decision"] in (CommitteeDecision.approve.value, CommitteeDecision.approve_with_conditions.value))
+        rejections = sum(1 for vote in votes if vote["decision"] == CommitteeDecision.reject.value)
+        return {
+            "approvals": approvals,
+            "rejections": rejections,
+            "votes_cast": approvals + rejections,
+            "votes_needed": 3,
+            "result": "Approved" if approvals >= 2 and approvals + rejections >= 3 else "Rejected" if rejections >= 2 and approvals + rejections >= 3 else "Pending",
+            "votes": votes,
+        }
 
     def _transition(self, case_id: str, expected: CaseStatus, target: CaseStatus, actor: str, rationale: str) -> CaseRecord:
         now = datetime.now(timezone.utc)

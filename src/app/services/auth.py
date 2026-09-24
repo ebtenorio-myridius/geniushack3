@@ -6,6 +6,8 @@ DEMO_USER_ROLES = {
     "product-owner-1": UserRole.product_owner,
     "analyst-1": UserRole.analyst,
     "committee-1": UserRole.committee,
+    "committee-2": UserRole.committee,
+    "committee-3": UserRole.committee,
 }
 
 

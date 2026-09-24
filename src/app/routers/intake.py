@@ -37,7 +37,7 @@ async def login(request: Request, role: UserRole = Form(...), user: str = Form(.
         return templates.TemplateResponse(
             request,
             "login.html",
-            {"error": "Use product-owner-1, analyst-1, or committee-1 for the matching demo role.", "hide_header_identity": True},
+            {"error": "Use product-owner-1, analyst-1, or committee-1/2/3 for the matching demo role.", "hide_header_identity": True},
             status_code=403,
         )
     destinations = {
@@ -171,7 +171,7 @@ async def committee_case_detail(request: Request, case_id: str):
     return templates.TemplateResponse(
         request,
         "committee_case.html",
-        {"case": case, "events": case_store.list_events(case_id)},
+        {"case": case, "events": case_store.list_events(case_id), "vote_summary": case_store.committee_vote_summary(case_id)},
     )
 
 
@@ -349,7 +349,7 @@ async def committee_queue(request: Request):
     return templates.TemplateResponse(
         request,
         "partials/committee_queue.html",
-        {"cases": cases, "events_by_case": {case.case_id: case_store.list_events(case.case_id) for case in cases}},
+        {"cases": cases, "events_by_case": {case.case_id: case_store.list_events(case.case_id) for case in cases}, "vote_summary_by_case": {case.case_id: case_store.committee_vote_summary(case.case_id) for case in cases}},
     )
 
 
@@ -359,17 +359,17 @@ async def demo_committee_queue(request: Request):
     return templates.TemplateResponse(
         request,
         "committee_queue.html",
-        {"cases": (cases := case_store.list_committee_cases()), "events_by_case": {case.case_id: case_store.list_events(case.case_id) for case in cases}},
+        {"cases": (cases := case_store.list_committee_cases()), "events_by_case": {case.case_id: case_store.list_events(case.case_id) for case in cases}, "vote_summary_by_case": {case.case_id: case_store.committee_vote_summary(case.case_id) for case in cases}},
     )
 
 
 @router.post("/{case_id}/committee/decision", response_class=HTMLResponse)
-async def committee_decision(request: Request, case_id: str, decision: str = Form(...), actor: str = Form(...), rationale: str = Form(...), conditions: str = Form("")):
+async def committee_decision(request: Request, case_id: str, decision: str = Form(...), rationale: str = Form(...), conditions: str = Form("")):
     from src.app.models.schemas import CommitteeDecision, CommitteeReview
     user, role = _identity(request)
-    require_role(UserRole.committee, user, role)
+    actor = require_role(UserRole.committee, user, role)
     try:
-        case = case_store.decide_committee(case_id, CommitteeReview(decision=CommitteeDecision(decision), actor=actor, rationale=rationale, conditions=conditions))
+        case = case_store.cast_committee_vote(case_id, CommitteeReview(decision=CommitteeDecision(decision), actor=actor, rationale=rationale, conditions=conditions))
     except (KeyError, ValueError) as exc:
         return templates.TemplateResponse(request, "partials/error.html", {"message": str(exc)}, status_code=409)
     return templates.TemplateResponse(request, "partials/review_result.html", {"case": case})

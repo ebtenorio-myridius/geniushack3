@@ -54,15 +54,26 @@
     <p class="panel__hint"><strong>{{ event.event_type.replace("_", " ") }}</strong> · {{ event.actor }} · {{ event.occurred_at }}<br>{{ event.rationale }}</p>
     {% endfor %}
 
+    <h3>Committee vote status</h3>
+    <p class="panel__hint">{{ vote_summary.approvals }} approvals · {{ vote_summary.rejections }} rejections · {{ vote_summary.votes_cast }}/{{ vote_summary.votes_needed }} votes cast · Result: {{ vote_summary.result }}</p>
+    {% if vote_summary.votes %}
+    <table class="score-table">
+        <thead><tr><th>Member</th><th>Vote</th><th>Rationale</th></tr></thead>
+        <tbody>
+        {% for vote in vote_summary.votes %}
+            <tr><td>{{ vote.actor }}</td><td>{{ vote.decision.replace("_", " ") }}</td><td>{{ vote.rationale }}{% if vote.conditions %}<br>Conditions: {{ vote.conditions }}{% endif %}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
     {% if case.status.value == 'committee_review' %}
-    <form class="review-form" hx-post="/intake/{{ case.case_id }}/committee/decision" hx-target="#committee-result" hx-headers='{"X-Demo-User":"committee-1","X-Demo-Role":"committee"}'>
-        <h3>Committee decision</h3>
-        <input type="hidden" name="actor" value="committee-1">
+    <form class="review-form" hx-post="/intake/{{ case.case_id }}/committee/decision" hx-target="#committee-result">
+        <h3>Committee vote</h3>
         <input name="rationale" required placeholder="Committee rationale">
         <input name="conditions" placeholder="Conditions, if applicable">
         <button class="button" name="decision" value="approve">Approve</button>
         <button class="button button--secondary" name="decision" value="reject">Reject</button>
-        <button class="button" name="decision" value="defer">Defer</button>
         <button class="button" name="decision" value="approve_with_conditions">Approve with conditions</button>
     </form>
     {% else %}
