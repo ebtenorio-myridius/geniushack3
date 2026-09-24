@@ -9,7 +9,7 @@ from src.app.services.llm_service import draft_extraction
 from src.app.services.pdf_extraction import PdfExtractionError, extract_text_from_pdf
 from src.app.services.risk_scoring import score_change_request
 from src.app.services.policy_service import find_policy_evidence
-from src.app.services.auth import require_role
+from src.app.services.auth import require_role, validate_demo_login
 from src.app.templating import templates
 
 logger = logging.getLogger(__name__)
@@ -32,6 +32,14 @@ async def login_page(request: Request):
 
 @router.post("/login")
 async def login(request: Request, role: UserRole = Form(...), user: str = Form(...)):
+    user = user.strip()
+    if not validate_demo_login(user, role):
+        return templates.TemplateResponse(
+            request,
+            "login.html",
+            {"error": "Use analyst-1 for the analyst role or committee-1 for the committee role."},
+            status_code=403,
+        )
     destination = "/intake/analyst/dashboard/demo" if role == UserRole.analyst else "/intake/committee/dashboard/demo"
     response = RedirectResponse(destination, status_code=303)
     response.set_cookie("demo_user", user, httponly=True, samesite="lax")
@@ -61,6 +69,8 @@ def _queue_context(cases):
 
 @router.get("/analyst/dashboard/demo", response_class=HTMLResponse)
 async def analyst_dashboard(request: Request):
+    user, role = _identity(request)
+    require_role(UserRole.analyst, user, role)
     cases = case_store.list_cases()
     return templates.TemplateResponse(
         request,
@@ -71,24 +81,44 @@ async def analyst_dashboard(request: Request):
 
 @router.get("/committee/dashboard/demo", response_class=HTMLResponse)
 async def committee_dashboard(request: Request):
+    user, role = _identity(request)
+    require_role(UserRole.committee, user, role)
     cases = case_store.list_cases((CaseStatus.committee_review,))
     return templates.TemplateResponse(
         request,
         "committee_dashboard.html",
-        _queue_context(cases),
+        _queue_context(cases) | {"detail_base": "/intake/committee/cases"},
     )
 
 
 @router.get("/analyst/decisioned", response_class=HTMLResponse)
 async def analyst_decisioned(request: Request):
+    user, role = _identity(request)
+    require_role(UserRole.analyst, user, role)
     cases = case_store.list_cases((CaseStatus.decisioned,))
     return templates.TemplateResponse(request, "case_list.html", {"title": "Decisioned cases", "role": "analyst", "cases": cases})
 
 
 @router.get("/committee/decisioned", response_class=HTMLResponse)
 async def committee_decisioned(request: Request):
+    user, role = _identity(request)
+    require_role(UserRole.committee, user, role)
     cases = case_store.list_cases((CaseStatus.decisioned,))
-    return templates.TemplateResponse(request, "case_list.html", {"title": "Decisioned cases", "role": "committee", "cases": cases})
+    return templates.TemplateResponse(request, "case_list.html", {"title": "Decisioned cases", "role": "committee", "cases": cases, "detail_base": "/intake/committee/cases"})
+
+
+@router.get("/committee/cases/{case_id}", response_class=HTMLResponse)
+async def committee_case_detail(request: Request, case_id: str):
+    user, role = _identity(request)
+    require_role(UserRole.committee, user, role)
+    case = case_store.get_case(case_id)
+    if case is None:
+        return templates.TemplateResponse(request, "partials/error.html", {"message": "Case not found."}, status_code=404)
+    return templates.TemplateResponse(
+        request,
+        "committee_case.html",
+        {"case": case, "events": case_store.list_events(case_id)},
+    )
 
 
 @router.post("/upload", response_class=HTMLResponse)

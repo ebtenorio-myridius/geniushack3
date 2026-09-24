@@ -6,6 +6,7 @@
 <section class="panel login-panel">
     <h1>Sign in to the workbench</h1>
     <p class="panel__hint">Choose a demo role to open the appropriate workspace.</p>
+    {% if error %}<p class="flag flag--error">{{ error }}</p>{% endif %}
     <form method="post" action="/intake/login">
         <label class="field">
             <span class="field__label">User name</span>

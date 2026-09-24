@@ -32,9 +32,14 @@ Analyst: analyst-1
 Committee member: committee-1
 ```
 
-These usernames are not pre-created accounts. Any entered username is accepted
-in the local demo; the selected role determines the workspace and protected
-actions.
+These are the two supported demo identities. The app checks the username-role
+pair before creating the demo session:
+
+- `analyst-1` can sign in only as an FCRM analyst;
+- `committee-1` can sign in only as a risk committee member.
+
+A mismatched username and role is rejected. These are still demo identities,
+not production accounts.
 
 Use **Sign in / switch role** in the header to change roles. Select logout by
 posting to `/intake/logout` when resetting the demo session.
