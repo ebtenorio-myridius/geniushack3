@@ -75,7 +75,10 @@ async def analyst_dashboard(request: Request):
     return templates.TemplateResponse(
         request,
         "analyst_dashboard.html",
-        _queue_context(cases) | {"decisioned_cases": [case for case in cases if case.status == CaseStatus.decisioned]},
+        _queue_context(cases) | {
+            "decisioned_cases": [case for case in cases if case.status == CaseStatus.decisioned],
+            "detail_base": "/intake/analyst/cases",
+        },
     )
 
 
@@ -96,7 +99,19 @@ async def analyst_decisioned(request: Request):
     user, role = _identity(request)
     require_role(UserRole.analyst, user, role)
     cases = case_store.list_cases((CaseStatus.decisioned,))
-    return templates.TemplateResponse(request, "case_list.html", {"title": "Decisioned cases", "role": "analyst", "cases": cases})
+    return templates.TemplateResponse(request, "case_list.html", {"title": "Decisioned cases", "role": "analyst", "cases": cases, "detail_base": "/intake/analyst/cases"})
+
+
+@router.get("/analyst/committee-cases", response_class=HTMLResponse)
+async def analyst_committee_cases(request: Request):
+    user, role = _identity(request)
+    require_role(UserRole.analyst, user, role)
+    cases = case_store.list_cases((CaseStatus.committee_review,))
+    return templates.TemplateResponse(
+        request,
+        "case_list.html",
+        {"title": "Cases awaiting committee decision", "role": "analyst", "cases": cases, "detail_base": "/intake/analyst/cases"},
+    )
 
 
 @router.get("/committee/decisioned", response_class=HTMLResponse)
@@ -117,6 +132,20 @@ async def committee_case_detail(request: Request, case_id: str):
     return templates.TemplateResponse(
         request,
         "committee_case.html",
+        {"case": case, "events": case_store.list_events(case_id)},
+    )
+
+
+@router.get("/analyst/cases/{case_id}", response_class=HTMLResponse)
+async def analyst_case_detail(request: Request, case_id: str):
+    user, role = _identity(request)
+    require_role(UserRole.analyst, user, role)
+    case = case_store.get_case(case_id)
+    if case is None:
+        return templates.TemplateResponse(request, "partials/error.html", {"message": "Case not found."}, status_code=404)
+    return templates.TemplateResponse(
+        request,
+        "analyst_case.html",
         {"case": case, "events": case_store.list_events(case_id)},
     )
 

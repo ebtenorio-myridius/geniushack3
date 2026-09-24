@@ -7,8 +7,8 @@
     <tbody>
     {% for case in cases %}
         <tr>
-            <td><a href="{{ (detail_base | default('/intake/committee/cases')) }}/{{ case.case_id }}">{{ case.case_id }}</a></td>
-            <td><a href="{{ (detail_base | default('/intake/committee/cases')) }}/{{ case.case_id }}">{{ case.extracted.change_title }}</a></td>
+            <td>{% if detail_base %}<a href="{{ detail_base }}/{{ case.case_id }}">{{ case.case_id }}</a>{% else %}{{ case.case_id }}{% endif %}</td>
+            <td>{% if detail_base %}<a href="{{ detail_base }}/{{ case.case_id }}">{{ case.extracted.change_title }}</a>{% else %}{{ case.extracted.change_title }}{% endif %}</td>
             <td><span class="badge badge--{{ case.assessment.risk_level.value }}">{{ case.assessment.risk_level.value }}</span></td>
             <td>{{ case.status.value.replace("_", " ") }}</td>
             <td>{{ case.updated_at.strftime("%Y-%m-%d %H:%M UTC") }}</td>
