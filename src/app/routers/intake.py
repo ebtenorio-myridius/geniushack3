@@ -156,8 +156,24 @@ async def submit_committee_review(request: Request, case_id: str, actor: str = F
 
 @router.get("/committee-queue", response_class=HTMLResponse)
 async def committee_queue(request: Request):
-    require_role(UserRole.committee, request.headers.get("X-Demo-User"), request.headers.get("X-Demo-Role"))
+    if request.headers.get("X-Demo-Role") != UserRole.committee.value:
+        return templates.TemplateResponse(
+            request,
+            "partials/committee_access.html",
+            {},
+            status_code=403,
+        )
     return templates.TemplateResponse(request, "partials/committee_queue.html", {"cases": case_store.list_committee_cases()})
+
+
+@router.get("/committee-queue/demo", response_class=HTMLResponse)
+async def demo_committee_queue(request: Request):
+    """Browser-friendly local demo entry point for the committee queue."""
+    return templates.TemplateResponse(
+        request,
+        "committee_queue.html",
+        {"cases": case_store.list_committee_cases()},
+    )
 
 
 @router.post("/{case_id}/committee/decision", response_class=HTMLResponse)
