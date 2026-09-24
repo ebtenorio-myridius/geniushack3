@@ -1,6 +1,6 @@
 # Genius Hacks 2026 Submission Assessment
 
-Assessment date: 2026-09-18
+Assessment date: 2026-09-24
 
 Source brief: https://myridius.com/genius-hacks-q3-2026
 
@@ -20,9 +20,9 @@ PDF
 -> committee decision
 ```
 
-The app addresses the central problem substantially and is suitable for a credible demonstration. It is not yet a production-ready banking platform. The largest remaining risks are prototype-level authentication, incomplete residual-risk/control modeling, single-member committee decisions, limited measured cost optimization, and limited preservation of the actual AI output/review trail for the requirements and design stages.
+The app addresses the central problem substantially and is suitable for a credible demonstration. It is not yet a production-ready banking platform. The largest remaining risks are prototype-level authentication, incomplete residual-risk/control modeling, limited measured cost optimization, and limited preservation of the actual AI output/review trail for the requirements and design stages.
 
-Estimated current rubric position: approximately **59.25/100**. This is an engineering estimate, not an official judging score. The increase reflects verified policy citations, explicit six-stage delivery evidence, improved scoring signals, synchronized governance documentation, and 19 passing tests.
+Estimated current rubric position: approximately **59.25/100**. This is an engineering estimate, not an official judging score. The assessment reflects verified policy citations, explicit six-stage delivery evidence, improved scoring signals, synchronized governance documentation, and 24 passing tests. The latest live evaluation is unavailable because all eight provider calls failed with `APIConnectionError`.
 
 ## 1. Problem Statement Compliance
 
@@ -55,7 +55,7 @@ Implemented:
 - policy evidence attachment using synthetic policy sources;
 - analyst finalization;
 - committee queue;
-- approve, reject, defer, and conditional-approval decisions;
+- three-member committee voting for approve, reject, defer, and conditional-approval decisions;
 - timestamped workflow events;
 - synthetic evaluation PDFs and JSON fixtures;
 - model latency and token telemetry.
@@ -66,7 +66,7 @@ Partial or missing:
 - FCRM approval of the published supervisory-framework mapping;
 - immutable audit enforcement at the database permission layer;
 - real identity and role management;
-- multi-member committee voting and quorum;
+- production committee identity and decision policy beyond the demo three-vote quorum;
 - source-page citations and document hashes;
 - production database, object storage, and background processing.
 
@@ -127,12 +127,11 @@ Evidence:
 - `evals/results/latest.json`
 - `evals/results/latest.md`
 
-Current measured live baseline:
+Latest recorded live run:
 
-- 8/8 successful calls after retry handling;
-- 66.2% normalized field accuracy;
-- 87.5% risk-level agreement;
-- 19 automated tests passing.
+- 0/8 successful calls; all attempts ended with `APIConnectionError`;
+- no model-quality accuracy or risk-agreement measurement;
+- 24 automated tests passing.
 
 The evaluation exposes real extraction weaknesses, which is useful evidence. The repository should more explicitly record each failure, prompt change, and subsequent result.
 
@@ -288,12 +287,11 @@ The page requires a credible deployment and operations approach. A running deplo
 
 Executed checks:
 
-- full automated suite: **19 passed**;
+- full automated suite: **24 passed**;
 - Python compilation for application, tests, tools, and evals: passed;
 - eight generated PDF inputs: validated through the app's PDF extractor;
-- live evaluation: 8/8 successful calls after retries;
-- live field accuracy: 66.2%;
-- live risk-level agreement: 87.5%;
+- live evaluation: latest recorded run had 0/8 successful calls because of `APIConnectionError`;
+- live field accuracy and risk-level agreement: not measurable from the latest run;
 - live expanded workflow: upload, edit, rescore, finalize, committee queue, decisioned status, and five audit events.
 
 The test suite reported one ReportLab deprecation warning. It does not currently fail the tests.

@@ -17,6 +17,7 @@
 5. **Human gate:** enter `synthetic-analyst` and a short rationale, then accept or reject the draft.
 6. **Auditability:** explain that the action is persisted with actor, rationale, and UTC timestamp.
 7. **Safety:** explain that the document is treated as untrusted data and that the system never auto-approves or auto-rejects.
+8. **Committee:** for a high-risk case, show the queue and cast three votes from the demo committee identities; the case remains pending until quorum.
 
 ## Fallback demonstration
 
@@ -39,8 +40,8 @@ The model only returns the extraction schema. Workflow decisions require a human
 
 **Is this production-ready?**
 
-It is a credible synthetic-data vertical slice. Production still requires authentication, Postgres migrations, policy citations, residual-risk controls, committee voting, retries, and measured observability.
+It is a credible synthetic-data vertical slice. Production still requires real authentication, Postgres migrations, approved policy mappings, residual-risk controls, database-enforced audit immutability, retries, and measured observability.
 
 **How do you know the model is good?**
 
-The repository contains hand-labeled synthetic cases and deterministic contract tests. The next evaluation run measures field-level live extraction accuracy and feeds failures back into the prompt.
+The repository contains hand-labeled synthetic cases and deterministic contract tests. The latest live run could not reach the provider; the next successful evaluation should measure field-level accuracy and feed failures back into the prompt.

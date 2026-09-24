@@ -64,7 +64,7 @@ flowchart LR
 - High and critical assessments are flagged for committee review.
 - No approval or rejection is performed automatically.
 
-**Current limitation:** the demo uses header-based roles and a single committee decision; real identity and multi-member quorum are production increments.
+**Current limitation:** the demo uses cookie/header-based roles and an application-enforced three-member quorum; real identity, explicit decision policy, and database-level immutability are production increments.
 
 ### Slide 6 - Risk scoring
 
@@ -88,7 +88,7 @@ The scorer produces category scores, rationales, an overall score, risk level, a
 - Contract tests validate schema parsing and deterministic score outcomes.
 - PDF fixture `evals/data/sample_change_request.pdf` exercises every extraction field.
 
-**Measured baseline:** 8/8 successful calls after retries, 66.2% normalized field accuracy, 87.5% risk-level agreement. Results are recorded in `evals/results/latest.json`.
+**Latest recorded run:** 0/8 successful calls because all provider attempts ended with `APIConnectionError`. It is not a model-quality baseline; rerun the paid evaluation with a reachable provider before presenting accuracy figures.
 
 ### Slide 8 - SDLC evidence
 
@@ -112,7 +112,7 @@ The scorer produces category scores, rationales, an overall score, risk level, a
 - `/healthz` supports a basic health check.
 - Telemetry records model latency, failures, prompt version, input/output token counts, and success status.
 
-**Production gaps:** authentication, authorization, migrations, source-document storage, retries/timeouts, and measured telemetry.
+**Production gaps:** real authentication/authorization, migrations, source-document storage, retries/timeouts, database-enforced audit immutability, and measured cost optimization.
 
 ### Slide 10 - Demonstration
 
@@ -139,6 +139,6 @@ The scorer produces category scores, rationales, an overall score, risk level, a
 
 **What is demonstrated today:** governed intake, AI-assisted extraction, deterministic scoring, persistence, analyst review, synthetic evaluation, and delivery evidence.
 
-**Next increments:** published-framework approval, controls and residual risk, real authentication, multi-member quorum, and operational dashboards.
+**Next increments:** published-framework approval, controls and residual risk, real authentication, database-enforced audit immutability, and operational dashboards.
 
 **Closing message:** the system prepares evidence and makes reasoning visible; humans remain accountable for decisions.

@@ -17,5 +17,6 @@ python tools/generate_presentation.py
 
 The presentation should describe the current implementation accurately. Policy
 evidence lookup, a committee decision endpoint, demo role headers, telemetry,
-and live LLM evaluation are implemented. Real identity, multi-member quorum,
-and production residual-risk controls remain planned extensions.
+and live LLM evaluation are implemented. Real identity, database-enforced audit
+immutability, explicit committee decision policy, and production residual-risk
+controls remain planned extensions.

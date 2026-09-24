@@ -158,7 +158,7 @@ def build_deck():
     card(slide, "Analyst gate", ["Accept or reject", "Edit and rescore", "Actor + rationale required"], 0.8, 4.1, 3.75, 1.65, TEAL, 14)
     card(slide, "Committee gate", ["High/critical cases escalate", "Role-gated queue", "Approve, reject, defer, or conditions"], 4.8, 4.1, 3.75, 1.65, ORANGE, 14)
     card(slide, "Audit evidence", ["UTC timestamps", "Append-only event records", "Original and edited extraction versions"], 8.8, 4.1, 3.75, 1.65, GREEN, 14)
-    text_box(slide, "Prototype limitation: demo headers are not production identity; quorum is a next increment.", 1.0, 6.25, 11.3, 0.3, 12, MUTED, False, align=PP_ALIGN.CENTER)
+    text_box(slide, "Prototype limitation: demo headers are not production identity; database immutability and decision policy remain.", 1.0, 6.25, 11.3, 0.3, 12, MUTED, False, align=PP_ALIGN.CENTER)
 
     slide = add_slide(prs, 7, "Risk", "Scoring is explainable by construction", "Engineering judgement")
     categories = [("Customer + geography", "35%", TEAL), ("Product + channel", "30%", ORANGE), ("Third party", "20%", GREEN), ("Complexity", "15%", MUTED)]
@@ -174,11 +174,11 @@ def build_deck():
     slide = add_slide(prs, 8, "Evaluation", "We measure the model, not just the demo", "Testing and evidence")
     text_box(slide, "8", 0.95, 2.05, 1.2, 0.8, 42, TEAL, True, align=PP_ALIGN.CENTER)
     text_box(slide, "synthetic cases", 0.65, 2.95, 2.0, 0.3, 14, MUTED, True, align=PP_ALIGN.CENTER)
-    text_box(slide, "66.2%", 3.45, 2.05, 2.1, 0.8, 36, ORANGE, True, align=PP_ALIGN.CENTER)
-    text_box(slide, "normalized field accuracy", 3.1, 2.95, 2.8, 0.3, 14, MUTED, True, align=PP_ALIGN.CENTER)
-    text_box(slide, "87.5%", 6.45, 2.05, 2.1, 0.8, 36, GREEN, True, align=PP_ALIGN.CENTER)
-    text_box(slide, "risk-level agreement", 6.1, 2.95, 2.8, 0.3, 14, MUTED, True, align=PP_ALIGN.CENTER)
-    text_box(slide, "19", 9.55, 2.05, 1.2, 0.8, 42, TEAL, True, align=PP_ALIGN.CENTER)
+    text_box(slide, "0/8", 3.45, 2.05, 2.1, 0.8, 36, ORANGE, True, align=PP_ALIGN.CENTER)
+    text_box(slide, "latest live calls succeeded", 3.1, 2.95, 2.8, 0.3, 14, MUTED, True, align=PP_ALIGN.CENTER)
+    text_box(slide, "N/A", 6.45, 2.05, 2.1, 0.8, 36, GREEN, True, align=PP_ALIGN.CENTER)
+    text_box(slide, "quality metrics unavailable", 6.1, 2.95, 2.8, 0.3, 14, MUTED, True, align=PP_ALIGN.CENTER)
+    text_box(slide, "24", 9.55, 2.05, 1.2, 0.8, 42, TEAL, True, align=PP_ALIGN.CENTER)
     text_box(slide, "automated tests", 9.15, 2.95, 2.0, 0.3, 14, MUTED, True, align=PP_ALIGN.CENTER)
     card(slide, "Failure loop", ["Live evaluation finds missing products and weak risk-factor capture", "Prompt rules and scoring signals are updated", "Regression tests protect the improvement"], 2.3, 4.15, 8.7, 1.45, ORANGE, 14)
 

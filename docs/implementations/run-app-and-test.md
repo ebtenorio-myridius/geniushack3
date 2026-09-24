@@ -5,7 +5,7 @@ This runbook explains how to start the app, submit synthetic PDFs, exercise the 
 ## 1. Open PowerShell in the Repository
 
 ```powershell
-cd C:\AgenticAI\risk-workbench
+Set-Location "C:\GENIUS HACK\GeniusHack3"
 ```
 
 ## 2. Install Dependencies
@@ -59,7 +59,7 @@ Open the application in a browser:
 http://localhost:8000
 ```
 
-The root URL redirects to `/intake`.
+The root URL redirects to `/intake`; the intake page provides the demo login.
 
 ## 5. Check Application Health
 
@@ -150,7 +150,7 @@ X-Demo-User: analyst-1
 X-Demo-Role: analyst
 ```
 
-Demo committee headers:
+Demo committee headers (for direct requests; browser login uses cookies):
 
 ```text
 X-Demo-User: committee-1
@@ -159,7 +159,8 @@ X-Demo-Role: committee
 
 These headers are for local demonstration only. They are not production authentication.
 
-Committee decisions are:
+Three distinct committee members are required for a final committee result.
+Committee votes are:
 
 - approve;
 - reject;
@@ -210,7 +211,7 @@ python -m pytest -q
 Expected result:
 
 ```text
-19 passed
+24 passed
 ```
 
 Run focused tests:
@@ -280,11 +281,10 @@ The evaluator records:
 - model outputs; and
 - extraction errors.
 
-The current recorded baseline is:
+The latest recorded run is:
 
-- 8/8 successful calls after retries;
-- 66.2% normalized field accuracy;
-- 87.5% risk-level agreement.
+- 0/8 successful calls; all attempts ended with `APIConnectionError`;
+- field accuracy and risk-level agreement are not measurable from this run.
 
 Run this explicitly when a new model or prompt measurement is needed. Do not run it as part of every unit-test cycle because it uses paid model calls.
 

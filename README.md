@@ -1,8 +1,8 @@
-# Risk Assessment Workbench — Starter Scaffold
+# Risk Assessment Workbench
 
 FastAPI + Jinja2 + HTMX workbench for Genius Hacks 2026. The current vertical
-slice is **upload a PDF -> extract text -> LLM drafts a structured change
-request -> deterministic risk score -> persist case -> analyst review**.
+slice is **upload a PDF -> extract text -> structured LLM extraction -> deterministic
+risk score -> analyst review -> committee quorum decision**.
 
 ## Stack
 
@@ -25,9 +25,9 @@ cp .env.example .env               # then add your OPENAI_API_KEY
 uvicorn src.app.main:app --reload --port 8000
 ```
 
-Open http://localhost:8000 — you'll land on the intake form. Upload a PDF
-(synthetic only — see hackathon constraints), and the page will show the
-extracted fields and a draft risk score without a full page reload.
+Open http://localhost:8000 — you'll land on the demo login. Choose a product-owner,
+analyst, or committee identity, then upload a synthetic PDF. The page shows the
+extracted fields, policy evidence, and draft risk score without a full page reload.
 
 For the free-first Docker deployment, see
 [ops/free-first-deployment.md](ops/free-first-deployment.md). The local
@@ -44,9 +44,7 @@ containers are free to run; OpenAI model calls may incur API charges.
 /ops            deployment, monitoring, token analysis notes
 ```
 
-## Submission checklist
-
-The required repository areas are present:
+## Repository evidence map
 
 - `/src` - application code and workflow routes/services
 - `/ai` - prompts and model/orchestration configuration
@@ -58,10 +56,15 @@ The required repository areas are present:
 - `/ops` - deployment, monitoring, and token-usage notes
 - `/docs/presentation` - deck outline, demo script, and judging evidence matrix
 
+The primary walkthrough is [docs/implementations/run-app-and-test.md](docs/implementations/run-app-and-test.md).
+The implementation status and known gaps are summarized in
+[docs/assessment/assessment.md](docs/assessment/assessment.md). The automated
+quality gate is [.github/workflows/ci.yml](.github/workflows/ci.yml).
+
 The presentation pack is in [docs/presentation](docs/presentation). It reflects
 the current implementation and identifies remaining production increments such
-as real authentication, multi-member quorum, residual-risk controls, and
-operational dashboards.
+as real authentication, immutable database enforcement, residual-risk controls,
+and operational dashboards.
 
 For end-user instructions, see the [user manual](docs/manual/user-manual.md).
 
@@ -83,11 +86,11 @@ For command-line startup and testing steps, see the
 ## Current limitations and next steps
 
 The current demo implements analyst editing/rescoring, policy evidence lookup,
-committee decisions, demo role headers, telemetry, and live evaluation. The
-remaining production increments are:
+three-member committee voting, demo role controls, telemetry, and live evaluation.
+The remaining production increments are:
 
 1. Replace demo headers with real authentication and authorization.
 2. Add controls, residual-risk scoring, and cited published supervisory mappings.
 3. Replace SQLite with PostgreSQL and add migrations, object storage, and
   background extraction workers.
-4. Add multi-member committee voting, quorum, dashboards, and alerting.
+4. Add production dashboards, alerting, and stronger identity/authorization controls.

@@ -17,9 +17,11 @@ changing history.
 ### Committee review
 
 High and critical cases are flagged for committee review. An analyst submits
-the finalized case, a committee-role user can view the queue, and a committee
-decision records approve, reject, defer, or approve-with-conditions plus
-rationale and conditions. No automated approval or rejection is permitted.
+the finalized case, committee-role users can view the queue, and three distinct
+committee members must vote. Each vote records approve, reject, defer, or
+approve-with-conditions plus rationale and conditions. The case remains pending
+until the three-vote quorum is reached; no automated approval or rejection is
+permitted.
 
 ### Audit requirement
 
@@ -32,9 +34,10 @@ This is where human-in-the-loop review gates and their rationale live —
 15% of the rubric, scored on "what risk is this gate controlling, and why
 is it placed here?"
 
-The demo implements extraction review, analyst editing/finalization, and
-committee decision gates. Multi-member quorum, conflict-of-interest handling,
-and residual-risk controls remain production increments.
+The demo implements extraction review, analyst editing/finalization, and a
+three-member committee decision gate. Real identity, conflict-of-interest
+handling, tie/decision policy, and residual-risk controls remain production
+increments.
 
 Suggested structure: one entry per gate —
 - What it checks
