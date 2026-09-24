@@ -163,7 +163,12 @@ async def committee_queue(request: Request):
             {},
             status_code=403,
         )
-    return templates.TemplateResponse(request, "partials/committee_queue.html", {"cases": case_store.list_committee_cases()})
+    cases = case_store.list_committee_cases()
+    return templates.TemplateResponse(
+        request,
+        "partials/committee_queue.html",
+        {"cases": cases, "events_by_case": {case.case_id: case_store.list_events(case.case_id) for case in cases}},
+    )
 
 
 @router.get("/committee-queue/demo", response_class=HTMLResponse)
@@ -172,7 +177,7 @@ async def demo_committee_queue(request: Request):
     return templates.TemplateResponse(
         request,
         "committee_queue.html",
-        {"cases": case_store.list_committee_cases()},
+        {"cases": (cases := case_store.list_committee_cases()), "events_by_case": {case.case_id: case_store.list_events(case.case_id) for case in cases}},
     )
 
 

@@ -146,6 +146,28 @@ textarea, input[type="text"] {
 .review-form { border-top: 1px solid var(--border); margin-top: 24px; padding-top: 18px; }
 .flag--success { background: #E8F4EC; color: var(--risk-low); border-left: 3px solid var(--risk-low); }
 
+.queue-item {
+    border-top: 1px solid var(--border);
+    padding: 20px 0;
+}
+
+.queue-item:first-of-type { border-top: none; padding-top: 0; }
+
+.queue-item h4 {
+    font-size: 0.9rem;
+    margin: 18px 0 8px;
+}
+
+.committee-facts {
+    display: grid;
+    grid-template-columns: minmax(130px, 0.35fr) 1fr;
+    column-gap: 16px;
+}
+
+.committee-facts dt { margin-top: 8px; }
+
+.committee-facts dd { margin-top: 8px; }
+
 .htmx-indicator {
     display: none;
     margin-left: 12px;

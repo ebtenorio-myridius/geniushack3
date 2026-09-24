@@ -207,6 +207,14 @@ class CaseStore:
             ids = [row[0] for row in connection.execute("SELECT case_id FROM cases WHERE status = ?", (CaseStatus.committee_review.value,))]
         return [self.get_case(case_id) for case_id in ids]
 
+    def list_events(self, case_id: str) -> list[dict]:
+        with closing(self._connect()) as connection:
+            rows = connection.execute(
+                "SELECT event_type, actor, rationale, occurred_at FROM workflow_events WHERE case_id = ? ORDER BY event_id",
+                (case_id,),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
     @staticmethod
     def _record_event(connection, case_id: str, event_type: str, actor: str, rationale: str):
         connection.execute(
