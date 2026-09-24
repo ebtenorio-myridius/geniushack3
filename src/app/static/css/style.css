@@ -64,6 +64,28 @@ h3 { font-size: 0.95rem; display: flex; justify-content: space-between; align-it
     margin-top: 2px;
 }
 
+.site-header__login {
+    display: inline-block;
+    margin-top: 8px;
+    color: var(--accent);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.site-header__login:hover { text-decoration: underline; }
+
+select {
+    display: block;
+    width: 100%;
+    padding: 9px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font: inherit;
+}
+
+.login-panel { max-width: 520px; }
+
 .steps {
     position: sticky;
     top: 81px;

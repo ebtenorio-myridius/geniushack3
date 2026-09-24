@@ -1,7 +1,7 @@
 import logging
 
 from fastapi import APIRouter, File, Form, Header, Request, UploadFile
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 
 from src.app.models.schemas import AnalystReview, CaseStatus, ExtractedChangeRequest, UserRole
 from src.app.services.dependencies import case_store
@@ -16,6 +16,35 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/intake", tags=["intake"])
 _MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+
+
+def _identity(request: Request) -> tuple[str | None, str | None]:
+    return (
+        request.headers.get("X-Demo-User") or request.cookies.get("demo_user"),
+        request.headers.get("X-Demo-Role") or request.cookies.get("demo_role"),
+    )
+
+
+@router.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    return templates.TemplateResponse(request, "login.html", {})
+
+
+@router.post("/login")
+async def login(request: Request, role: UserRole = Form(...), user: str = Form(...)):
+    destination = "/intake/analyst/dashboard/demo" if role == UserRole.analyst else "/intake/committee/dashboard/demo"
+    response = RedirectResponse(destination, status_code=303)
+    response.set_cookie("demo_user", user, httponly=True, samesite="lax")
+    response.set_cookie("demo_role", role.value, httponly=True, samesite="lax")
+    return response
+
+
+@router.post("/logout")
+async def logout():
+    response = RedirectResponse("/intake/login", status_code=303)
+    response.delete_cookie("demo_user")
+    response.delete_cookie("demo_role")
+    return response
 
 
 @router.get("", response_class=HTMLResponse)
@@ -124,7 +153,7 @@ async def review_change_request(
     demo_user: str | None = Header(default=None, alias="X-Demo-User"),
     demo_role: str | None = Header(default=None, alias="X-Demo-Role"),
 ):
-    require_role(UserRole.analyst, demo_user, demo_role)
+    require_role(UserRole.analyst, demo_user or request.cookies.get("demo_user"), demo_role or request.cookies.get("demo_role"))
     try:
         case = case_store.review_case(case_id, AnalystReview(decision=decision, actor=actor, rationale=rationale))
     except KeyError:
@@ -158,7 +187,7 @@ async def edit_change_request(
     demo_user: str | None = Header(default=None, alias="X-Demo-User"),
     demo_role: str | None = Header(default=None, alias="X-Demo-Role"),
 ):
-    require_role(UserRole.analyst, demo_user, demo_role)
+    require_role(UserRole.analyst, demo_user or request.cookies.get("demo_user"), demo_role or request.cookies.get("demo_role"))
     extracted = ExtractedChangeRequest(
         change_title=change_title,
         change_type=change_type,
@@ -184,7 +213,8 @@ async def edit_change_request(
 @router.post("/{case_id}/committee/submit", response_class=HTMLResponse)
 async def submit_committee_review(request: Request, case_id: str, actor: str = Form(...), rationale: str = Form(...)):
     try:
-        require_role(UserRole.analyst, request.headers.get("X-Demo-User"), request.headers.get("X-Demo-Role"))
+        user, role = _identity(request)
+        require_role(UserRole.analyst, user, role)
         case = case_store.submit_committee(case_id, actor, rationale)
     except KeyError:
         return templates.TemplateResponse(request, "partials/error.html", {"message": "Case not found."}, status_code=404)
@@ -195,7 +225,8 @@ async def submit_committee_review(request: Request, case_id: str, actor: str = F
 
 @router.get("/committee-queue", response_class=HTMLResponse)
 async def committee_queue(request: Request):
-    if request.headers.get("X-Demo-Role") != UserRole.committee.value:
+    user, role = _identity(request)
+    if role != UserRole.committee.value:
         return templates.TemplateResponse(
             request,
             "partials/committee_access.html",
@@ -223,7 +254,8 @@ async def demo_committee_queue(request: Request):
 @router.post("/{case_id}/committee/decision", response_class=HTMLResponse)
 async def committee_decision(request: Request, case_id: str, decision: str = Form(...), actor: str = Form(...), rationale: str = Form(...), conditions: str = Form("")):
     from src.app.models.schemas import CommitteeDecision, CommitteeReview
-    require_role(UserRole.committee, request.headers.get("X-Demo-User"), request.headers.get("X-Demo-Role"))
+    user, role = _identity(request)
+    require_role(UserRole.committee, user, role)
     try:
         case = case_store.decide_committee(case_id, CommitteeReview(decision=CommitteeDecision(decision), actor=actor, rationale=rationale, conditions=conditions))
     except (KeyError, ValueError) as exc:

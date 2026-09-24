@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Login — Risk Assessment Workbench{% endblock %}
+
+{% block content %}
+<section class="panel login-panel">
+    <h1>Sign in to the workbench</h1>
+    <p class="panel__hint">Choose a demo role to open the appropriate workspace.</p>
+    <form method="post" action="/intake/login">
+        <label class="field">
+            <span class="field__label">User name</span>
+            <input type="text" name="user" value="analyst-1" required>
+        </label>
+        <label class="field">
+            <span class="field__label">Role</span>
+            <select name="role" required>
+                <option value="analyst">FCRM analyst</option>
+                <option value="committee">Risk committee member</option>
+            </select>
+        </label>
+        <button class="button" type="submit">Sign in</button>
+    </form>
+</section>
+{% endblock %}

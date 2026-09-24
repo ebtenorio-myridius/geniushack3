@@ -20,6 +20,14 @@ Scanned image-only PDFs are not supported by the current text extraction path.
 
 ## 3. User Roles
 
+Open `http://localhost:8000/intake/login` to select a demo role. Enter a user
+name and choose either **FCRM analyst** or **Risk committee member**. The app
+stores the selected demo identity in local cookies and redirects you to the
+matching workspace.
+
+Use **Sign in / switch role** in the header to change roles. Select logout by
+posting to `/intake/logout` when resetting the demo session.
+
 ### Product owner
 
 Use the intake page to submit a change request PDF.
