@@ -69,9 +69,17 @@ h3 { font-size: 0.95rem; display: flex; justify-content: space-between; align-it
     margin-top: 2px;
 }
 
+.site-header__identity {
+    display: block;
+    color: #FFFFFF;
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin-top: 8px;
+}
+
 .site-header__login {
     display: inline-block;
-    margin-top: 8px;
+    margin-top: 6px;
     color: #FFFFFF;
     font-size: 0.8rem;
     font-weight: 600;
