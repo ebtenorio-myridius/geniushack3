@@ -25,6 +25,17 @@ name and choose either **FCRM analyst** or **Risk committee member**. The app
 stores the selected demo identity in local cookies and redirects you to the
 matching workspace.
 
+Recommended demo usernames are:
+
+```text
+Analyst: analyst-1
+Committee member: committee-1
+```
+
+These usernames are not pre-created accounts. Any entered username is accepted
+in the local demo; the selected role determines the workspace and protected
+actions.
+
 Use **Sign in / switch role** in the header to change roles. Select logout by
 posting to `/intake/logout` when resetting the demo session.
 
@@ -36,7 +47,8 @@ Use the intake page to submit a change request PDF.
 
 Review the extracted fields, edit incorrect information, rescore the case, and accept or reject the assessment draft.
 
-For the local demo, analyst access is represented by:
+For browser use, the login page stores the analyst role in cookies. For direct
+API or HTMX testing, analyst access can also be represented by:
 
 ```text
 X-Demo-User: analyst-1
@@ -49,7 +61,8 @@ These headers are for demonstration only and are not production authentication.
 
 Review escalated cases and record a decision.
 
-For the local demo, committee access is represented by:
+For browser use, the login page stores the committee role in cookies. For
+direct API or HTMX testing, committee access can also be represented by:
 
 ```text
 X-Demo-User: committee-1
@@ -80,6 +93,9 @@ opening these URLs:
 
 - Analyst workspace: `http://localhost:8000/intake/analyst/dashboard/demo`
 - Committee workspace: `http://localhost:8000/intake/committee/dashboard/demo`
+- Analyst decisioned cases: `http://localhost:8000/intake/analyst/decisioned`
+- Committee decisioned cases: `http://localhost:8000/intake/committee/decisioned`
+- Committee review queue: `http://localhost:8000/intake/committee-queue/demo`
 
 The analyst workspace shows every submitted case, regardless of risk level. It
 also links to cases already decisioned and to cases waiting for committee
@@ -115,7 +131,7 @@ After processing, the page displays:
 
 Treat the extraction and score as a draft. Check every important field against the source PDF.
 
-## 6. Edit and Rescore
+## 7. Edit and Rescore
 
 If the extraction is incomplete or incorrect:
 
@@ -134,7 +150,7 @@ The system:
 
 The original model extraction is retained. Do not use the edit form to invent facts that are not supported by the PDF.
 
-## 7. Accept or Reject the Draft
+## 8. Accept or Reject the Draft
 
 To finalize the analyst review:
 
@@ -150,7 +166,7 @@ A rationale should explain what was checked and why the decision is appropriate.
 The extracted fields were checked against the synthetic source PDF. The geography, product, and stated risk factors are supported by the document.
 ```
 
-## 8. Low- and Medium-Risk Workflow
+## 9. Low- and Medium-Risk Workflow
 
 Use this path when the draft assessment does not require committee review.
 
@@ -177,7 +193,7 @@ The case is not automatically approved or rejected. The analyst's finalization a
 
 If the analyst does not support the assessment, select **Reject draft** instead. The case moves to `analyst_rejected` and the rejection rationale is retained.
 
-## 9. High- and Critical-Risk Workflow
+## 10. High- and Critical-Risk Workflow
 
 Use this path when the draft is flagged for committee review.
 
@@ -229,7 +245,7 @@ X-Demo-Role: committee
 
 for committee actions. These headers are demonstration-only authentication.
 
-## 10. Workflow States
+## 11. Workflow States
 
 A case moves through the following states:
 
@@ -245,7 +261,7 @@ A case may also be rejected during analyst review.
 
 Invalid transitions are refused. For example, a case cannot be sent to the committee before analyst finalization.
 
-## 11. Risk Score Interpretation
+## 12. Risk Score Interpretation
 
 The current prototype uses four deterministic categories:
 
@@ -260,7 +276,7 @@ The current rules are prototype rules. They must be governed and approved by the
 
 Controls reduce risk; they do not eliminate it. The prototype does not yet calculate a complete residual-risk assessment.
 
-## 12. Policy Evidence
+## 13. Policy Evidence
 
 The result may show synthetic policy evidence related to:
 
@@ -272,7 +288,7 @@ Each evidence item includes a policy identifier, section, excerpt, relevance sta
 
 The current policy documents are synthetic demonstration material. They are not regulatory advice and must not replace approved supervisory-framework guidance.
 
-## 13. Auditability
+## 14. Auditability
 
 The app records workflow events for:
 
@@ -284,7 +300,7 @@ The app records workflow events for:
 
 Events include an actor, rationale, and timestamp. Extraction versions preserve the original model output and later analyst edits.
 
-## 14. Handling Errors
+## 15. Handling Errors
 
 ### Non-PDF upload
 
@@ -306,7 +322,7 @@ Check that the model provider configuration is available and retry. The source P
 
 Use the correct demo role for the action. In production, the demo headers must be replaced by real authentication.
 
-## 15. Recommended Demo Walkthrough
+## 16. Recommended Demo Walkthrough
 
 Use `evals/data/pdfs/SYN-001.pdf` for a simple case or a higher-risk PDF such as `SYN-003.pdf` or `SYN-008.pdf`.
 
@@ -321,7 +337,7 @@ Use `evals/data/pdfs/SYN-001.pdf` for a simple case or a higher-risk PDF such as
 9. Record a conditional committee decision.
 10. Explain the audit events and extraction version.
 
-## 16. Important Limitations
+## 17. Important Limitations
 
 This is a synthetic-data demonstration and prototype. It does not currently provide:
 
