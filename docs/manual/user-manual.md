@@ -124,30 +124,74 @@ A rationale should explain what was checked and why the decision is appropriate.
 The extracted fields were checked against the synthetic source PDF. The geography, product, and stated risk factors are supported by the document.
 ```
 
-## 8. Submit to Committee Review
+## 8. Low- and Medium-Risk Workflow
 
-High- and critical-risk cases are flagged for committee review.
+Use this path when the draft assessment does not require committee review.
 
-After analyst finalization, an analyst can submit the case to the committee queue with a rationale explaining the escalation.
+1. Upload the PDF.
+2. Review the extracted fields, score, rationales, and policy evidence.
+3. Edit and rescore if any extracted value is incomplete or incorrect.
+4. Enter the analyst identity and review rationale.
+5. Select **Accept draft**.
 
-A committee member can open the queue using the committee role. The queue shows cases waiting for a human committee decision.
+The case moves to:
 
-## 9. Record a Committee Decision
+```text
+Draft
+-> Analyst review
+-> Analyst finalized
+```
 
-A committee member can select:
+The case is not automatically approved or rejected. The analyst's finalization and rationale are recorded in SQLite as an audit event.
 
-- **Approve**
-- **Reject**
-- **Defer**
-- **Approve with conditions**
+If the analyst does not support the assessment, select **Reject draft** instead. The case moves to `analyst_rejected` and the rejection rationale is retained.
 
-Enter:
+## 9. High- and Critical-Risk Workflow
 
-- committee member identity;
-- decision rationale; and
-- conditions when applicable.
+Use this path when the draft is flagged for committee review.
 
-The decision and rationale are recorded as a workflow event. The system does not decide on behalf of the committee.
+1. Upload the PDF.
+2. Review the extraction, score, rationales, and policy evidence.
+3. Edit and rescore if needed.
+4. Select **Accept draft** and finalize the analyst review.
+5. Enter the escalation rationale in **Submit to committee**.
+6. Select **Submit committee review**.
+7. A committee member opens the committee queue.
+8. Review the finalized assessment and analyst rationale.
+9. Select one committee decision:
+	- **Approve**
+	- **Reject**
+	- **Defer**
+	- **Approve with conditions**
+10. Enter the committee identity, rationale, and conditions when applicable.
+
+The case moves to:
+
+```text
+Draft
+-> Analyst review
+-> Analyst finalized
+-> Committee review
+-> Decisioned
+```
+
+The committee decision, rationale, conditions, actor, and timestamp are recorded as workflow evidence. The system does not decide on behalf of the committee.
+
+For the local demo, use:
+
+```text
+X-Demo-User: analyst-1
+X-Demo-Role: analyst
+```
+
+for analyst actions, and:
+
+```text
+X-Demo-User: committee-1
+X-Demo-Role: committee
+```
+
+for committee actions. These headers are demonstration-only authentication.
 
 ## 10. Workflow States
 
