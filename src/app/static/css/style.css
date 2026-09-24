@@ -6,6 +6,8 @@
     --border: #DADFE5;
     --accent: #005A9C;
     --accent-secondary: #0078D4;
+    --accent-soft: #E5F1FB;
+    --accent-border: #A6D8FF;
 
     --risk-low: #107C10;
     --risk-medium: #FFB900;
@@ -45,11 +47,11 @@ h3 { font-size: 0.95rem; display: flex; justify-content: space-between; align-it
     position: sticky;
     top: 0;
     z-index: 20;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface);
+    border-bottom: 1px solid var(--accent);
+    background: var(--accent);
     padding: 20px 0;
     margin-bottom: 32px;
-    box-shadow: 0 2px 8px rgba(27, 35, 48, 0.06);
+    box-shadow: 0 2px 8px rgba(0, 90, 156, 0.18);
 }
 
 .site-header__title {
@@ -57,11 +59,12 @@ h3 { font-size: 0.95rem; display: flex; justify-content: space-between; align-it
     font-family: Georgia, serif;
     font-size: 1.15rem;
     font-weight: 600;
+    color: #FFFFFF;
 }
 
 .site-header__subtitle {
     display: block;
-    color: var(--ink-muted);
+    color: #DDEEFF;
     font-size: 0.85rem;
     margin-top: 2px;
 }
@@ -69,7 +72,7 @@ h3 { font-size: 0.95rem; display: flex; justify-content: space-between; align-it
 .site-header__login {
     display: inline-block;
     margin-top: 8px;
-    color: var(--accent);
+    color: #FFFFFF;
     font-size: 0.8rem;
     font-weight: 600;
     text-decoration: none;
@@ -102,7 +105,7 @@ select {
     font-size: 0.8rem;
     color: var(--ink-muted);
     background: var(--bg);
-    border-bottom: 1px solid var(--border);
+    border-bottom: 2px solid var(--accent);
 }
 
 .steps__item--active {
@@ -112,8 +115,8 @@ select {
 
 .panel {
     background: var(--surface);
-    border: 1px solid var(--border);
-    border-top: 3px solid var(--accent);
+    border: 1px solid var(--accent-border);
+    border-top: 4px solid var(--accent);
     padding: 28px;
     margin-bottom: 24px;
 }
@@ -140,8 +143,8 @@ input[type="file"] {
     display: block;
     width: 100%;
     padding: 10px;
-    border: 1px solid var(--border);
-    background: var(--bg);
+    border: 1px solid var(--accent-border);
+    background: var(--accent-soft);
     font-size: 0.9rem;
 }
 
@@ -163,7 +166,7 @@ textarea, input[type="text"] {
     display: block;
     width: 100%;
     padding: 9px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--accent-border);
     font: inherit;
 }
 
@@ -174,6 +177,9 @@ textarea, input[type="text"] {
     border-top: 1px solid var(--border);
     padding: 20px 0;
 }
+
+.queue-item:nth-of-type(odd) { background: var(--accent-soft); }
+.queue-item:nth-of-type(even) { background: var(--surface); }
 
 .queue-item:first-of-type { border-top: none; padding-top: 0; }
 
@@ -199,7 +205,7 @@ textarea, input[type="text"] {
     align-items: center;
     margin: 0 0 20px;
     padding: 12px 0;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--accent-border);
     color: var(--ink-muted);
     font-size: 0.85rem;
 }
@@ -210,6 +216,8 @@ textarea, input[type="text"] {
 
 .case-table-wrap { overflow-x: auto; }
 .case-table { min-width: 680px; }
+.case-table tbody tr:nth-child(odd) { background: var(--accent-soft); }
+.case-table tbody tr:nth-child(even) { background: var(--surface); }
 .case-table a { color: var(--accent); font-weight: 600; text-decoration: none; }
 .case-table a:hover { text-decoration: underline; }
 
@@ -305,6 +313,9 @@ textarea, input[type="text"] {
     border-bottom: 1px solid var(--border);
     vertical-align: top;
 }
+
+.score-table tbody tr:nth-child(odd) { background: var(--accent-soft); }
+.score-table tbody tr:nth-child(even) { background: var(--surface); }
 
 .score-table__score {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
