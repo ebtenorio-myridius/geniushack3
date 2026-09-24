@@ -665,6 +665,90 @@ Focused validations confirmed:
 - focused case store tests passed: `6 passed`;
 - full test suite passed: `24 passed`.
 
+## 2026-09-24 - Failure Handling and Improvement Through Iteration
+
+### Request
+The user asked where the challenge requirement **"Failure handling and how the setup improved through iteration"** is implemented in the app.
+
+### Findings
+The evidence is split across runtime app code, evaluation tooling, and documentation rather than a single module.
+
+### Runtime Failure Handling
+Implemented in:
+
+- `src/app/routers/intake.py`
+- `src/app/services/pdf_extraction.py`
+- `src/app/services/llm_service.py`
+- `src/app/services/case_store.py`
+
+Runtime failures handled include:
+
+- non-PDF uploads returning `415`;
+- files over 10 MB returning `413`;
+- textless or scanned PDFs returning `422` through `PdfExtractionError`;
+- LLM extraction failures returning `502` and logging the failure;
+- invalid workflow transitions being rejected;
+- duplicate committee votes being rejected;
+- committee votes before committee review being rejected.
+
+The LLM service records extraction telemetry for both success and failure, including:
+
+- operation;
+- model;
+- prompt version;
+- latency;
+- input and output token counts when available;
+- success flag;
+- error type.
+
+### Evaluation Failure Handling
+Implemented in:
+
+- `evals/run_extraction_eval.py`
+- `evals/results/latest.json`
+
+The live evaluation runner:
+
+- runs each synthetic case through the extraction model;
+- retries transient model/provider failures up to three times;
+- records success or failure per case;
+- records error type;
+- records latency;
+- calculates field accuracy;
+- calculates risk-level agreement;
+- writes results to `evals/results/latest.json`.
+
+This was the mechanism that surfaced the office-network `APIConnectionError` during testing.
+
+### Improvement Through Iteration
+Documented in:
+
+- `ai/prompts/extract_change_request.md`
+- `docs/sdlc/ai-delivery-evidence.md`
+- `evals/README.md`
+
+Evidence includes:
+
+- prompt version log showing `v1` baseline and `v2` token-compact prompt;
+- SDLC failure-to-improvement loop describing how eval results led to prompt, evaluator, and scoring improvements;
+- eval documentation explaining how failures should feed back into prompt changes, scoring rule changes, and synthetic case expansion.
+
+### Explanation for Judges
+Suggested explanation:
+
+```text
+Failure handling is implemented both at runtime and in the SDLC loop. At runtime, bad PDFs, oversized uploads, invalid workflow transitions, duplicate committee votes, and model failures are handled with controlled responses and telemetry. In evaluation, the live runner records per-case failures, latency, field accuracy, and risk agreement. Those results feed into prompt and scoring-rule iteration, which is documented in the prompt version log and SDLC evidence file.
+```
+
+### Remaining Gaps
+Known gaps identified:
+
+- no UI dashboard yet for telemetry or failure rates;
+- no automatic alerting yet;
+- no OCR fallback for scanned PDFs;
+- model-provider retry exists in the eval runner but not in the main upload route;
+- failure-to-improvement is documented and partially implemented, but it is not a fully automated feedback pipeline.
+
 ## Current Demo Roles
 
 ```text
