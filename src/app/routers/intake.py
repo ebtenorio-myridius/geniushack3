@@ -68,6 +68,27 @@ def _queue_context(cases):
     }
 
 
+def _decision_status_labels(cases):
+    labels = {}
+    decision_labels = {
+        "approve": ("Approved", "approved"),
+        "reject": ("Rejected", "rejected"),
+        "defer": ("Deferred", "deferred"),
+        "approve_with_conditions": ("Approved with conditions", "approved-conditions"),
+    }
+    for case in cases:
+        decision_events = [
+            event for event in case_store.list_events(case.case_id)
+            if event["event_type"] == CaseStatus.decisioned.value
+        ]
+        if not decision_events:
+            continue
+        decision = decision_events[-1]["rationale"].split(":", 1)[0]
+        label, css_class = decision_labels.get(decision, (CaseStatus.decisioned.value.replace("_", " "), "decisioned"))
+        labels[case.case_id] = {"label": label, "class": css_class}
+    return labels
+
+
 @router.get("/analyst/dashboard/demo", response_class=HTMLResponse)
 async def analyst_dashboard(request: Request):
     user, role = _identity(request)
@@ -100,7 +121,7 @@ async def analyst_decisioned(request: Request):
     user, role = _identity(request)
     require_role(UserRole.analyst, user, role)
     cases = case_store.list_cases((CaseStatus.decisioned,))
-    return templates.TemplateResponse(request, "case_list.html", {"title": "Decisioned cases", "role": "analyst", "cases": cases, "detail_base": "/intake/analyst/cases"})
+    return templates.TemplateResponse(request, "case_list.html", {"title": "Decisioned cases", "role": "analyst", "cases": cases, "detail_base": "/intake/analyst/cases", "status_labels": _decision_status_labels(cases)})
 
 
 @router.get("/analyst/committee-cases", response_class=HTMLResponse)
@@ -120,7 +141,7 @@ async def committee_decisioned(request: Request):
     user, role = _identity(request)
     require_role(UserRole.committee, user, role)
     cases = case_store.list_cases((CaseStatus.decisioned,))
-    return templates.TemplateResponse(request, "case_list.html", {"title": "Decisioned cases", "role": "committee", "cases": cases, "detail_base": "/intake/committee/cases"})
+    return templates.TemplateResponse(request, "case_list.html", {"title": "Decisioned cases", "role": "committee", "cases": cases, "detail_base": "/intake/committee/cases", "status_labels": _decision_status_labels(cases)})
 
 
 @router.get("/committee/cases/{case_id}", response_class=HTMLResponse)

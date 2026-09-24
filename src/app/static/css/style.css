@@ -262,6 +262,21 @@ textarea, input[type="text"] {
 .badge--high { background: var(--risk-high); }
 .badge--critical { background: var(--risk-critical); }
 
+.status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #FFFFFF;
+    white-space: nowrap;
+}
+
+.status-badge--approved { background: var(--risk-low); }
+.status-badge--rejected { background: var(--risk-high); }
+.status-badge--deferred { background: var(--accent); }
+.status-badge--approved-conditions { background: #0B6A3A; }
+.status-badge--decisioned { background: var(--ink-muted); }
+
 .grid-two {
     display: grid;
     grid-template-columns: 1fr 1fr;

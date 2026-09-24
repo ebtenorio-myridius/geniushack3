@@ -10,7 +10,13 @@
             <td>{% if detail_base %}<a href="{{ detail_base }}/{{ case.case_id }}">{{ case.case_id }}</a>{% else %}{{ case.case_id }}{% endif %}</td>
             <td>{% if detail_base %}<a href="{{ detail_base }}/{{ case.case_id }}">{{ case.extracted.change_title }}</a>{% else %}{{ case.extracted.change_title }}{% endif %}</td>
             <td><span class="badge badge--{{ case.assessment.risk_level.value }}">{{ case.assessment.risk_level.value }}</span></td>
-            <td>{{ case.status.value.replace("_", " ") }}</td>
+            <td>
+                {% if status_labels is defined and case.case_id in status_labels %}
+                <span class="status-badge status-badge--{{ status_labels[case.case_id].class }}">{{ status_labels[case.case_id].label }}</span>
+                {% else %}
+                {{ case.status.value.replace("_", " ") }}
+                {% endif %}
+            </td>
             <td>{{ case.updated_at.strftime("%Y-%m-%d %H:%M UTC") }}</td>
         </tr>
     {% endfor %}
