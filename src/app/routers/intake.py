@@ -37,10 +37,15 @@ async def login(request: Request, role: UserRole = Form(...), user: str = Form(.
         return templates.TemplateResponse(
             request,
             "login.html",
-            {"error": "Use analyst-1 for the analyst role or committee-1 for the committee role."},
+            {"error": "Use product-owner-1, analyst-1, or committee-1 for the matching demo role."},
             status_code=403,
         )
-    destination = "/intake/analyst/dashboard/demo" if role == UserRole.analyst else "/intake/committee/dashboard/demo"
+    destinations = {
+        UserRole.product_owner: "/intake/product-owner/dashboard/demo",
+        UserRole.analyst: "/intake/analyst/dashboard/demo",
+        UserRole.committee: "/intake/committee/dashboard/demo",
+    }
+    destination = destinations[role]
     response = RedirectResponse(destination, status_code=303)
     response.set_cookie("demo_user", user, httponly=True, samesite="lax")
     response.set_cookie("demo_role", role.value, httponly=True, samesite="lax")
@@ -66,6 +71,18 @@ def _queue_context(cases):
         "cases": cases,
         "events_by_case": {case.case_id: case_store.list_events(case.case_id) for case in cases},
     }
+
+
+@router.get("/product-owner/dashboard/demo", response_class=HTMLResponse)
+async def product_owner_dashboard(request: Request):
+    user, role = _identity(request)
+    require_role(UserRole.product_owner, user, role)
+    cases = case_store.list_cases()
+    return templates.TemplateResponse(
+        request,
+        "product_owner_dashboard.html",
+        {"cases": cases, "detail_base": "/intake/product-owner/cases"},
+    )
 
 
 def _decision_status_labels(cases):
@@ -154,6 +171,20 @@ async def committee_case_detail(request: Request, case_id: str):
     return templates.TemplateResponse(
         request,
         "committee_case.html",
+        {"case": case, "events": case_store.list_events(case_id)},
+    )
+
+
+@router.get("/product-owner/cases/{case_id}", response_class=HTMLResponse)
+async def product_owner_case_detail(request: Request, case_id: str):
+    user, role = _identity(request)
+    require_role(UserRole.product_owner, user, role)
+    case = case_store.get_case(case_id)
+    if case is None:
+        return templates.TemplateResponse(request, "partials/error.html", {"message": "Case not found."}, status_code=404)
+    return templates.TemplateResponse(
+        request,
+        "product_owner_case.html",
         {"case": case, "events": case_store.list_events(case_id)},
     )
 

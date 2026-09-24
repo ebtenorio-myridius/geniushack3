@@ -10,11 +10,12 @@
     <form method="post" action="/intake/login">
         <label class="field">
             <span class="field__label">User name</span>
-            <input type="text" name="user" value="analyst-1" required>
+            <input type="text" name="user" value="product-owner-1" required>
         </label>
         <label class="field">
             <span class="field__label">Role</span>
             <select name="role" required>
+                <option value="product_owner">Product owner</option>
                 <option value="analyst">FCRM analyst</option>
                 <option value="committee">Risk committee member</option>
             </select>

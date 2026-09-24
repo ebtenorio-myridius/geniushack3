@@ -3,6 +3,7 @@ from fastapi import Header, HTTPException
 from src.app.models.schemas import UserRole
 
 DEMO_USER_ROLES = {
+    "product-owner-1": UserRole.product_owner,
     "analyst-1": UserRole.analyst,
     "committee-1": UserRole.committee,
 }

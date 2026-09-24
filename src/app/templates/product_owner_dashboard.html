@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Product Owner Dashboard — Risk Assessment Workbench{% endblock %}
+
+{% block content %}
+<nav class="dashboard-nav">
+    <strong>Product owner workspace</strong>
+    <a href="/intake">Upload case</a>
+</nav>
+<section class="panel">
+    <h1>Submitted change requests</h1>
+    <p class="panel__hint">Track submitted cases from intake through assessment and committee decision.</p>
+    {% include "partials/case_table.html" %}
+</section>
+{% endblock %}
