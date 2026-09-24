@@ -128,6 +128,11 @@ The extracted fields were checked against the synthetic source PDF. The geograph
 
 Use this path when the draft assessment does not require committee review.
 
+Use one of these sample files:
+
+- Low risk: `evals/data/pdfs/SYN-001.pdf` - online banking dashboard accessibility refresh.
+- Medium risk: `evals/data/pdfs/SYN-004.pdf` - vendor onboarding for document digitization.
+
 1. Upload the PDF.
 2. Review the extracted fields, score, rationales, and policy evidence.
 3. Edit and rescore if any extracted value is incomplete or incorrect.
@@ -149,6 +154,11 @@ If the analyst does not support the assessment, select **Reject draft** instead.
 ## 9. High- and Critical-Risk Workflow
 
 Use this path when the draft is flagged for committee review.
+
+Use one of these sample files:
+
+- Critical risk: `evals/data/pdfs/SYN-003.pdf` - cross-border remittance product with vendor and sanctions exposure.
+- High risk: `evals/data/pdfs/SYN-008.pdf` - new invoice-financing product across multiple channels.
 
 1. Upload the PDF.
 2. Review the extraction, score, rationales, and policy evidence.
