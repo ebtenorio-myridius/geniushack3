@@ -21,32 +21,51 @@ Scanned image-only PDFs are not supported by the current text extraction path.
 ## 3. User Roles
 
 Open `http://localhost:8000/intake/login` to select a demo role. Enter a user
-name and choose either **FCRM analyst** or **Risk committee member**. The app
-stores the selected demo identity in local cookies and redirects you to the
-matching workspace.
+name and choose **Product owner**, **FCRM analyst**, or **Risk committee
+member**. The app stores the selected demo identity in local cookies and
+redirects you to the matching workspace.
 
 Recommended demo usernames are:
 
 ```text
+Product owner: product-owner-1
 Analyst: analyst-1
-Committee member: committee-1
+Committee members: committee-1, committee-2, committee-3
 ```
 
-These are the two supported demo identities. The app checks the username-role
+These are the supported demo identities. The app checks the username-role
 pair before creating the demo session:
 
+- `product-owner-1` can sign in only as a product owner;
 - `analyst-1` can sign in only as an FCRM analyst;
-- `committee-1` can sign in only as a risk committee member.
+- `committee-1`, `committee-2`, and `committee-3` can sign in only as risk committee members.
 
 A mismatched username and role is rejected. These are still demo identities,
 not production accounts.
 
-Use **Sign in / switch role** in the header to change roles. Select logout by
-posting to `/intake/logout` when resetting the demo session.
+Use **Sign in / switch role** in the header to change roles. The login page
+hides the current signed-in identity while switching roles. Other workbench
+pages show the current user and role in the header, for example:
+
+```text
+Signed in as analyst-1 · FCRM analyst
+```
+
+Select logout by posting to `/intake/logout` when resetting the demo session.
 
 ### Product owner
 
-Use the intake page to submit a change request PDF.
+Use the intake page to submit a change request PDF. Product owners can track
+submitted cases and open read-only case details from the Product Owner
+dashboard.
+
+For browser use, the login page stores the product owner role in cookies. For
+direct API or HTMX testing, product owner access can also be represented by:
+
+```text
+X-Demo-User: product-owner-1
+X-Demo-Role: product_owner
+```
 
 ### FCRM analyst
 
@@ -64,7 +83,8 @@ These headers are for demonstration only and are not production authentication.
 
 ### Risk committee member
 
-Review escalated cases and record a decision.
+Review escalated cases and cast committee votes. Three committee members vote
+on each case before the case is finalized.
 
 For browser use, the login page stores the committee role in cookies. For
 direct API or HTMX testing, committee access can also be represented by:
@@ -73,6 +93,8 @@ direct API or HTMX testing, committee access can also be represented by:
 X-Demo-User: committee-1
 X-Demo-Role: committee
 ```
+
+Use `committee-2` and `committee-3` for the second and third committee votes.
 
 ## 4. Submit a Change Request
 
@@ -97,10 +119,14 @@ For the local demo, the workspaces are available from the intake page or by
 opening these URLs:
 
 - Analyst workspace: `http://localhost:8000/intake/analyst/dashboard/demo`
+- Product Owner workspace: `http://localhost:8000/intake/product-owner/dashboard/demo`
 - Committee workspace: `http://localhost:8000/intake/committee/dashboard/demo`
 - Analyst decisioned cases: `http://localhost:8000/intake/analyst/decisioned`
 - Committee decisioned cases: `http://localhost:8000/intake/committee/decisioned`
 - Committee review queue: `http://localhost:8000/intake/committee-queue/demo`
+
+The Product Owner workspace shows submitted cases and read-only case details.
+It is used to raise and track change requests.
 
 The analyst workspace shows every submitted case, regardless of risk level. It
 also links to cases already decisioned and to cases waiting for committee
@@ -215,12 +241,24 @@ Use one of these sample files:
 6. Select **Submit committee review**.
 7. A committee member opens the committee queue.
 8. Review the finalized assessment and analyst rationale.
-9. Select one committee decision:
-	- **Approve**
-	- **Reject**
-	- **Defer**
-	- **Approve with conditions**
-10. Enter the committee identity, rationale, and conditions when applicable.
+9. Each committee member signs in separately and casts one vote:
+   - **Approve**
+   - **Reject**
+   - **Approve with conditions**
+10. Enter the committee rationale and conditions when applicable.
+11. Repeat with `committee-1`, `committee-2`, and `committee-3` until three votes are recorded.
+
+The committee voting matrix is:
+
+| Approvals | Rejections | Result |
+| ---: | ---: | --- |
+| 3 | 0 | Approved |
+| 2 | 1 | Approved |
+| 1 | 2 | Rejected |
+| 0 | 3 | Rejected |
+| 1 | 0 | Pending |
+| 1 | 1 | Pending |
+| 2 | 0 | Pending, waiting for third vote |
 
 The case moves to:
 
@@ -233,6 +271,18 @@ Draft
 ```
 
 The committee decision, rationale, conditions, actor, and timestamp are recorded as workflow evidence. The system does not decide on behalf of the committee.
+
+Committee pages show the vote count, the pending or final result, and each
+committee member's vote and rationale. A committee member can vote only once on
+the same case.
+
+Decisioned case lists show the specific final result rather than only the
+workflow status. Status badges use these colors:
+
+- **Approved** - green;
+- **Rejected** - red;
+- **Deferred** - dark blue;
+- **Approved with conditions** - dark green.
 
 For the local demo, use:
 
@@ -248,7 +298,8 @@ X-Demo-User: committee-1
 X-Demo-Role: committee
 ```
 
-for committee actions. These headers are demonstration-only authentication.
+for committee actions. Use `committee-2` and `committee-3` for the remaining
+votes. These headers are demonstration-only authentication.
 
 ## 11. Workflow States
 
@@ -301,7 +352,8 @@ The app records workflow events for:
 - extraction edits;
 - analyst review;
 - committee submission; and
-- committee decision.
+- committee votes; and
+- committee final decision.
 
 Events include an actor, rationale, and timestamp. Extraction versions preserve the original model output and later analyst edits.
 
@@ -339,15 +391,16 @@ Use `evals/data/pdfs/SYN-001.pdf` for a simple case or a higher-risk PDF such as
 6. Rescore the case.
 7. Accept and finalize the analyst review.
 8. Submit a high-risk case to committee review.
-9. Record a conditional committee decision.
-10. Explain the audit events and extraction version.
+9. Sign in as `committee-1`, cast the first vote, and show the case remains pending.
+10. Sign in as `committee-2`, cast the second vote, and show the case remains pending when only two votes are present.
+11. Sign in as `committee-3`, cast the third vote, and show the final approved or rejected result.
+12. Explain the vote history, audit events, and extraction version.
 
 ## 17. Important Limitations
 
 This is a synthetic-data demonstration and prototype. It does not currently provide:
 
 - production authentication;
-- multi-member committee quorum;
 - full residual-risk and control-effectiveness scoring;
 - production PostgreSQL persistence;
 - object storage for uploaded documents;
