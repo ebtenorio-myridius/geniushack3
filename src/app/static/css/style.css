@@ -1,15 +1,17 @@
 :root {
-    --bg: #F5F6F8;
+    --bg: #F5F7FA;
     --surface: #FFFFFF;
-    --ink: #1B2330;
-    --ink-muted: #5C6472;
+    --ink: #323130;
+    --ink-muted: #605E5C;
     --border: #DADFE5;
-    --accent: #2C5F7C;
+    --accent: #005A9C;
+    --accent-secondary: #0078D4;
 
-    --risk-low: #3A7D5C;
-    --risk-medium: #A67C1E;
-    --risk-high: #B5502C;
-    --risk-critical: #A23B3B;
+    --risk-low: #107C10;
+    --risk-medium: #FFB900;
+    --risk-high: #D13438;
+    --risk-critical: #D13438;
+    --review-needed: #5C2D91;
 }
 
 * { box-sizing: border-box; }
@@ -155,7 +157,7 @@ input[type="file"] {
 }
 
 .button:hover { opacity: 0.92; }
-.button--secondary { background: var(--risk-high); }
+.button--secondary { background: var(--accent-secondary); }
 
 textarea, input[type="text"] {
     display: block;
@@ -166,7 +168,7 @@ textarea, input[type="text"] {
 }
 
 .review-form { border-top: 1px solid var(--border); margin-top: 24px; padding-top: 18px; }
-.flag--success { background: #E8F4EC; color: var(--risk-low); border-left: 3px solid var(--risk-low); }
+.flag--success { background: #E7F4E7; color: var(--risk-low); border-left: 3px solid var(--risk-low); }
 
 .queue-item {
     border-top: 1px solid var(--border);
@@ -322,13 +324,13 @@ textarea, input[type="text"] {
 }
 
 .flag--warn {
-    background: #FBF0DE;
-    color: var(--risk-medium);
-    border-left: 3px solid var(--risk-medium);
+    background: #F3ECFA;
+    color: var(--review-needed);
+    border-left: 3px solid var(--review-needed);
 }
 
 .flag--error {
-    background: #FBE9E7;
+    background: #FDE7E9;
     color: var(--risk-critical);
     border-left: 3px solid var(--risk-critical);
 }
