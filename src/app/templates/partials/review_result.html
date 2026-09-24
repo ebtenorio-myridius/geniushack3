@@ -1,3 +1,18 @@
+<ol id="steps" class="steps" hx-swap-oob="true">
+    <li class="steps__item">1. Upload change request</li>
+    <li class="steps__item">2. Review extraction</li>
+    <li class="steps__item steps__item--active">3. Analyst finalizes</li>
+</ol>
+
 <section class="flag flag--{{ 'warn' if case.status.value == 'analyst_rejected' else 'success' }}">
     Case {{ case.case_id }} is now {{ case.status.value.replace('_', ' ') }}. The analyst action and rationale were recorded.
 </section>
+
+{% if case.status.value == 'analyst_finalized' and case.assessment.requires_committee_review %}
+<form class="review-form" hx-post="/intake/{{ case.case_id }}/committee/submit" hx-target="#review-result" hx-headers='{"X-Demo-User":"analyst-1","X-Demo-Role":"analyst"}'>
+    <h3>Submit to committee</h3>
+    <input type="hidden" name="actor" value="analyst-1">
+    <textarea name="rationale" required rows="2" placeholder="Explain why committee review is required"></textarea>
+    <button class="button" type="submit">Submit committee review</button>
+</form>
+{% endif %}
