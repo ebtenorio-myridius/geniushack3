@@ -23,6 +23,45 @@ async def intake_form(request: Request):
     return templates.TemplateResponse(request, "intake.html", {})
 
 
+def _queue_context(cases):
+    return {
+        "cases": cases,
+        "events_by_case": {case.case_id: case_store.list_events(case.case_id) for case in cases},
+    }
+
+
+@router.get("/analyst/dashboard/demo", response_class=HTMLResponse)
+async def analyst_dashboard(request: Request):
+    cases = case_store.list_cases()
+    return templates.TemplateResponse(
+        request,
+        "analyst_dashboard.html",
+        _queue_context(cases) | {"decisioned_cases": [case for case in cases if case.status == CaseStatus.decisioned]},
+    )
+
+
+@router.get("/committee/dashboard/demo", response_class=HTMLResponse)
+async def committee_dashboard(request: Request):
+    cases = case_store.list_cases((CaseStatus.committee_review,))
+    return templates.TemplateResponse(
+        request,
+        "committee_dashboard.html",
+        _queue_context(cases),
+    )
+
+
+@router.get("/analyst/decisioned", response_class=HTMLResponse)
+async def analyst_decisioned(request: Request):
+    cases = case_store.list_cases((CaseStatus.decisioned,))
+    return templates.TemplateResponse(request, "case_list.html", {"title": "Decisioned cases", "role": "analyst", "cases": cases})
+
+
+@router.get("/committee/decisioned", response_class=HTMLResponse)
+async def committee_decisioned(request: Request):
+    cases = case_store.list_cases((CaseStatus.decisioned,))
+    return templates.TemplateResponse(request, "case_list.html", {"title": "Decisioned cases", "role": "committee", "cases": cases})
+
+
 @router.post("/upload", response_class=HTMLResponse)
 async def upload_change_request(request: Request, file: UploadFile = File(...)):
     """Handles the PDF upload from the intake form and returns an HTML

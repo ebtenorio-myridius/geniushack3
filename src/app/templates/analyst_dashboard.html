@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Analyst Dashboard — Risk Assessment Workbench{% endblock %}
+
+{% block content %}
+<nav class="dashboard-nav">
+    <strong>Analyst workspace</strong>
+    <a href="/intake">Upload case</a>
+    <a href="/intake/analyst/decisioned">Decisioned cases</a>
+    <a href="/intake/committee-queue/demo">Cases for committee</a>
+</nav>
+<section class="panel">
+    <h1>Submitted cases</h1>
+    <p class="panel__hint">All submitted cases are shown here, regardless of risk level.</p>
+    {% include "partials/case_table.html" %}
+</section>
+{% endblock %}

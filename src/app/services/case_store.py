@@ -207,6 +207,19 @@ class CaseStore:
             ids = [row[0] for row in connection.execute("SELECT case_id FROM cases WHERE status = ?", (CaseStatus.committee_review.value,))]
         return [self.get_case(case_id) for case_id in ids]
 
+    def list_cases(self, statuses: tuple[CaseStatus, ...] | None = None) -> list[CaseRecord]:
+        with closing(self._connect()) as connection:
+            if statuses:
+                placeholders = ", ".join("?" for _ in statuses)
+                values = tuple(status.value for status in statuses)
+                rows = connection.execute(
+                    f"SELECT case_id FROM cases WHERE status IN ({placeholders}) ORDER BY updated_at DESC",
+                    values,
+                ).fetchall()
+            else:
+                rows = connection.execute("SELECT case_id FROM cases ORDER BY updated_at DESC").fetchall()
+        return [self.get_case(row[0]) for row in rows]
+
     def list_events(self, case_id: str) -> list[dict]:
         with closing(self._connect()) as connection:
             rows = connection.execute(

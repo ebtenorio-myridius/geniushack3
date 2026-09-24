@@ -1,0 +1,22 @@
+{% if cases %}
+<div class="case-table-wrap">
+<table class="score-table case-table">
+    <thead>
+        <tr><th>Case</th><th>Title</th><th>Risk</th><th>Status</th><th>Updated</th></tr>
+    </thead>
+    <tbody>
+    {% for case in cases %}
+        <tr>
+            <td>{{ case.case_id }}</td>
+            <td>{{ case.extracted.change_title }}</td>
+            <td><span class="badge badge--{{ case.assessment.risk_level.value }}">{{ case.assessment.risk_level.value }}</span></td>
+            <td>{{ case.status.value.replace("_", " ") }}</td>
+            <td>{{ case.updated_at.strftime("%Y-%m-%d %H:%M UTC") }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{% else %}
+<p class="panel__hint">No cases found.</p>
+{% endif %}

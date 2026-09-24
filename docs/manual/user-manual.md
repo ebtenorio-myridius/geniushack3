@@ -65,7 +65,25 @@ PDF
 -> case persistence
 ```
 
-## 5. Review the Draft
+## 5. Role Workspaces
+
+For the local demo, the workspaces are available from the intake page or by
+opening these URLs:
+
+- Analyst workspace: `http://localhost:8000/intake/analyst/dashboard/demo`
+- Committee workspace: `http://localhost:8000/intake/committee/dashboard/demo`
+
+The analyst workspace shows every submitted case, regardless of risk level. It
+also links to cases already decisioned and to cases waiting for committee
+review. The analyst can return to the intake page to upload another PDF.
+
+The committee workspace shows cases currently waiting for committee review. A
+separate **Decisioned cases** link provides completed decisions for reference.
+
+These are browser-friendly demo workspaces. Production use requires real login,
+role-based authorization, and authenticated actors.
+
+## 6. Review the Draft
 
 After processing, the page displays:
 

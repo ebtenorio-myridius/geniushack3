@@ -84,3 +84,20 @@ def test_case_store_versions_edits_and_supports_committee_decision(tmp_path):
         CommitteeReview(decision="approve", actor="synthetic-committee", rationale="Approved synthetic case."),
     )
     assert decided.status == CaseStatus.decisioned
+
+
+def test_case_store_lists_cases_by_workflow_status(tmp_path):
+    store = CaseStore(str(tmp_path / "cases.db"))
+    draft = store.create_case("draft.pdf", _request(), score_change_request(_request()))
+    finalized_request = _request(change_title="Finalized case")
+    finalized = store.create_case("finalized.pdf", finalized_request, score_change_request(finalized_request))
+    store.review_case(
+        finalized.case_id,
+        AnalystReview(decision=CaseStatus.analyst_accepted, actor="analyst", rationale="Reviewed."),
+    )
+
+    all_cases = store.list_cases()
+    finalized_cases = store.list_cases((CaseStatus.analyst_finalized,))
+
+    assert {case.case_id for case in all_cases} == {draft.case_id, finalized.case_id}
+    assert [case.case_id for case in finalized_cases] == [finalized.case_id]

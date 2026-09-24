@@ -168,6 +168,25 @@ textarea, input[type="text"] {
 
 .committee-facts dd { margin-top: 8px; }
 
+.dashboard-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    align-items: center;
+    margin: 0 0 20px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    color: var(--ink-muted);
+    font-size: 0.85rem;
+}
+
+.dashboard-nav strong { color: var(--ink); margin-right: auto; }
+.dashboard-nav a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.dashboard-nav a:hover { text-decoration: underline; }
+
+.case-table-wrap { overflow-x: auto; }
+.case-table { min-width: 680px; }
+
 .htmx-indicator {
     display: none;
     margin-left: 12px;

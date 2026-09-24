@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Committee Dashboard — Risk Assessment Workbench{% endblock %}
+
+{% block content %}
+<nav class="dashboard-nav">
+    <strong>Committee workspace</strong>
+    <a href="/intake/committee-queue/demo">Cases to review</a>
+    <a href="/intake/committee/decisioned">Decisioned cases</a>
+</nav>
+<section class="panel">
+    <h1>Committee cases</h1>
+    <p class="panel__hint">Review cases waiting for committee decision, with decisioned cases available for reference.</p>
+    {% include "partials/case_table.html" %}
+</section>
+{% endblock %}
