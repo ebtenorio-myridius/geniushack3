@@ -6336,4 +6336,14 @@ I found why it generated zero entries: the message-type filter pattern is too st
 
 [No natural-language response; tool requests were executed in this turn.]
 
+## 2026-09-27
+
+### 19:03:07Z - User
+
+Now, run a retest of the app, regardless of what changed. Do a full test.
+
+### 19:03:07Z - Assistant
+
+The full retest completed. The automated test suite passed all 26 tests, with one `reportlab` deprecation warning. The live extraction evaluation completed all 8 synthetic cases successfully, with 67.5% field accuracy (54/80 fields), 100% risk-level agreement, and 2,790 ms mean latency. I updated `evals/results/latest.md` to match `evals/results/latest.json` and verified the reported metrics and case rows.
+
 
