@@ -1,6 +1,6 @@
 # Genius Hacks 2026 Submission Assessment
 
-Assessment date: 2026-09-24
+Assessment date: 2026-09-24 (refreshed 2026-09-28)
 
 Source brief: https://myridius.com/genius-hacks-q3-2026
 
@@ -22,7 +22,7 @@ PDF
 
 The app addresses the central problem substantially and is suitable for a credible demonstration. It is not yet a production-ready banking platform. The largest remaining risks are prototype-level authentication, incomplete residual-risk/control modeling, limited measured cost optimization, and limited preservation of the actual AI output/review trail for the requirements and design stages.
 
-Estimated current rubric position: approximately **59.25/100**. This is an engineering estimate, not an official judging score. The assessment reflects verified policy citations, explicit six-stage delivery evidence, improved scoring signals, synchronized governance documentation, and 24 passing tests. The latest live evaluation is unavailable because all eight provider calls failed with `APIConnectionError`.
+Estimated current rubric position: approximately **60.25/100** (up from 59.25/100 as of 2026-09-24). This is an engineering estimate, not an official judging score. The assessment reflects verified policy citations, explicit six-stage delivery evidence, improved scoring signals, synchronized governance documentation, and 24 passing tests. The `APIConnectionError` that previously failed all eight live-evaluation calls was traced to the office network blocking outbound OpenAI API access; the same code succeeds unchanged from a home network. The live evaluation now records 8 of 8 successful calls, 68.8% field accuracy, and 100% risk-level agreement (see `evals/results/latest.md`). This incident, including detection and resolution, is documented in `ops/monitoring.md`. One evaluation finding worth acting on before submission: on the case designed to test contradictory source input (`SYN-005`), the model returned a higher extraction confidence (0.6) than the expected value (0.35) — it did not adequately flag its own uncertainty on the case built to test that behavior.
 
 ## 1. Problem Statement Compliance
 
@@ -129,11 +129,24 @@ Evidence:
 
 Latest recorded live run:
 
-- 0/8 successful calls; all attempts ended with `APIConnectionError`;
-- no model-quality accuracy or risk-agreement measurement;
+- 8/8 successful calls (previous run recorded 0/8 due to an office-network
+  `APIConnectionError`, resolved and documented in `ops/monitoring.md`);
+- 68.8% field accuracy (55/80 expected fields) and 100% risk-level agreement
+  (8/8 cases);
+- mean latency 2,282 ms per case, no provider errors;
 - 24 automated tests passing.
 
-The evaluation exposes real extraction weaknesses, which is useful evidence. The repository should more explicitly record each failure, prompt change, and subsequent result.
+The evaluation exposes real extraction weaknesses, which is useful evidence.
+Notably, on `SYN-005` (the case deliberately built with contradictory source
+text), the model's reported extraction confidence (0.6) was higher than the
+expected value (0.35) — a confidence-calibration gap on exactly the scenario
+meant to test it. Several other field misses are narrative-text fields
+(risk factors, descriptions) that may be semantically close to expected but
+scored as wrong by exact/normalized comparison rather than a true content
+error; worth a manual spot-check before treating 68.8% as a hard quality
+ceiling. The repository should continue to record each failure, prompt
+change, and subsequent result as dated artifacts, as it now does for the
+connectivity incident.
 
 ### Stage 05: Deployment
 
@@ -185,16 +198,16 @@ Missing:
 | AI harness and agent orchestration | 30% | 50% | 15.0 | Structured extraction, versioned prompts, targeted policy evidence, context boundary, telemetry, and deterministic workflow. No multi-agent orchestration or production RAG. |
 | SDLC automation | 20% | 50% | 10.0 | Six-stage AI delivery guidance, human gates, CI, and requirements/design/development/testing/deployment/ops artifacts. |
 | Human-in-the-loop and governance | 15% | 75% | 11.25 | Analyst edit/finalize, versioning, committee queue/decisions, rationale, role gates, and audit events. Real identity, quorum, and immutable DB enforcement remain. |
-| Evaluation framework | 10% | 75% | 7.5 | Eight fixtures/PDFs, live runner, retries, field accuracy, risk agreement, latency, and 19 regression tests. |
+| Evaluation framework | 10% | 85% | 8.5 | Eight fixtures/PDFs, live runner, retries, and 24 regression tests, now backed by a working live run: 68.8% field accuracy, 100% risk agreement, no provider errors. Confidence-calibration gap on the contradictory-input case (`SYN-005`) remains to be addressed. |
 | Context engineering and requirements | 10% | 65% | 6.5 | Open-question decisions, explicit extraction rules, untrusted-document boundary, targeted citations, and published source mapping. |
 | Production readiness | 5% | 45% | 2.25 | Docker, Compose, CI, upload limits, health endpoint, telemetry, and free-first runbook. Production identity, migrations, object storage, and alerting remain. |
 | Token efficiency | 5% | 55% | 2.75 | `gpt-4o-mini`, bounded input, captured token fields, and evaluation latency. Cost comparison remains. |
 | Engineering judgement | 5% | 80% | 4.0 | Strong AI/deterministic boundary, narrow risk-signal rules, explicit gates, and reproducible evaluation. Residual-risk governance remains. |
-| **Estimated total** | **100%** |  | **59.25** |  |
+| **Estimated total** | **100%** |  | **60.25** |  |
 
 ## 4. What Must Be Submitted
 
-The hackathon requires two items by **30 September 2026**:
+The hackathon requires two items by **9 October 2026** (extended from the original 30 September 2026 deadline):
 
 1. One GitHub repository containing the codebase and every supporting artifact.
 2. A presentation deck.
@@ -220,9 +233,11 @@ Present in the workspace:
 
 The final editable PowerPoint deck is present at
 `docs/presentation/Risk_Assessment_Workbench_Genius_Hacks_2026.pptx`, generated
-from `tools/generate_presentation.py`. The pushed repository contains three
-meaningful commits covering the initial submission, rubric improvements, and
-presentation deck.
+from `tools/generate_presentation.py`. The pushed repository now contains 40
+commits with descriptive messages spanning the initial submission, rubric
+improvements, UI/UX iteration, new user roles, the presentation deck, and
+dated incident/chat-transcript records — well beyond the three-commit state
+recorded on 2026-09-24.
 
 ## 5. Required Documents
 
@@ -238,19 +253,19 @@ presentation deck.
 | Evaluation definitions | Present in `evals/README.md` and runner |
 | Synthetic datasets | Present in JSON and generated PDFs |
 | Evaluation results | Present in `evals/results/` |
-| Automated tests | Present; 19 pass |
+| Automated tests | Present; 24 pass |
 | Deployment approach | Present in `ops/` |
 | Monitoring approach | Present, but no dashboard or alerts |
 | Token analysis | Present, but measured cost analysis is limited |
 | Prompt and agent configuration | Present in `/ai` |
 | Presentation | Editable PPTX present, with outline and demo script |
-| Commit history | Present in the pushed repository: three meaningful commits |
+| Commit history | Present in the pushed repository: 40 descriptive commits |
 
 ## 6. Other Page Details That Matter
 
 ### Commit history
 
-The page says a repository that appears fully formed in a single commit tells the panel little about how the team worked. This repository now has separate commits for the initial submission, rubric improvements, and presentation deck. Continue preserving prompt/evaluation iterations.
+The page says a repository that appears fully formed in a single commit tells the panel little about how the team worked. This repository now has 40 descriptive commits covering the initial submission, rubric improvements, UI/role iteration, the presentation deck, and dated incident and chat-transcript records (`chats/chats_home.md`, `chats/chats_office.md`, `ops/monitoring.md`). Continue preserving prompt/evaluation iterations this way through submission.
 
 ### Synthetic data only
 
@@ -279,7 +294,7 @@ The page requires a credible deployment and operations approach. A running deplo
 ### Dates
 
 - Registration deadline: 2 September 2026;
-- submission deadline: 30 September 2026;
+- submission deadline: 9 October 2026 (extended from the original 30 September 2026);
 - final presentations: to be announced;
 - awards: to be announced.
 
@@ -290,8 +305,12 @@ Executed checks:
 - full automated suite: **24 passed**;
 - Python compilation for application, tests, tools, and evals: passed;
 - eight generated PDF inputs: validated through the app's PDF extractor;
-- live evaluation: latest recorded run had 0/8 successful calls because of `APIConnectionError`;
-- live field accuracy and risk-level agreement: not measurable from the latest run;
+- live evaluation: latest recorded run had **8/8 successful calls** from a
+  home network, after an earlier run failed 0/8 with `APIConnectionError`
+  on the office network (root cause and resolution documented in
+  `ops/monitoring.md`);
+- live field accuracy: **68.8%** (55/80 expected fields); live risk-level
+  agreement: **100%** (8/8 cases); mean latency 2,282 ms per case;
 - live expanded workflow: upload, edit, rescore, finalize, committee queue, decisioned status, and five audit events.
 
 The test suite reported one ReportLab deprecation warning. It does not currently fail the tests.
@@ -303,7 +322,7 @@ The test suite reported one ReportLab deprecation warning. It does not currently
 3. Replace demo headers with real authentication if claiming production readiness.
 4. Add multi-member committee votes, quorum, and conflict-of-interest handling.
 5. Add a measured token/cost report and optimization comparison.
-6. Preserve prompt/evaluation failure iterations as dated artifacts.
+6. Continue preserving prompt/evaluation failure iterations as dated artifacts (started with the `ops/monitoring.md` connectivity incident record); investigate and address the `SYN-005` confidence-calibration gap next.
 7. Verify `.env`, SQLite databases, API keys, caches, and generated local state are excluded from the GitHub submission.
 
 ## Final Verdict
