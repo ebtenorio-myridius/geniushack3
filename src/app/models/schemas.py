@@ -99,6 +99,8 @@ class PolicyEvidence(BaseModel):
     excerpt: str
     relevance: str
     source_path: str = "docs/policies/unknown.md"
+    similarity_score: float | None = None
+    retrieval_method: str = "rule_fallback"
 
 
 class AnalystReview(BaseModel):

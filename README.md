@@ -22,6 +22,8 @@ pip install -r requirements.txt
 
 cp .env.example .env               # then add your OPENAI_API_KEY
 
+python tools/embed_policies.py     # one-time: builds ai/policy_index.json for semantic policy retrieval
+
 uvicorn src.app.main:app --reload --port 8000
 ```
 

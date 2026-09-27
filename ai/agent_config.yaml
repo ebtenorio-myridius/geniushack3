@@ -22,9 +22,25 @@ scoring_step:
     engineering-judgement rationale.
 
 policy_retrieval_step:
-  status: implemented_demo
-  approach: deterministic keyword retrieval over synthetic policy evidence
+  status: implemented
+  approach: >
+    Semantic retrieval: docs/policies/*.md is chunked and embedded offline
+    (tools/embed_policies.py, text-embedding-3-small) into ai/policy_index.json.
+    At request time, the change request's own extracted fields are embedded
+    and matched by cosine similarity against the cached chunk vectors — top 3
+    matches above a similarity floor are returned, each carrying its
+    similarity_score and retrieval_method for audit purposes. No vector
+    database is used at this corpus size (a few dozen short chunks); an
+    in-memory scan is exact and fast. Falls back to a deterministic
+    category-keyword match (the original implementation) when the index or
+    OPENAI_API_KEY is unavailable, e.g. in CI or during a provider outage —
+    see ops/monitoring.md for a real instance of that failure mode.
   source_directory: docs/policies
+  index_file: ai/policy_index.json
+  production_migration: >
+    Swap the in-memory cosine scan for pgvector, Azure AI Search, or similar
+    once the policy corpus grows beyond what fits comfortably in memory;
+    the PolicyEvidence contract returned to callers does not need to change.
 
 committee_summary_step:
   status: planned

@@ -1,24 +1,24 @@
 {
   "case_count": 8,
   "successful_cases": 8,
-  "field_accuracy": 0.688,
+  "field_accuracy": 0.675,
   "risk_agreement": 1.0,
   "results": [
     {
       "case_id": "SYN-001",
       "success": true,
-      "correct_fields": 9,
+      "correct_fields": 8,
       "total_fields": 10,
-      "field_accuracy": 0.9,
+      "field_accuracy": 0.8,
       "risk_level": "low",
       "expected_risk_level": "low",
       "risk_agreement": true,
-      "latency_ms": 2785,
+      "latency_ms": 3313,
       "actual": {
-        "change_title": "Online Banking Dashboard Refresh",
+        "change_title": "Refresh Online Banking Dashboard",
         "change_type": "feature_change",
         "business_unit": "Consumer Banking",
-        "description": "Refresh the layout and accessibility labels on the existing online banking account dashboard.",
+        "description": "Updating the layout and accessibility labels on the existing online banking account dashboard.",
         "geographies_involved": [],
         "customer_segments_involved": [],
         "vendor_involved": false,
@@ -39,12 +39,12 @@
       "risk_level": "medium",
       "expected_risk_level": "medium",
       "risk_agreement": true,
-      "latency_ms": 2540,
+      "latency_ms": 2867,
       "actual": {
         "change_title": "Extend Treasury Portal to Small Non-Profits",
         "change_type": "new_customer_segment",
         "business_unit": "Commercial Banking",
-        "description": "Extending the existing treasury portal to small non-profit organizations in the United States, which introduces a new customer segment and requires updated onboarding guidance.",
+        "description": "Extending the existing treasury portal to small non-profit organizations, which involves updating onboarding guidance.",
         "geographies_involved": [
           "United States"
         ],
@@ -57,7 +57,7 @@
           "treasury portal"
         ],
         "stated_risk_factors": [],
-        "extraction_confidence": 0.9
+        "extraction_confidence": 1.0
       }
     },
     {
@@ -69,12 +69,12 @@
       "risk_level": "critical",
       "expected_risk_level": "critical",
       "risk_agreement": true,
-      "latency_ms": 2762,
+      "latency_ms": 2200,
       "actual": {
-        "change_title": "New Cross-Border Remittance and Foreign-Exchange Product",
+        "change_title": "New Cross-Border Remittance and FX Product",
         "change_type": "new_product",
         "business_unit": "Payments",
-        "description": "Proposing a new cross-border remittance and foreign-exchange product for non-resident customers.",
+        "description": "Introducing a cross-border remittance and foreign-exchange product for non-resident customers in Iran, Germany, and Poland.",
         "geographies_involved": [
           "Iran",
           "Germany",
@@ -106,12 +106,12 @@
       "risk_level": "medium",
       "expected_risk_level": "medium",
       "risk_agreement": true,
-      "latency_ms": 1771,
+      "latency_ms": 2651,
       "actual": {
         "change_title": "Onboard Northstar Document Services",
         "change_type": "vendor_onboarding",
         "business_unit": "Wealth Management",
-        "description": "Onboard Northstar Document Services to digitize archival statements and process existing client documents.",
+        "description": "Onboarding Northstar Document Services to digitize archival statements and process existing client documents.",
         "geographies_involved": [
           "United States"
         ],
@@ -120,7 +120,7 @@
         "vendor_name": "Northstar Document Services",
         "products_involved": [],
         "stated_risk_factors": [],
-        "extraction_confidence": 0.9
+        "extraction_confidence": 1.0
       }
     },
     {
@@ -132,12 +132,12 @@
       "risk_level": "medium",
       "expected_risk_level": "medium",
       "risk_agreement": true,
-      "latency_ms": 1759,
+      "latency_ms": 2813,
       "actual": {
         "change_title": "Pilot for New Mobile Deposit Feature",
         "change_type": "feature_change",
         "business_unit": "",
-        "description": "A possible pilot for a new mobile deposit feature is being considered.",
+        "description": "Possible pilot for a new mobile deposit feature targeting existing retail customers and new business customers.",
         "geographies_involved": [
           "Canada"
         ],
@@ -149,22 +149,21 @@
         "vendor_name": null,
         "products_involved": [],
         "stated_risk_factors": [
-          "Vendor decision is pending",
-          "The draft mentions Canada but another section says the pilot is domestic only."
+          "Pilot mentions Canada but another section states it is domestic only. Vendor decision is pending."
         ],
-        "extraction_confidence": 0.6
+        "extraction_confidence": 0.7
       }
     },
     {
       "case_id": "SYN-006",
       "success": true,
-      "correct_fields": 6,
+      "correct_fields": 7,
       "total_fields": 10,
-      "field_accuracy": 0.6,
+      "field_accuracy": 0.7,
       "risk_level": "low",
       "expected_risk_level": "low",
       "risk_agreement": true,
-      "latency_ms": 3062,
+      "latency_ms": 2455,
       "actual": {
         "change_title": "Add Manual Review Queue for Unusual CNP Transactions",
         "change_type": "process_change",
@@ -177,7 +176,9 @@
         "vendor_involved": false,
         "vendor_name": null,
         "products_involved": [],
-        "stated_risk_factors": [],
+        "stated_risk_factors": [
+          "unusual card-not-present transactions"
+        ],
         "extraction_confidence": 0.9
       }
     },
@@ -190,9 +191,9 @@
       "risk_level": "medium",
       "expected_risk_level": "medium",
       "risk_agreement": true,
-      "latency_ms": 1705,
+      "latency_ms": 2960,
       "actual": {
-        "change_title": "Change in Account-Opening Process",
+        "change_title": "Changes to Account-Opening Process",
         "change_type": "process_change",
         "business_unit": "Consumer Banking",
         "description": "Changing the account-opening process for existing checking products.",
@@ -218,15 +219,15 @@
     {
       "case_id": "SYN-008",
       "success": true,
-      "correct_fields": 8,
+      "correct_fields": 7,
       "total_fields": 10,
-      "field_accuracy": 0.8,
+      "field_accuracy": 0.7,
       "risk_level": "high",
       "expected_risk_level": "high",
       "risk_agreement": true,
-      "latency_ms": 1871,
+      "latency_ms": 3061,
       "actual": {
-        "change_title": "Instant Invoice-Financing Product",
+        "change_title": "New Instant Invoice-Financing Product",
         "change_type": "new_product",
         "business_unit": "Commercial Banking",
         "description": "Proposal for a new instant invoice-financing product delivered through branch and online channels for small and medium-sized enterprises.",
@@ -239,7 +240,7 @@
         "vendor_involved": false,
         "vendor_name": null,
         "products_involved": [
-          "instant invoice-financing"
+          "instant invoice-financing product"
         ],
         "stated_risk_factors": [
           "rapid funds movement",
