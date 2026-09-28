@@ -4,11 +4,10 @@
 ### Slide 1 - The problem
 
 - Financial crime risk assessment currently moves through email, Word, Excel, and SharePoint.
-- Analysts spend 15-20 business days preparing an assessment.
 - Similar changes can receive different conclusions.
 - Reconstructing the reason for a rating is slow when an examiner asks later.
 
-**Message:** the product is a governed preparation and review workflow, not an automatic decision engine.
+**Message:** the prototype organizes evidence for human review; it is not an automatic decision engine. Avoid unverified cycle-time savings claims.
 
 ### Slide 2 - Expanded product definition
 
@@ -26,13 +25,14 @@
 
 `Submitted -> Extracted -> Analyst Review -> Analyst Finalized -> Committee Review -> Decisioned`
 
-See `docs/requirements/spec.md`.
+The browser demo uses fixed username/role pairs and session cookies. This is a demo access gate, not production identity or authorization. See `docs/requirements/spec.md`.
 
 ### Slide 3 - What we built
 
 ```mermaid
 flowchart LR
-    PDF[PDF submission] --> TEXT[pypdf text extraction]
+    AUTH[Demo sign-in] --> PDF[PDF submission]
+    PDF --> TEXT[pypdf text extraction]
     TEXT --> LLM[Structured LLM extraction]
     LLM --> SCORE[Deterministic risk scoring]
     SCORE --> CASE[(SQLite case record)]
@@ -44,27 +44,30 @@ flowchart LR
 - Pydantic validates the extraction contract.
 - SQLite persists the case and audit event.
 - The result remains a draft until a human acts.
+- `/intake` requires a valid demo session; the upload POST endpoint itself currently lacks an equivalent role check, so this is not a production security boundary.
 
 ### Slide 4 - AI harness and context boundary
 
 - The model extracts only facts stated or clearly implied in the source.
 - Structured outputs prevent malformed data from reaching scoring.
-- The PDF is explicitly treated as untrusted data; embedded instructions cannot override system rules.
+- The prompt treats submitted document text as untrusted data and instructs the model not to follow embedded directions.
 - The prompt and model configuration live in `/ai` and are inspectable.
 - Risk scoring stays deterministic and outside the LLM.
+- Policy evidence uses semantic retrieval when an index and API key are available; otherwise it falls back to deterministic category rules.
 
-**Why:** probabilistic extraction benefits from an LLM; scoring and workflow transitions must be reproducible.
+**Why:** probabilistic extraction benefits from an LLM; scoring and workflow transitions must be reproducible. Policy snippets are synthetic demo material, not approved supervisory guidance.
 
 ### Slide 5 - Human-in-the-loop governance
 
 - Every upload receives a durable case ID.
 - The extraction and score are drafts.
 - Analyst accept/reject actions require an actor and rationale.
-- Workflow events are timestamped and append-only in the demo store.
+- Workflow events are timestamped and append-only through the application, but not protected by database-level immutability.
 - High and critical assessments are flagged for committee review.
 - No approval or rejection is performed automatically.
+- The demo committee rule counts three distinct members; two approvals (including conditional approvals) approve, otherwise the result is rejected. The endpoint does not accept `defer`.
 
-**Current limitation:** the demo uses cookie/header-based roles and an application-enforced three-member quorum; real identity, explicit decision policy, and database-level immutability are production increments.
+**Current limitation:** identity is demo-only; some endpoints are not role-gated consistently; actor fields are not uniformly bound to authenticated identities. The quorum rule is prototype behavior, not an institutionally approved decision policy.
 
 ### Slide 6 - Risk scoring
 
@@ -79,7 +82,7 @@ The scorer produces category scores, rationales, an overall score, risk level, a
 
 **Engineering decision:** use deterministic weighted rules so a committee can reproduce and challenge the result.
 
-**Caveat:** the current weights are prototype values and require formal supervisory-framework mapping before production.
+**Caveat:** these are placeholder prototype weights, not validated or approved supervisory-framework mappings. Controls and residual risk are not modeled.
 
 ### Slide 7 - Evaluation approach
 
@@ -88,7 +91,9 @@ The scorer produces category scores, rationales, an overall score, risk level, a
 - Contract tests validate schema parsing and deterministic score outcomes.
 - PDF fixture `evals/data/sample_change_request.pdf` exercises every extraction field.
 
-**Latest recorded run:** 0/8 successful calls because all provider attempts ended with `APIConnectionError`. It is not a model-quality baseline; rerun the paid evaluation with a reachable provider before presenting accuracy figures.
+**Latest recorded live run:** 8/8 successful calls; 54/80 expected fields correct (67.5% field accuracy); deterministic risk-level agreement was 8/8 (100%); mean latency was 2,790 ms. This is a small synthetic evaluation, not a production accuracy estimate. Perfect risk agreement does not mean all extracted fields were correct.
+
+**Automated tests:** 46 passed in the latest local full-suite run. CI is configured to run pytest on pushes and pull requests to `master`; a successful hosted CI run is not claimed here.
 
 ### Slide 8 - SDLC evidence
 
@@ -98,7 +103,7 @@ The scorer produces category scores, rationales, an overall score, risk level, a
 
 **Development:** structured extraction, deterministic scoring, persistence, and analyst review in `/src`.
 
-**Testing:** pytest cases and synthetic evaluation fixtures in `/tests` and `/evals`.
+**Testing:** 46 passing local pytest cases, CI configuration, and an eight-case synthetic live-evaluation fixture in `/tests`, `.github/workflows/ci.yml`, and `/evals`.
 
 **Deployment:** Dockerfile, Compose, database volume, environment configuration, and health endpoint.
 
@@ -111,20 +116,20 @@ The scorer produces category scores, rationales, an overall score, risk level, a
 - Durable SQLite volume for the demo; Postgres is the production target.
 - `/healthz` supports a basic health check.
 - Telemetry records model latency, failures, prompt version, input/output token counts, and success status.
+- Live extraction requires a configured OpenAI API key; policy retrieval alone has a deterministic fallback.
 
-**Production gaps:** real authentication/authorization, migrations, source-document storage, retries/timeouts, database-enforced audit immutability, and measured cost optimization.
+**Production gaps:** consistent endpoint authorization, real identity, migrations, source-document storage, extraction retries/timeouts, database-enforced audit immutability, approved policy mappings, residual-risk controls, and measured cost optimization.
 
 ### Slide 10 - Demonstration
 
-1. Open the intake page.
-2. Upload `evals/data/sample_change_request.pdf`.
-3. Show extracted fields and deterministic category scores.
-4. Show the case ID and draft status.
-5. Enter a synthetic analyst identity and rationale.
-6. Accept or reject the draft.
-7. Show the persisted workflow status.
-8. Submit a high-risk case to the committee queue and record a conditional decision.
-9. Explain how the audit events and extraction version support later review.
+1. Open `http://127.0.0.1:8000/` and explicitly sign in as `product-owner-1` with the Product owner role.
+2. Open Upload case and submit `evals/data/sample_change_request.pdf`.
+3. Show extracted fields, policy evidence, deterministic category scores, case ID, and draft status.
+4. Use Sign in / switch role; explicitly choose FCRM analyst and enter `analyst-1`.
+5. Review/edit the extraction, provide a rationale, and finalize the assessment.
+6. Submit a high/critical case for committee review.
+7. Switch among `committee-1`, `committee-2`, and `committee-3`; cast approve, reject, or approve-with-conditions votes. Three distinct votes are required; `defer` is not accepted by the current endpoint.
+8. Show the resulting status, version history, and timestamped workflow events. Describe them as application-enforced demo records, not tamper-proof audit storage.
 
 ### Slide 11 - Failure handling
 
@@ -134,11 +139,12 @@ The scorer produces category scores, rationales, an overall score, risk level, a
 - Structured-output failures return an analyst-facing error.
 - Ambiguous and adversarial synthetic cases are retained for evaluation.
 - Human rejection records the rationale instead of silently changing the draft.
+- The browser intake route redirects signed-out users to login, but the upload API endpoint does not currently enforce the same role check; do not present the demo as securely access-controlled.
 
 ### Slide 12 - Closing and next increments
 
-**What is demonstrated today:** governed intake, AI-assisted extraction, deterministic scoring, persistence, analyst review, synthetic evaluation, and delivery evidence.
+**What is demonstrated today:** demo-session intake, AI-assisted extraction, deterministic scoring, policy-evidence retrieval/fallback, SQLite persistence, analyst review, three-member committee voting, synthetic evaluation, and delivery evidence.
 
-**Next increments:** published-framework approval, controls and residual risk, real authentication, database-enforced audit immutability, and operational dashboards.
+**Next increments:** consistent endpoint authorization, real authentication, approved framework mappings and decision policy, controls and residual risk, database-enforced audit immutability, source-backed extraction citations, and operational dashboards.
 
 **Closing message:** the system prepares evidence and makes reasoning visible; humans remain accountable for decisions.
