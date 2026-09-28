@@ -10,20 +10,24 @@ The system prepares evidence. It does not make an automatic approval or rejectio
 
 Before using the app, make sure:
 
-- the application is running at `http://localhost:8000`;
-- the model provider is configured if live extraction is enabled;
+- the application is running at `http://127.0.0.1:8000`;
+- an OpenAI API key is configured for live PDF extraction;
 - you are using synthetic data only;
 - your input is a text-based PDF;
 - the PDF is no larger than 10 MB.
 
 Scanned image-only PDFs are not supported by the current text extraction path.
+Policy evidence may fall back to deterministic rules; extraction has no offline
+fallback.
 
 ## 3. User Roles
 
-Open `http://localhost:8000/intake/login` to select a demo role. Enter a user
-name and choose **Product owner**, **FCRM analyst**, or **Risk committee
-member**. The app stores the selected demo identity in local cookies and
-redirects you to the matching workspace.
+Open `http://127.0.0.1:8000/`. A signed-out browser is sent to login; a signed-in
+browser is sent to its role dashboard. The login form starts with the username
+and role blank. Enter a username and explicitly select **Product owner**,
+**FCRM analyst**, or **Risk committee member**. Selecting a role does not fill
+the username. A successful login stores the demo identity in browser cookies
+and opens the matching workspace.
 
 Recommended demo usernames are:
 
@@ -40,68 +44,48 @@ pair before creating the demo session:
 - `analyst-1` can sign in only as an FCRM analyst;
 - `committee-1`, `committee-2`, and `committee-3` can sign in only as risk committee members.
 
-A mismatched username and role is rejected. These are still demo identities,
-not production accounts.
+A mismatched username and role is rejected. These are demo identities, not
+production accounts.
 
-Use **Sign in / switch role** in the header to change roles. The login page
-hides the current signed-in identity while switching roles. Other workbench
-pages show the current user and role in the header, for example:
+Use **Sign in / switch role** in the header to end the current demo session.
+That link clears the app's `demo_user` and `demo_role` cookies and opens login.
+Enter the username and select the role again. Other workbench pages show the
+current user and role in the header, for example:
 
 ```text
 Signed in as analyst-1 · FCRM analyst
 ```
 
-Select logout by posting to `/intake/logout` when resetting the demo session.
+The login page does not display the previous identity while switching roles.
 
 ### Product owner
 
-Use the intake page to submit a change request PDF. Product owners can track
-submitted cases and open read-only case details from the Product Owner
-dashboard.
-
-For browser use, the login page stores the product owner role in cookies. For
-direct API or HTMX testing, product owner access can also be represented by:
-
-```text
-X-Demo-User: product-owner-1
-X-Demo-Role: product_owner
-```
+After signing in as `product-owner-1`, select **Upload case** from the Product
+Owner dashboard to open `/intake`. Product owners can track submitted cases and
+open read-only case details from that dashboard.
 
 ### FCRM analyst
 
-Review the extracted fields, edit incorrect information, rescore the case, and accept or reject the assessment draft.
-
-For browser use, the login page stores the analyst role in cookies. For direct
-API or HTMX testing, analyst access can also be represented by:
-
-```text
-X-Demo-User: analyst-1
-X-Demo-Role: analyst
-```
-
-These headers are for demonstration only and are not production authentication.
+The extraction result contains inline forms to edit/rescore and accept/reject
+the draft. Analyst case-detail pages reached later from the dashboard are
+read-only; review actions are not available there. The inline forms include a
+fixed demo analyst header and an editable actor field, so they do not provide a
+secure or authenticated role boundary.
 
 ### Risk committee member
 
-Review escalated cases and cast committee votes. Three committee members vote
-on each case before the case is finalized.
-
-For browser use, the login page stores the committee role in cookies. For
-direct API or HTMX testing, committee access can also be represented by:
-
-```text
-X-Demo-User: committee-1
-X-Demo-Role: committee
-```
-
-Use `committee-2` and `committee-3` for the second and third committee votes.
+After signing in as a committee member, select **Cases to review** from the
+Committee dashboard. Three distinct committee demo identities must vote before
+the case is finalized. Use **Sign in / switch role** to change identities
+between votes.
 
 ## 4. Submit a Change Request
 
-1. Open `http://localhost:8000`.
-2. Select a PDF change request.
-3. Select **Submit for extraction**.
-4. Wait while the system reads the document and drafts the extraction.
+1. Open `http://127.0.0.1:8000/`.
+2. For the product-owner submission flow, sign in as `product-owner-1` and explicitly select **Product owner**.
+3. From the Product Owner dashboard, select **Upload case**. Signed-out or invalid sessions at `/intake` are redirected to login.
+4. Select a PDF change request and select **Submit for extraction**.
+5. Wait while the system reads the document and drafts the extraction.
 
 The system performs these steps:
 
@@ -115,15 +99,15 @@ PDF
 
 ## 5. Role Workspaces
 
-For the local demo, the workspaces are available from the intake page or by
-opening these URLs:
+After signing in with a matching demo role, open the corresponding dashboard
+or list:
 
-- Analyst workspace: `http://localhost:8000/intake/analyst/dashboard/demo`
-- Product Owner workspace: `http://localhost:8000/intake/product-owner/dashboard/demo`
-- Committee workspace: `http://localhost:8000/intake/committee/dashboard/demo`
-- Analyst decisioned cases: `http://localhost:8000/intake/analyst/decisioned`
-- Committee decisioned cases: `http://localhost:8000/intake/committee/decisioned`
-- Committee review queue: `http://localhost:8000/intake/committee-queue/demo`
+- Analyst workspace: `http://127.0.0.1:8000/intake/analyst/dashboard/demo`
+- Product Owner workspace: `http://127.0.0.1:8000/intake/product-owner/dashboard/demo`
+- Committee workspace: `http://127.0.0.1:8000/intake/committee/dashboard/demo`
+- Analyst decisioned cases: `http://127.0.0.1:8000/intake/analyst/decisioned`
+- Committee decisioned cases: `http://127.0.0.1:8000/intake/committee/decisioned`
+- Committee review queue: open **Cases to review** from the Committee dashboard. The underlying `/intake/committee-queue/demo` URL is a demo convenience and is not itself role-gated.
 
 The Product Owner workspace shows submitted cases and read-only case details.
 It is used to raise and track change requests.
@@ -158,16 +142,20 @@ After processing, the page displays:
 - score rationales;
 - overall risk level;
 - committee-review flag; and
-- related synthetic policy evidence.
+- related synthetic policy evidence, when any evidence is returned.
 
 Treat the extraction and score as a draft. Check every important field against the source PDF.
 
 ## 7. Edit and Rescore
 
+Use the **Edit extraction and rescore** form in the extraction result while it
+is still open. Analyst case-detail pages reached later from the dashboard are
+read-only.
+
 If the extraction is incomplete or incorrect:
 
 1. Edit the fields in **Edit extraction and rescore**.
-2. Enter the analyst identity.
+2. Enter the actor name to record with this edit.
 3. Enter a rationale explaining the correction.
 4. Select **Save edit and rescore**.
 
@@ -179,17 +167,22 @@ The system:
 - refreshes the policy evidence; and
 - records the edit as an audit event.
 
-The original model extraction is retained. Do not use the edit form to invent facts that are not supported by the PDF.
+The original model extraction is retained. Do not use the edit form to invent
+facts that are not supported by the PDF. The inline form currently supplies a
+fixed demo analyst header; the actor field is not proof of a real authenticated
+identity.
 
 ## 8. Accept or Reject the Draft
 
 To finalize the analyst review:
 
-1. Enter the analyst identity.
+1. Enter the actor name to record with this review.
 2. Enter a rationale.
 3. Select **Accept draft** or **Reject draft**.
 
-An accepted case moves to analyst-finalized status. A rejected case records the rejection and rationale.
+An accepted case moves to analyst-finalized status. A rejected case records the
+rejection and rationale. The inline result form uses a fixed demo analyst
+header; the entered actor is not a verified identity.
 
 A rationale should explain what was checked and why the decision is appropriate. For example:
 
@@ -206,10 +199,10 @@ Use one of these sample files:
 - Low risk: `evals/data/pdfs/SYN-001.pdf` - online banking dashboard accessibility refresh.
 - Medium risk: `evals/data/pdfs/SYN-004.pdf` - vendor onboarding for document digitization.
 
-1. Upload the PDF.
+1. Sign in and upload the PDF from `/intake`.
 2. Review the extracted fields, score, rationales, and policy evidence.
 3. Edit and rescore if any extracted value is incomplete or incorrect.
-4. Enter the analyst identity and review rationale.
+4. Enter the actor name to record and a review rationale.
 5. Select **Accept draft**.
 
 The case moves to:
@@ -220,7 +213,8 @@ Draft
 -> Analyst finalized
 ```
 
-The case is not automatically approved or rejected. The analyst's finalization and rationale are recorded in SQLite as an audit event.
+The case is not automatically approved or rejected. The analyst action and
+rationale are recorded in SQLite as a workflow event.
 
 If the analyst does not support the assessment, select **Reject draft** instead. The case moves to `analyst_rejected` and the rejection rationale is retained.
 
@@ -233,13 +227,13 @@ Use one of these sample files:
 - Critical risk: `evals/data/pdfs/SYN-003.pdf` - cross-border remittance product with vendor and sanctions exposure.
 - High risk: `evals/data/pdfs/SYN-008.pdf` - new invoice-financing product across multiple channels.
 
-1. Upload the PDF.
+1. Sign in and upload the PDF from `/intake`.
 2. Review the extraction, score, rationales, and policy evidence.
 3. Edit and rescore if needed.
 4. Select **Accept draft** and finalize the analyst review.
 5. Enter the escalation rationale in **Submit to committee**.
 6. Select **Submit committee review**.
-7. A committee member opens the committee queue.
+7. A committee member signs in and opens **Cases to review** from the Committee dashboard.
 8. Review the finalized assessment and analyst rationale.
 9. Each committee member signs in separately and casts one vote:
    - **Approve**
@@ -248,17 +242,11 @@ Use one of these sample files:
 10. Enter the committee rationale and conditions when applicable.
 11. Repeat with `committee-1`, `committee-2`, and `committee-3` until three votes are recorded.
 
-The committee voting matrix is:
-
-| Approvals | Rejections | Result |
-| ---: | ---: | --- |
-| 3 | 0 | Approved |
-| 2 | 1 | Approved |
-| 1 | 2 | Rejected |
-| 0 | 3 | Rejected |
-| 1 | 0 | Pending |
-| 1 | 1 | Pending |
-| 2 | 0 | Pending, waiting for third vote |
+The case remains pending until three distinct votes are recorded. After the
+third vote, two or more approvals (including **Approve with conditions**)
+produce an approval; otherwise the result is rejected. This is prototype
+behavior, not an institutionally approved decision policy. The visible vote
+form does not offer **Defer**.
 
 The case moves to:
 
@@ -270,36 +258,24 @@ Draft
 -> Decisioned
 ```
 
-The committee decision, rationale, conditions, actor, and timestamp are recorded as workflow evidence. The system does not decide on behalf of the committee.
+Each vote's rationale, conditions, demo actor, and timestamp are recorded as
+workflow evidence. The final result follows the prototype vote-count rule; it
+is not an independently governed policy decision.
 
 Committee pages show the vote count, the pending or final result, and each
 committee member's vote and rationale. A committee member can vote only once on
 the same case.
 
 Decisioned case lists show the specific final result rather than only the
-workflow status. Status badges use these colors:
+workflow status. The visible outcomes are:
 
-- **Approved** - green;
-- **Rejected** - red;
-- **Deferred** - dark blue;
-- **Approved with conditions** - dark green.
+- **Approved**;
+- **Rejected**; or
+- **Approved with conditions**.
 
-For the local demo, use:
-
-```text
-X-Demo-User: analyst-1
-X-Demo-Role: analyst
-```
-
-for analyst actions, and:
-
-```text
-X-Demo-User: committee-1
-X-Demo-Role: committee
-```
-
-for committee actions. Use `committee-2` and `committee-3` for the remaining
-votes. These headers are demonstration-only authentication.
+Use the login form to sign in separately as `committee-1`, `committee-2`, and
+`committee-3` for the three votes. The demo queue URL is a browser convenience,
+not an authorization boundary; use only synthetic data.
 
 ## 11. Workflow States
 
@@ -351,11 +327,15 @@ The app records workflow events for:
 - case creation;
 - extraction edits;
 - analyst review;
-- committee submission; and
+- committee submission;
 - committee votes; and
 - committee final decision.
 
-Events include an actor, rationale, and timestamp. Extraction versions preserve the original model output and later analyst edits.
+Events include an actor value, rationale, and UTC timestamp. Extraction
+versions preserve the original model output and later analyst edits. Event
+history is append-only through application behavior, not database-enforced
+tamper-proof storage; entered actor values are not equivalent to verified
+identity.
 
 ## 15. Handling Errors
 
@@ -373,34 +353,38 @@ The PDF may be scanned or image-only. Use a text-layer PDF for the current demo.
 
 ### Model extraction failure
 
-Check that the model provider configuration is available and retry. The source PDF remains a draft input until a valid structured extraction is produced.
+Check that the OpenAI provider configuration is available and retry the upload.
+The app does not create a case or store the source PDF when extraction fails.
 
 ### Unauthorized action
 
-Use the correct demo role for the action. In production, the demo headers must be replaced by real authentication.
+Sign in with a supported username/role pair. `/intake` redirects signed-out
+users to login, but endpoint authorization is inconsistent: the PDF upload
+POST is not role-gated, the inline analyst forms use a fixed demo header, and
+the demo committee queue route is not role-gated. These are prototype
+limitations, not security controls. Do not use real data.
 
 ## 16. Recommended Demo Walkthrough
 
 Use `evals/data/pdfs/SYN-001.pdf` for a simple case or a higher-risk PDF such as `SYN-003.pdf` or `SYN-008.pdf`.
 
-1. Submit the PDF.
-2. Show the extracted JSON-compatible fields.
-3. Explain the category scores and rationales.
-4. Show policy evidence.
-5. Edit one field and explain the correction.
-6. Rescore the case.
-7. Accept and finalize the analyst review.
-8. Submit a high-risk case to committee review.
-9. Sign in as `committee-1`, cast the first vote, and show the case remains pending.
-10. Sign in as `committee-2`, cast the second vote, and show the case remains pending when only two votes are present.
-11. Sign in as `committee-3`, cast the third vote, and show the final approved or rejected result.
-12. Explain the vote history, audit events, and extraction version.
+1. Sign in as `product-owner-1` with the Product owner role.
+2. Open **Upload case** and submit the PDF.
+3. Show the extracted fields, category scores, rationales, policy evidence if present, case ID, and draft status.
+4. Use the inline edit/review forms to demonstrate correction and analyst finalization; explain that these forms use a fixed demo analyst header and are not a real role boundary.
+5. For a high/critical case, submit it to committee review.
+6. Sign in as `committee-1`, cast the first vote, and show the case is pending.
+7. Repeat with `committee-2` and `committee-3`; after the third vote show the prototype rule's result.
+8. Explain the vote history, application-level workflow events, and extraction versions, including their non-production audit limitations.
 
 ## 17. Important Limitations
 
 This is a synthetic-data demonstration and prototype. It does not currently provide:
 
-- production authentication;
+- production authentication or consistent endpoint authorization;
+- secure separation between product-owner and analyst actions in the inline result forms;
+- database-enforced, tamper-proof audit storage;
+- an institutionally approved committee decision policy;
 - full residual-risk and control-effectiveness scoring;
 - production PostgreSQL persistence;
 - object storage for uploaded documents;
