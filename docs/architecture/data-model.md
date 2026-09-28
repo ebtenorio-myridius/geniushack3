@@ -1,30 +1,67 @@
 # Data Model
 
-## Case
+The current Pydantic contracts are in `src/app/models/schemas.py`; SQLite
+tables and serialization are implemented in
+`src/app/services/case_store.py`. This is the prototype's persistence model,
+not a database-enforced governance or immutability layer.
 
-Stores the case ID, source filename, extracted request, draft assessment, workflow status, and created/updated timestamps.
+## Case Record
 
-## Extraction and assessment
+The `cases` table stores a generated case ID, source filename, current
+structured extraction, draft risk assessment, workflow status, UTC creation
+and update timestamps, serialized policy evidence, and the current extraction
+version. The `CaseRecord` response model exposes these values to the app.
+Uploaded PDF bytes and source text are not persisted, so the source document
+cannot be retrieved from the case store.
 
-The extraction is a Pydantic contract versioned by the prompt/model configuration. The assessment records category scores, rationale, overall score, risk level, committee flag, and scoring method.
+## Extraction and Assessment
 
-## Workflow event and committee vote
+`ExtractedChangeRequest` contains the extracted fields and model-reported
+confidence. `RiskAssessmentDraft` contains category scores and rationales,
+weighted overall score, risk level, committee-review flag, and scoring-method
+label. Analyst edits replace the current extraction/assessment values and
+increment the version number; the prior extraction JSON is retained in
+`extraction_versions`. Prompt/model configuration is not stored as a complete
+per-case immutable snapshot.
 
-Each event stores case ID, event type, actor, rationale, and UTC timestamp. Events are append-only so an analyst disagreement is preserved rather than overwritten.
+The assessment has no control inventory, control effectiveness, residual-risk
+calculation, approved rule-set version, or source-page/span citations.
 
-Committee votes store case ID, decision, actor, rationale, and UTC timestamp.
-The case store prevents duplicate votes by actor and finalizes the case only
-after three distinct committee members have voted. The displayed result uses
-the committee vote summary; a production implementation should add explicit
-tie/decision policy and database permission enforcement.
+## Workflow Events
 
-## Implemented extensions
+`workflow_events` stores case ID, event type, actor string, rationale, and UTC
+timestamp. Application paths insert events for case creation, analyst review,
+edits, committee submission, votes, and finalization. The application does not
+provide update/delete endpoints for event rows, but SQLite permissions,
+triggers, or external write-once storage do not enforce immutability. Actor
+strings in the database are not independently verified identities.
 
-The case store also persists policy evidence, extraction versions, workflow
-events, and telemetry. Analyst edits create a new extraction version instead of
-overwriting the model result.
+## Committee Votes
 
-## Production extensions
+`committee_votes` stores case ID, actor, decision, rationale, optional
+conditions, and UTC timestamp. Its primary key `(case_id, actor)` prevents the
+same actor string from voting twice. The HTTP voting route validates the
+committee demo cookie identity and uses that username as the actor. The case
+store itself enforces only actor-string uniqueness, not the identity mapping.
 
-Add source-page evidence, control effectiveness, residual risk, rule-version
-identifiers, and database-enforced append-only storage before production use.
+The prototype endpoint accepts approve, reject, and approve-with-conditions;
+it rejects defer. A case becomes decisioned after three votes, with at least
+two approvals producing approval (conditional if a conditional vote or
+conditions are present); otherwise it is rejected. This implementation is
+not an institutionally approved decision policy.
+
+## Telemetry and Policy Evidence
+
+The `telemetry` table stores operation, model, prompt-version label, latency,
+optional input/output token counts, success flag, optional error type, and UTC
+timestamp. Policy evidence is serialized on the case and records its source
+path, retrieval method, and optional semantic similarity score. Policy content
+in this prototype is synthetic and is not approved supervisory guidance.
+
+## Production Extensions
+
+Before production use, add consistent endpoint authorization and real identity,
+database migrations and a persistence adapter, protected source-document
+storage with retention controls, source-page evidence, control effectiveness
+and residual risk, immutable scoring/prompt/rule versions, approved policy and
+decision rules, and database-enforced or external append-only audit storage.
