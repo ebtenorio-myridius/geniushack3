@@ -27,7 +27,15 @@ def _identity(request: Request) -> tuple[str | None, str | None]:
 
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
-    return templates.TemplateResponse(request, "login.html", {"hide_header_identity": True})
+    return templates.TemplateResponse(
+        request,
+        "login.html",
+        {
+            "hide_header_identity": True,
+            "selected_role": "",
+            "demo_user": "",
+        },
+    )
 
 
 @router.post("/login")
@@ -37,7 +45,12 @@ async def login(request: Request, role: UserRole = Form(...), user: str = Form(.
         return templates.TemplateResponse(
             request,
             "login.html",
-            {"error": "Use product-owner-1, analyst-1, or committee-1/2/3 for the matching demo role.", "hide_header_identity": True},
+            {
+                "error": "Use product-owner-1, analyst-1, or committee-1/2/3 for the matching demo role.",
+                "hide_header_identity": True,
+                "selected_role": role.value,
+                "demo_user": user,
+            },
             status_code=403,
         )
     destinations = {
@@ -55,14 +68,31 @@ async def login(request: Request, role: UserRole = Form(...), user: str = Form(.
 @router.post("/logout")
 async def logout():
     response = RedirectResponse("/intake/login", status_code=303)
+    _clear_identity_cookies(response)
+    return response
+
+
+@router.get("/switch-role")
+async def switch_role():
+    response = RedirectResponse("/intake/login", status_code=303)
+    _clear_identity_cookies(response)
+    return response
+
+
+def _clear_identity_cookies(response: RedirectResponse) -> None:
     response.delete_cookie("demo_user")
     response.delete_cookie("demo_role")
-    return response
 
 
 @router.get("", response_class=HTMLResponse)
 async def intake_form(request: Request):
     user, role = _identity(request)
+    try:
+        authenticated = bool(user and role and validate_demo_login(user, UserRole(role)))
+    except ValueError:
+        authenticated = False
+    if not authenticated:
+        return RedirectResponse("/intake/login")
     return templates.TemplateResponse(request, "intake.html", {"demo_user": user, "demo_role": role})
 
 

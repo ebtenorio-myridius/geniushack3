@@ -6346,4 +6346,20 @@ Now, run a retest of the app, regardless of what changed. Do a full test.
 
 The full retest completed. The automated test suite passed all 26 tests, with one `reportlab` deprecation warning. The live extraction evaluation completed all 8 synthetic cases successfully, with 67.5% field accuracy (54/80 fields), 100% risk-level agreement, and 2,790 ms mean latency. I updated `evals/results/latest.md` to match `evals/results/latest.json` and verified the reported metrics and case rows.
 
+## 2026-09-28
+
+### 05:19:25Z - User
+
+I think we nailed it. Now, update `chats/chats_home.md` to reflect the latest conversation we have since the last time this file is updated. Follow the same format with the date/time stamp.
+
+### 05:19:25Z - Assistant
+
+Conversation summary since the previous entry:
+
+- Updated `/` to route valid signed-in users to their role dashboard and unauthenticated users to login; added role-routing tests.
+- Reproduced a role-switch issue: the switch action cleared session cookies, but the login form defaulted to `product-owner-1` and Product Owner. Changed the login form to require an explicit role and username, and verified role switching in the browser.
+- Required a valid demo identity to access `/intake`; missing or mismatched identities now redirect to `/intake/login`. Added tests for signed-out, invalid, and each supported role.
+- Removed automatic username population when a role is selected, retaining server-side username/role validation.
+- Final automated test result: 46 passed, with one existing `reportlab` deprecation warning.
+
 
