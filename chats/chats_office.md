@@ -797,3 +797,29 @@ This file captures the office chat and development decisions. A separate file sh
 ```text
 chats/chats_home.md
 ```
+
+## 2026-09-30 09:57:33 -04:00 - Failure Handling, Presentation Generator, and Pylance
+
+Entry timestamp is the time this summary was recorded. Exact timestamps for the earlier turns were not available in the chat context.
+
+### Request
+The user asked to assess failure handling and improvement through iteration, close the identified gaps, resolve an edge case in the presentation generator, and then address unresolved `pptx` and `reportlab` imports reported by Pylance.
+
+### Actions
+- Probed upload failure responses and found malformed PDF bytes escaped as HTTP 500; confirmed wrong MIME, oversized, textless PDF, and model failures returned controlled responses.
+- Converted pypdf parser failures into `PdfExtractionError`, producing a controlled 422 response for malformed PDFs.
+- Added bounded retries for connection, timeout, and rate-limit failures in `llm_service.py`: three total attempts with exponential backoff. Disabled hidden SDK retries and removed the evaluator's duplicate retry loop.
+- Added automated coverage for upload errors, transient retry recovery/exhaustion/non-transient errors, and committee majority outcomes. Added committee `defer` as the outcome when three votes produce neither an approval nor rejection majority.
+- Reconciled the evaluation documentation to the checked-in result: 54/80 fields (67.5%), 100% risk-level agreement, and 2,790 ms mean latency. Corrected the incident date wording and documented the hardening iteration.
+- Reproduced presentation generation failing with `ValueError: chart data contains no categories` when all evaluation calls failed. Added a no-success empty-state panel and a regression test; regenerated the PowerPoint.
+- Investigated Pylance import warnings. The `.venv` contains `pptx` and `reportlab`, but Pylance still reported the global Python 3.14 interpreter as selected. The workspace settings now specify `.venv\Scripts\python.exe`; the user was advised to select that interpreter in VS Code and reload the window.
+
+### Results
+- Full local test suite passed: `60 passed`.
+- Python compilation passed; `git diff --check` reported no whitespace errors.
+- Presentation generator ran with current results and also passed the all-failed-evaluation regression test.
+- Pylance's environment report still showed the global interpreter during the check; manual interpreter selection/reload remains unverified.
+
+### Remaining Notes
+- The latest paid live evaluation was not rerun; recorded metrics remain from the existing eight-case synthetic run.
+- Production authentication, consistent endpoint authorization, institutionally approved committee rules, and automated alerting remain outside this update.
