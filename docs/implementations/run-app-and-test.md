@@ -214,7 +214,7 @@ python -m pytest -q
 Expected result:
 
 ```text
-59 passed
+60 passed
 ```
 
 Run focused tests:

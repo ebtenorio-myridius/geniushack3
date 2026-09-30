@@ -377,14 +377,19 @@ def build_deck():
         text_box(slide, value, x, 1.45, 2.1, 0.55, 26, WHITE, True, HEAD_FONT, PP_ALIGN.CENTER, MSO_ANCHOR.MIDDLE)
         text_box(slide, label, x, 1.98, 2.1, 0.3, 11, ICE, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
     rows = per_case_accuracy()
-    chart_data = CategoryChartData()
-    chart_data.categories = [case for case, _ in rows]
-    chart_data.add_series("Field accuracy (%)", [value for _, value in rows])
-    frame = slide.shapes.add_chart(XL_CHART_TYPE.COLUMN_CLUSTERED, _emu(0.5), _emu(2.55), _emu(4.9), _emu(2.55), chart_data)
-    style_chart(frame.chart, "Field accuracy by synthetic case (%)", 100)
-    series = frame.chart.plots[0].series[0]
-    series.format.fill.solid()
-    series.format.fill.fore_color.rgb = BLUE
+    if rows:
+        chart_data = CategoryChartData()
+        chart_data.categories = [case for case, _ in rows]
+        chart_data.add_series("Field accuracy (%)", [value for _, value in rows])
+        frame = slide.shapes.add_chart(XL_CHART_TYPE.COLUMN_CLUSTERED, _emu(0.5), _emu(2.55), _emu(4.9), _emu(2.55), chart_data)
+        style_chart(frame.chart, "Field accuracy by synthetic case (%)", 100)
+        series = frame.chart.plots[0].series[0]
+        series.format.fill.solid()
+        series.format.fill.fore_color.rgb = BLUE
+    else:
+        card(slide, 0.5, 2.55, 4.9, 2.55)
+        heading(slide, "No successful extraction cases", 0.8, 2.85, 4.2)
+        text_box(slide, "The latest evaluation could not measure field accuracy. Show the recorded provider errors and rerun when the model endpoint is reachable.", 0.8, 3.35, 4.2, 1.2, 14)
     card(slide, 5.6, 2.55, 3.9, 2.55)
     heading(slide, "Failure handled, and how to read this", 5.8, 2.65, 3.6)
     bullet_box(slide, [
