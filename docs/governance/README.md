@@ -20,8 +20,9 @@ High and critical cases are flagged for committee review. An analyst submits
 the finalized case, committee-role users can view the queue, and three distinct
 committee members must vote. Each vote records approve, reject, defer, or
 approve-with-conditions plus rationale and conditions. The case remains pending
-until the three-vote quorum is reached; no automated approval or rejection is
-permitted.
+until three votes are recorded; two approvals or rejections decide the result,
+and a full vote without either majority is deferred. No automated approval or
+rejection is permitted.
 
 ### Audit requirement
 
@@ -36,8 +37,8 @@ is it placed here?"
 
 The demo implements extraction review, analyst editing/finalization, and a
 three-member committee decision gate. Real identity, conflict-of-interest
-handling, tie/decision policy, and residual-risk controls remain production
-increments.
+handling, formal approval of the prototype decision rule, and residual-risk
+controls remain production increments.
 
 Suggested structure: one entry per gate —
 - What it checks

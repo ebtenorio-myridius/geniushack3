@@ -334,7 +334,7 @@ def build_deck():
     flow(slide, ["Draft", "Edit", "Finalize", "Committee", "Decision"], ["ai", "human", "human", "human", "human"], 0.5, 1.45, 1.5, 0.375, 0.55)
     gates = [
         ("Analyst gate", ["Accept or reject the draft", "Edit and rescore", "Rationale required"]),
-        ("Committee rule", ["Three distinct votes required", "Approve / reject / conditions", "Two approvals approve; otherwise reject"]),
+        ("Committee rule", ["Three distinct votes required", "Approve / reject / defer / conditions", "Two approvals/rejections decide; otherwise defer"]),
         ("Audit evidence", ["UTC timestamps", "Append-only workflow events", "Original and edited versions kept"]),
     ]
     for index, (name, items) in enumerate(gates):
@@ -363,7 +363,7 @@ def build_deck():
 
     # 9. Evaluation (numbers come from evals/results/latest.json)
     slide = new_slide(prs, state, "Testing and evidence", "We measure the model, not just the demo",
-                      notes="7:45-9:45. Lead with the iteration story: baseline, what was classified as wrong, what changed, new number. Then failure handling: the office-network block, how it was detected (APIConnectionError, 0/8) and the recovery. Token line: gpt-4o-mini, bounded input, per-call latency and token telemetry; quote measured tokens per case from the iteration log.")
+                      notes="7:45-9:45. Lead with the iteration story: baseline, what was classified as wrong, what changed, new number. Then failure handling: the office-network block, how it was detected (APIConnectionError, 0/8), recovery, and the bounded runtime retry added after testing. Also mention malformed PDFs now return a controlled 422. Token line: gpt-4o-mini, bounded input, per-call latency and token telemetry; quote measured tokens per case from the iteration log.")
     field_accuracy = f"{evaluation['field_accuracy']:.1%}" if evaluation["field_accuracy"] is not None else "N/A"
     risk_agreement = f"{evaluation['risk_agreement']:.0%}" if evaluation["risk_agreement"] is not None else "N/A"
     latency = f"{evaluation['mean_latency_ms'] / 1000:.1f} s" if evaluation["mean_latency_ms"] is not None else "N/A"
@@ -388,7 +388,7 @@ def build_deck():
     card(slide, 5.6, 2.55, 3.9, 2.55)
     heading(slide, "Failure handled, and how to read this", 5.8, 2.65, 3.6)
     bullet_box(slide, [
-        "First live run: 0/8, connection errors. Cause: office network blocks the OpenAI API. Fix: ran from another network",
+        "Office-network incident: 0/8; recovered on an unblocked network. Runtime now retries transient provider failures up to three times",
         "Risk agreement comes from the deterministic scorer; it does not prove every field is right",
         f"Eight synthetic cases, not a production accuracy estimate. pytest: {test_result}",
     ], 5.8, 3.05, 3.55, 2.0, 11)

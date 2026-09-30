@@ -55,7 +55,7 @@
     {% endfor %}
 
     <h3>Committee vote status</h3>
-    <p class="panel__hint">{{ vote_summary.approvals }} approvals · {{ vote_summary.rejections }} rejections · {{ vote_summary.votes_cast }}/{{ vote_summary.votes_needed }} votes cast · Result: {{ vote_summary.result }}</p>
+    <p class="panel__hint">{{ vote_summary.approvals }} approvals · {{ vote_summary.rejections }} rejections · {{ vote_summary.deferred }} deferrals · {{ vote_summary.votes_cast }}/{{ vote_summary.votes_needed }} votes cast · Result: {{ vote_summary.result }}</p>
     {% if vote_summary.votes %}
     <table class="score-table">
         <thead><tr><th>Member</th><th>Vote</th><th>Rationale</th></tr></thead>
@@ -74,6 +74,7 @@
         <input name="conditions" placeholder="Conditions, if applicable">
         <button class="button" name="decision" value="approve">Approve</button>
         <button class="button button--secondary" name="decision" value="reject">Reject</button>
+        <button class="button button--secondary" name="decision" value="defer">Defer</button>
         <button class="button" name="decision" value="approve_with_conditions">Approve with conditions</button>
     </form>
     {% else %}

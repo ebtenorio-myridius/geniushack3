@@ -44,11 +44,12 @@ same actor string from voting twice. The HTTP voting route validates the
 committee demo cookie identity and uses that username as the actor. The case
 store itself enforces only actor-string uniqueness, not the identity mapping.
 
-The prototype endpoint accepts approve, reject, and approve-with-conditions;
-it rejects defer. A case becomes decisioned after three votes, with at least
-two approvals producing approval (conditional if a conditional vote or
-conditions are present); otherwise it is rejected. This implementation is
-not an institutionally approved decision policy.
+The prototype endpoint accepts approve, reject, defer, and
+approve-with-conditions. A case becomes decisioned after three votes. At least
+two approvals produce approval (conditional if a conditional vote or
+conditions are present); at least two rejections produce rejection. If neither
+has a majority, the result is deferred. This implementation is not an
+institutionally approved decision policy.
 
 ## Telemetry and Policy Evidence
 

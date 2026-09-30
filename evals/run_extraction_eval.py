@@ -44,18 +44,7 @@ async def run():
     for case in cases:
         started = time.perf_counter()
         try:
-            actual = None
-            last_error = None
-            for _ in range(3):
-                try:
-                    actual = await draft_extraction(case["source_text"])
-                    break
-                except Exception as exc:
-                    last_error = exc
-                    if type(exc).__name__ not in {"APIConnectionError", "APITimeoutError", "RateLimitError"}:
-                        raise
-            if actual is None:
-                raise last_error
+            actual = await draft_extraction(case["source_text"])
             correct, total = _field_accuracy(actual, case["expected_extraction"])
             assessment = score_change_request(actual)
             results.append({"case_id": case["case_id"], "success": True, "correct_fields": correct, "total_fields": total, "field_accuracy": round(correct / total, 3), "risk_level": assessment.risk_level.value, "expected_risk_level": case["expected_risk_level"], "risk_agreement": assessment.risk_level.value == case["expected_risk_level"], "latency_ms": round((time.perf_counter() - started) * 1000), "actual": actual.model_dump(mode="json")})

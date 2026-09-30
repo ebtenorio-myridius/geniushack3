@@ -1,6 +1,7 @@
 import io
 
 from pypdf import PdfReader
+from pypdf.errors import PdfReadError
 
 
 class PdfExtractionError(Exception):
@@ -19,8 +20,11 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
     raise PdfExtractionError — for that case, swap in a vision-model call
     (send page images to GPT-4o-class model) or an OCR step upstream.
     """
-    reader = PdfReader(io.BytesIO(file_bytes))
-    pages_text = [page.extract_text() or "" for page in reader.pages]
+    try:
+        reader = PdfReader(io.BytesIO(file_bytes))
+        pages_text = [page.extract_text() or "" for page in reader.pages]
+    except PdfReadError as exc:
+        raise PdfExtractionError("The uploaded file is not a readable PDF.") from exc
     text = "\n\n".join(pages_text).strip()
 
     if not text:

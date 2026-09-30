@@ -136,6 +136,52 @@ def test_case_store_rejects_duplicate_committee_vote(tmp_path):
         raise AssertionError("A committee member must not vote twice on the same case")
 
 
+def test_case_store_defers_when_three_votes_have_no_approval_or_rejection_majority(tmp_path):
+    store = CaseStore(str(tmp_path / "cases.db"))
+    case = store.create_case("synthetic.pdf", _request(), score_change_request(_request()))
+    store.review_case(case.case_id, AnalystReview(decision=CaseStatus.analyst_accepted, actor="analyst", rationale="Ready."))
+    store.submit_committee(case.case_id, "analyst", "Escalated.")
+
+    for actor, decision in [
+        ("committee-1", "approve"),
+        ("committee-2", "reject"),
+        ("committee-3", "defer"),
+    ]:
+        case = store.cast_committee_vote(
+            case.case_id,
+            CommitteeReview(decision=decision, actor=actor, rationale="Synthetic committee vote."),
+        )
+
+    summary = store.committee_vote_summary(case.case_id)
+    decision_event = store.list_events(case.case_id)[-1]
+    assert case.status == CaseStatus.decisioned
+    assert summary["deferred"] == 1
+    assert summary["votes_cast"] == 3
+    assert summary["result"] == "Deferred"
+    assert "defer: Vote result" in decision_event["rationale"]
+
+
+def test_case_store_rejects_when_two_committee_members_vote_to_reject(tmp_path):
+    store = CaseStore(str(tmp_path / "cases.db"))
+    case = store.create_case("synthetic.pdf", _request(), score_change_request(_request()))
+    store.review_case(case.case_id, AnalystReview(decision=CaseStatus.analyst_accepted, actor="analyst", rationale="Ready."))
+    store.submit_committee(case.case_id, "analyst", "Escalated.")
+
+    for actor, decision in [
+        ("committee-1", "reject"),
+        ("committee-2", "reject"),
+        ("committee-3", "approve"),
+    ]:
+        case = store.cast_committee_vote(
+            case.case_id,
+            CommitteeReview(decision=decision, actor=actor, rationale="Synthetic committee vote."),
+        )
+
+    summary = store.committee_vote_summary(case.case_id)
+    assert case.status == CaseStatus.decisioned
+    assert summary["result"] == "Rejected"
+
+
 def test_case_store_lists_cases_by_workflow_status(tmp_path):
     store = CaseStore(str(tmp_path / "cases.db"))
     draft = store.create_case("draft.pdf", _request(), score_change_request(_request()))

@@ -17,7 +17,7 @@
 4. **Traceability:** point out the case ID, draft status, policy evidence, extraction version, and workflow events.
 5. **Human gate:** use Sign in / switch role, explicitly select FCRM analyst, enter `analyst-1`, and sign in. Review the case, edit if needed, enter a rationale, and finalize.
 6. **Safety:** explain that the prompt treats document text as untrusted and that the system never auto-approves or auto-rejects.
-7. **Committee:** submit a high/critical case, then switch among `committee-1`, `committee-2`, and `committee-3` to cast three distinct approve, reject, or approve-with-conditions votes. Two approvals approve; otherwise the result is rejected. The current endpoint does not accept defer.
+7. **Committee:** submit a high/critical case, then switch among `committee-1`, `committee-2`, and `committee-3` to cast three distinct approve, reject, defer, or approve-with-conditions votes. Two approvals approve, two rejections reject, and no majority defers.
 8. **Auditability:** explain that actor, rationale, versions, and UTC events are persisted in SQLite. The event history is append-only through application behavior, not database-enforced immutability.
 
 ## Fallback demonstration
@@ -42,7 +42,7 @@ The model only returns the extraction schema. Workflow decisions require a human
 
 **Is this production-ready?**
 
-It is a credible synthetic-data vertical slice. Production still requires real authentication, Postgres migrations, approved policy mappings, residual-risk controls, database-enforced audit immutability, retries, and measured observability.
+It is a credible synthetic-data vertical slice. Production still requires real authentication, Postgres migrations, approved policy mappings, residual-risk controls, database-enforced audit immutability, provider-specific timeout tuning, and measured observability.
 
 **How do you know the model is good?**
 

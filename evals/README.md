@@ -35,7 +35,9 @@ python evals/run_extraction_eval.py
 
 It writes `evals/results/latest.json` with per-case field accuracy, latency,
 errors, and model output. The command is intentionally separate from unit
-tests because it calls the configured model provider.
+tests because it calls the configured model provider. Transient connection,
+timeout, and rate-limit errors are retried by `draft_extraction` (three total
+attempts); the runner does not add a second retry loop.
 
 ## Sample PDF input
 

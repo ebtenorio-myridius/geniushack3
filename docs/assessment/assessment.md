@@ -22,7 +22,7 @@ PDF
 
 The app addresses the central problem substantially and is suitable for a credible demonstration. It is not yet a production-ready banking platform. The largest remaining risks are prototype-level authentication, incomplete residual-risk/control modeling, limited measured cost optimization, and limited preservation of the actual AI output/review trail for the requirements and design stages.
 
-Estimated current rubric position: approximately **60.25/100** (up from 59.25/100 as of 2026-09-24). This is an engineering estimate, not an official judging score. The assessment reflects verified policy citations, explicit six-stage delivery evidence, improved scoring signals, synchronized governance documentation, and 24 passing tests. The `APIConnectionError` that previously failed all eight live-evaluation calls was traced to the office network blocking outbound OpenAI API access; the same code succeeds unchanged from a home network. The live evaluation now records 8 of 8 successful calls, 68.8% field accuracy, and 100% risk-level agreement (see `evals/results/latest.md`). This incident, including detection and resolution, is documented in `ops/monitoring.md`. One evaluation finding worth acting on before submission: on the case designed to test contradictory source input (`SYN-005`), the model returned a higher extraction confidence (0.6) than the expected value (0.35) — it did not adequately flag its own uncertainty on the case built to test that behavior.
+Estimated current rubric position: approximately **60.25/100** (up from 59.25/100 as of 2026-09-24). This is an engineering estimate, not an official judging score. The assessment reflects verified policy citations, explicit six-stage delivery evidence, improved scoring signals, synchronized governance documentation, and 59 passing tests. The `APIConnectionError` that previously failed all eight live-evaluation calls was traced to the office network blocking outbound OpenAI API access; rerunning from an unblocked network succeeded. The latest recorded evaluation has 8/8 successful calls, 54/80 fields correct (67.5%), and 100% risk-level agreement (see `evals/results/latest.md`). That incident and the subsequent malformed-PDF, retry, and quorum hardening are documented in `ops/monitoring.md` and `docs/sdlc/ai-delivery-evidence.md`. One evaluation finding remains: on the contradictory-input case (`SYN-005`), the model's reported extraction confidence was higher than the expected value, indicating a confidence-calibration gap.
 
 ## 1. Problem Statement Compliance
 
@@ -66,7 +66,7 @@ Partial or missing:
 - FCRM approval of the published supervisory-framework mapping;
 - immutable audit enforcement at the database permission layer;
 - real identity and role management;
-- production committee identity and decision policy beyond the demo three-vote quorum;
+- production committee identity and institutionally approved decision policy beyond the demo three-vote rule;
 - source-page citations and document hashes;
 - production database, object storage, and background processing.
 
@@ -131,10 +131,10 @@ Latest recorded live run:
 
 - 8/8 successful calls (previous run recorded 0/8 due to an office-network
   `APIConnectionError`, resolved and documented in `ops/monitoring.md`);
-- 68.8% field accuracy (55/80 expected fields) and 100% risk-level agreement
+- 67.5% field accuracy (54/80 expected fields) and 100% risk-level agreement
   (8/8 cases);
-- mean latency 2,282 ms per case, no provider errors;
-- 24 automated tests passing.
+- mean latency 2,790 ms per case, no provider errors;
+- 59 automated tests passing.
 
 The evaluation exposes real extraction weaknesses, which is useful evidence.
 Notably, on `SYN-005` (the case deliberately built with contradictory source
@@ -143,7 +143,7 @@ expected value (0.35) — a confidence-calibration gap on exactly the scenario
 meant to test it. Several other field misses are narrative-text fields
 (risk factors, descriptions) that may be semantically close to expected but
 scored as wrong by exact/normalized comparison rather than a true content
-error; worth a manual spot-check before treating 68.8% as a hard quality
+error; worth a manual spot-check before treating 67.5% as a hard quality
 ceiling. The repository should continue to record each failure, prompt
 change, and subsequent result as dated artifacts, as it now does for the
 connectivity incident.
@@ -197,8 +197,8 @@ Missing:
 |---|---:|---:|---:|---|
 | AI harness and agent orchestration | 30% | 50% | 15.0 | Structured extraction, versioned prompts, targeted policy evidence, context boundary, telemetry, and deterministic workflow. No multi-agent orchestration or production RAG. |
 | SDLC automation | 20% | 50% | 10.0 | Six-stage AI delivery guidance, human gates, CI, and requirements/design/development/testing/deployment/ops artifacts. |
-| Human-in-the-loop and governance | 15% | 75% | 11.25 | Analyst edit/finalize, versioning, committee queue/decisions, rationale, role gates, and audit events. Real identity, quorum, and immutable DB enforcement remain. |
-| Evaluation framework | 10% | 85% | 8.5 | Eight fixtures/PDFs, live runner, retries, and 24 regression tests, now backed by a working live run: 68.8% field accuracy, 100% risk agreement, no provider errors. Confidence-calibration gap on the contradictory-input case (`SYN-005`) remains to be addressed. |
+| Human-in-the-loop and governance | 15% | 75% | 11.25 | Analyst edit/finalize, versioning, committee queue/decisions, rationale, role gates, and audit events. Real identity, institutional approval of the vote rule, and immutable DB enforcement remain. |
+| Evaluation framework | 10% | 85% | 8.5 | Eight fixtures/PDFs, live runner, bounded transient retries, and 59 regression tests, backed by the latest run: 67.5% field accuracy, 100% risk agreement, no provider errors. Confidence calibration on `SYN-005` remains to be addressed. |
 | Context engineering and requirements | 10% | 65% | 6.5 | Open-question decisions, explicit extraction rules, untrusted-document boundary, targeted citations, and published source mapping. |
 | Production readiness | 5% | 45% | 2.25 | Docker, Compose, CI, upload limits, health endpoint, telemetry, and free-first runbook. Production identity, migrations, object storage, and alerting remain. |
 | Token efficiency | 5% | 55% | 2.75 | `gpt-4o-mini`, bounded input, captured token fields, and evaluation latency. Cost comparison remains. |
@@ -302,15 +302,15 @@ The page requires a credible deployment and operations approach. A running deplo
 
 Executed checks:
 
-- full automated suite: **24 passed**;
+- full automated suite: **59 passed**;
 - Python compilation for application, tests, tools, and evals: passed;
 - eight generated PDF inputs: validated through the app's PDF extractor;
 - live evaluation: latest recorded run had **8/8 successful calls** from a
   home network, after an earlier run failed 0/8 with `APIConnectionError`
   on the office network (root cause and resolution documented in
   `ops/monitoring.md`);
-- live field accuracy: **68.8%** (55/80 expected fields); live risk-level
-  agreement: **100%** (8/8 cases); mean latency 2,282 ms per case;
+- live field accuracy: **67.5%** (54/80 expected fields); live risk-level
+  agreement: **100%** (8/8 cases); mean latency 2,790 ms per case;
 - live expanded workflow: upload, edit, rescore, finalize, committee queue, decisioned status, and five audit events.
 
 The test suite reported one ReportLab deprecation warning. It does not currently fail the tests.

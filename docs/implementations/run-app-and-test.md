@@ -168,6 +168,9 @@ Committee votes are:
 - approve with conditions.
 
 A committee decision requires an actor and rationale. Conditions can be added for conditional approval.
+Two approvals or rejections decide the result; if neither reaches a majority,
+the case is deferred after the third vote. This is prototype behavior, not an
+approved institutional decision rule.
 
 The complete workflow is:
 
@@ -211,7 +214,7 @@ python -m pytest -q
 Expected result:
 
 ```text
-24 passed
+59 passed
 ```
 
 Run focused tests:

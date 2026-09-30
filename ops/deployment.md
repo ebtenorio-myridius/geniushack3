@@ -19,5 +19,5 @@ Deployment gates:
 
 Production additions are PostgreSQL and migrations, object storage for source
 documents, real authentication, TLS termination, malware scanning, provider
-timeouts/retries, backups, alerting, and a rollback plan. The free-first
+timeout tuning/retry observability, backups, alerting, and a rollback plan. The free-first
 deployment document describes the open-source alternatives and their limits.

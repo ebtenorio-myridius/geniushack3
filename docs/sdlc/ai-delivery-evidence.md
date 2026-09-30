@@ -19,6 +19,19 @@ This file maps the six delivery stages to the artifact, human gate, and measurab
 4. The deterministic scorer gained narrow high-impact signals and regression tests.
 5. The next evaluation run is compared with the recorded baseline rather than judged by visual inspection.
 
+## Failure-hardening iteration (2026-09-30)
+
+HTTP probes exposed malformed PDF bytes escaping as an unhandled server error.
+The PDF service now converts parser failures to its controlled extraction
+error, and route tests assert the user-facing 422 response. Provider connection,
+timeout, and rate-limit errors now use one bounded three-attempt exponential
+backoff in the LLM service; the evaluation runner delegates to that same policy
+instead of nesting retries. Tests cover recovery, exhausted retries, telemetry,
+and the upload responses. A committee contract review also found that the
+schema/docs advertised `defer` while the vote path rejected it; defer is now a
+vote and the outcome when three votes produce neither a two-vote approval nor
+rejection majority. The rule remains prototype-only pending governance approval.
+
 ## Evidence discipline
 
 The team must preserve prompt versions, evaluation outputs, human corrections, and rejected alternatives. A claim in the presentation is only made when it links to a repository artifact or a reproducible command.

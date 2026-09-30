@@ -1,7 +1,8 @@
+import asyncio
 from pathlib import Path
 from time import perf_counter
 
-from openai import AsyncOpenAI
+from openai import APIConnectionError, APITimeoutError, AsyncOpenAI, RateLimitError
 
 from src.app.config import settings
 from src.app.models.schemas import ExtractedChangeRequest
@@ -10,7 +11,9 @@ from src.app.models.schemas import TelemetryRecord
 
 _PROMPT_PATH = Path(__file__).resolve().parents[3] / "ai" / "prompts" / "extract_change_request.md"
 
-_client = AsyncOpenAI(api_key=settings.openai_api_key)
+_client = AsyncOpenAI(api_key=settings.openai_api_key, max_retries=0)
+_MAX_EXTRACTION_ATTEMPTS = 3
+_RETRY_DELAY_SECONDS = 0.25
 
 
 def _load_system_prompt() -> str:
@@ -41,14 +44,21 @@ async def draft_extraction(raw_text: str) -> ExtractedChangeRequest:
 
     started = perf_counter()
     try:
-        response = await _client.beta.chat.completions.parse(
-            model=settings.openai_model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": document_text},
-            ],
-            response_format=ExtractedChangeRequest,
-        )
+        for attempt in range(_MAX_EXTRACTION_ATTEMPTS):
+            try:
+                response = await _client.beta.chat.completions.parse(
+                    model=settings.openai_model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": document_text},
+                    ],
+                    response_format=ExtractedChangeRequest,
+                )
+                break
+            except (APIConnectionError, APITimeoutError, RateLimitError):
+                if attempt + 1 == _MAX_EXTRACTION_ATTEMPTS:
+                    raise
+                await asyncio.sleep(_RETRY_DELAY_SECONDS * (2**attempt))
         parsed = response.choices[0].message.parsed
         if parsed is None:
             raise ValueError("The model returned no structured extraction")

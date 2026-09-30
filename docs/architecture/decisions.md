@@ -90,13 +90,13 @@ authorization on every page and API endpoint.
 ## Committee voting rule
 
 **Decision:** require three distinct committee usernames to cast approve,
-reject, or approve-with-conditions votes. At least two approvals produce
-approval; otherwise the result is rejection. The endpoint does not accept
-defer.
+reject, defer, or approve-with-conditions votes. At least two approvals
+produce approval; at least two rejections produce rejection; with no majority,
+the case is deferred.
 
 **Reason:** demonstrate a multi-member review workflow and preserve each vote
 and rationale in the case history.
 
 **Boundary:** this is prototype logic, not an approved institutional decision
-policy. Production governance must define quorum, conflicts, abstention,
+policy. Production governance must approve quorum, conflicts, abstention,
 deferral, tie handling, and decision authority explicitly.

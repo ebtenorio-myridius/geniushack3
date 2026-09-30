@@ -129,4 +129,4 @@ The live evaluation calls the configured model provider and may incur OpenAI cha
 
 ## Known limitations
 
-The free-first Compose deployment is appropriate for a synthetic demo or internal prototype. It is not a public production service until PostgreSQL, real authentication, TLS, backups, upload malware scanning, provider timeouts/retries, and operational alerting are added.
+The free-first Compose deployment is appropriate for a synthetic demo or internal prototype. It is not a public production service until PostgreSQL, real authentication, TLS, backups, upload malware scanning, provider-specific timeout tuning and retry observability, and operational alerting are added.

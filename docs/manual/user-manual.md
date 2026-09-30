@@ -238,15 +238,16 @@ Use one of these sample files:
 9. Each committee member signs in separately and casts one vote:
    - **Approve**
    - **Reject**
+   - **Defer**
    - **Approve with conditions**
 10. Enter the committee rationale and conditions when applicable.
 11. Repeat with `committee-1`, `committee-2`, and `committee-3` until three votes are recorded.
 
 The case remains pending until three distinct votes are recorded. After the
 third vote, two or more approvals (including **Approve with conditions**)
-produce an approval; otherwise the result is rejected. This is prototype
-behavior, not an institutionally approved decision policy. The visible vote
-form does not offer **Defer**.
+produce approval; two or more rejections produce rejection; otherwise the
+result is deferred. This is prototype behavior, not an institutionally
+approved decision policy.
 
 The case moves to:
 

@@ -26,3 +26,8 @@ def test_raises_on_pdf_with_no_extractable_text():
     pdf_bytes = _make_pdf_bytes(None)
     with pytest.raises(PdfExtractionError):
         extract_text_from_pdf(pdf_bytes)
+
+
+def test_raises_controlled_error_for_malformed_pdf():
+    with pytest.raises(PdfExtractionError, match="not a readable PDF"):
+        extract_text_from_pdf(b"not a PDF")

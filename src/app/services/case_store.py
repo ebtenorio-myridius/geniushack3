@@ -196,8 +196,6 @@ class CaseStore:
         return self._transition(case_id, CaseStatus.committee_review, CaseStatus.decisioned, review.actor, f"{review.decision.value}: {rationale}")
 
     def cast_committee_vote(self, case_id: str, review: CommitteeReview) -> CaseRecord:
-        if review.decision == CommitteeDecision.defer:
-            raise ValueError("Committee voting accepts approve, reject, or approve with conditions")
         now = datetime.now(timezone.utc)
         with closing(self._connect()) as connection:
             with connection:
@@ -227,17 +225,19 @@ class CaseStore:
                 ).fetchall()
                 approvals = sum(1 for vote in votes if vote["decision"] in (CommitteeDecision.approve.value, CommitteeDecision.approve_with_conditions.value))
                 rejections = sum(1 for vote in votes if vote["decision"] == CommitteeDecision.reject.value)
-                counted_votes = approvals + rejections
-                if counted_votes >= 3:
+                deferred = sum(1 for vote in votes if vote["decision"] == CommitteeDecision.defer.value)
+                if len(votes) >= 3:
                     if approvals >= 2:
                         final_decision = CommitteeDecision.approve_with_conditions.value if any(vote["decision"] == CommitteeDecision.approve_with_conditions.value or vote["conditions"] for vote in votes) else CommitteeDecision.approve.value
-                    else:
+                    elif rejections >= 2:
                         final_decision = CommitteeDecision.reject.value
+                    else:
+                        final_decision = CommitteeDecision.defer.value
                     connection.execute(
                         "UPDATE cases SET status = ?, updated_at = ? WHERE case_id = ?",
                         (CaseStatus.decisioned.value, now.isoformat(), case_id),
                     )
-                    self._record_event(connection, case_id, CaseStatus.decisioned.value, "committee", f"{final_decision}: Vote result {approvals} approvals, {rejections} rejections")
+                    self._record_event(connection, case_id, CaseStatus.decisioned.value, "committee", f"{final_decision}: Vote result {approvals} approvals, {rejections} rejections, {deferred} deferrals")
         return self.get_case(case_id)
 
     def list_committee_votes(self, case_id: str) -> list[dict]:
@@ -252,12 +252,23 @@ class CaseStore:
         votes = self.list_committee_votes(case_id)
         approvals = sum(1 for vote in votes if vote["decision"] in (CommitteeDecision.approve.value, CommitteeDecision.approve_with_conditions.value))
         rejections = sum(1 for vote in votes if vote["decision"] == CommitteeDecision.reject.value)
+        deferred = sum(1 for vote in votes if vote["decision"] == CommitteeDecision.defer.value)
+        votes_cast = len(votes)
+        if votes_cast < 3:
+            result = "Pending"
+        elif approvals >= 2:
+            result = "Approved"
+        elif rejections >= 2:
+            result = "Rejected"
+        else:
+            result = "Deferred"
         return {
             "approvals": approvals,
             "rejections": rejections,
-            "votes_cast": approvals + rejections,
+            "deferred": deferred,
+            "votes_cast": votes_cast,
             "votes_needed": 3,
-            "result": "Approved" if approvals >= 2 and approvals + rejections >= 3 else "Rejected" if rejections >= 2 and approvals + rejections >= 3 else "Pending",
+            "result": result,
             "votes": votes,
         }
 

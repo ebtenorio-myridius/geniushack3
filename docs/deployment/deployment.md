@@ -234,4 +234,4 @@ After deployment:
 
 ## Production gap
 
-Before public production, add PostgreSQL and migrations, object storage, malware scanning, real authentication and authorization, TLS termination, provider timeouts and retries, rate limits, backups, audit retention, monitoring, alerting, and a rollback plan. The current demo role headers and local SQLite design are not production controls.
+Before public production, add PostgreSQL and migrations, object storage, malware scanning, real authentication and authorization, TLS termination, provider-specific timeout tuning and retry observability, rate limits, backups, audit retention, monitoring, alerting, and a rollback plan. The current demo role headers and local SQLite design are not production controls.

@@ -46,13 +46,14 @@
         {% set vote_summary = (vote_summary_by_case | default({})).get(case.case_id) %}
         {% if vote_summary %}
         <h4>Committee vote status</h4>
-        <p class="panel__hint">{{ vote_summary.approvals }} approvals · {{ vote_summary.rejections }} rejections · {{ vote_summary.votes_cast }}/{{ vote_summary.votes_needed }} votes cast · Result: {{ vote_summary.result }}</p>
+        <p class="panel__hint">{{ vote_summary.approvals }} approvals · {{ vote_summary.rejections }} rejections · {{ vote_summary.deferred }} deferrals · {{ vote_summary.votes_cast }}/{{ vote_summary.votes_needed }} votes cast · Result: {{ vote_summary.result }}</p>
         {% endif %}
         <form hx-post="/intake/{{ case.case_id }}/committee/decision" hx-target="#committee-result">
             <input name="rationale" required placeholder="Committee rationale">
             <input name="conditions" placeholder="Conditions, if applicable">
             <button class="button" name="decision" value="approve">Approve</button>
             <button class="button button--secondary" name="decision" value="reject">Reject</button>
+            <button class="button button--secondary" name="decision" value="defer">Defer</button>
             <button class="button" name="decision" value="approve_with_conditions">Approve with conditions</button>
         </form>
     </article>

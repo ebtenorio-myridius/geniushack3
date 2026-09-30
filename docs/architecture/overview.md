@@ -51,9 +51,9 @@ evidence, extraction versions, workflow events, committee votes, and telemetry.
 The uploaded PDF itself is not persisted. Workflow history is append-only by
 application behavior, not protected by database-level immutability. Committee
 voting requires three distinct authenticated demo usernames at the voting
-route; the current rule approves with at least two approval votes (including
-conditional approvals), otherwise rejects. This is prototype behavior, not
-an institutionally approved decision policy.
+route; two approvals approve, two rejections reject, and a full vote without
+either majority defers. This is prototype behavior, not an institutionally
+approved decision policy.
 
 SQLite is a deliberately small persistence choice for the synthetic demo. A
 production database migration would require a persistence adapter and

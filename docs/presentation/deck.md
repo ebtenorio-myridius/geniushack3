@@ -65,7 +65,7 @@ flowchart LR
 - Workflow events are timestamped and append-only through the application, but not protected by database-level immutability.
 - High and critical assessments are flagged for committee review.
 - No approval or rejection is performed automatically.
-- The demo committee rule counts three distinct members; two approvals (including conditional approvals) approve, otherwise the result is rejected. The endpoint does not accept `defer`.
+- The demo committee rule counts three distinct members; two approvals approve, two rejections reject, and no majority defers the case.
 
 **Current limitation:** identity is demo-only; some endpoints are not role-gated consistently; actor fields are not uniformly bound to authenticated identities. The quorum rule is prototype behavior, not an institutionally approved decision policy.
 
@@ -93,7 +93,7 @@ The scorer produces category scores, rationales, an overall score, risk level, a
 
 **Latest recorded live run:** 8/8 successful calls; 54/80 expected fields correct (67.5% field accuracy); deterministic risk-level agreement was 8/8 (100%); mean latency was 2,790 ms. This is a small synthetic evaluation, not a production accuracy estimate. Perfect risk agreement does not mean all extracted fields were correct.
 
-**Automated tests:** 46 passed in the latest local full-suite run. CI is configured to run pytest on pushes and pull requests to `master`; a successful hosted CI run is not claimed here.
+**Automated tests:** 59 passed in the latest local full-suite run. CI is configured to run pytest on pushes and pull requests to `master`; a successful hosted CI run is not claimed here.
 
 ### Slide 8 - SDLC evidence
 
@@ -103,7 +103,7 @@ The scorer produces category scores, rationales, an overall score, risk level, a
 
 **Development:** structured extraction, deterministic scoring, persistence, and analyst review in `/src`.
 
-**Testing:** 46 passing local pytest cases, CI configuration, and an eight-case synthetic live-evaluation fixture in `/tests`, `.github/workflows/ci.yml`, and `/evals`.
+**Testing:** 59 passing local pytest cases, CI configuration, and an eight-case synthetic live-evaluation fixture in `/tests`, `.github/workflows/ci.yml`, and `/evals`.
 
 **Deployment:** Dockerfile, Compose, database volume, environment configuration, and health endpoint.
 
@@ -118,7 +118,7 @@ The scorer produces category scores, rationales, an overall score, risk level, a
 - Telemetry records model latency, failures, prompt version, input/output token counts, and success status.
 - Live extraction requires a configured OpenAI API key; policy retrieval alone has a deterministic fallback.
 
-**Production gaps:** consistent endpoint authorization, real identity, migrations, source-document storage, extraction retries/timeouts, database-enforced audit immutability, approved policy mappings, residual-risk controls, and measured cost optimization.
+**Production gaps:** consistent endpoint authorization, real identity, migrations, source-document storage, provider-specific timeout tuning, database-enforced audit immutability, approved policy mappings, residual-risk controls, and measured cost optimization.
 
 ### Slide 10 - Demonstration
 
@@ -128,15 +128,15 @@ The scorer produces category scores, rationales, an overall score, risk level, a
 4. Use Sign in / switch role; explicitly choose FCRM analyst and enter `analyst-1`.
 5. Review/edit the extraction, provide a rationale, and finalize the assessment.
 6. Submit a high/critical case for committee review.
-7. Switch among `committee-1`, `committee-2`, and `committee-3`; cast approve, reject, or approve-with-conditions votes. Three distinct votes are required; `defer` is not accepted by the current endpoint.
+7. Switch among `committee-1`, `committee-2`, and `committee-3`; cast approve, reject, defer, or approve-with-conditions votes. Three distinct votes are required; a full vote without an approval or rejection majority defers.
 8. Show the resulting status, version history, and timestamped workflow events. Describe them as application-enforced demo records, not tamper-proof audit storage.
 
 ### Slide 11 - Failure handling
 
-- Empty text-layer PDF returns a clear extraction error.
+- Textless and malformed PDFs return clear extraction errors.
 - Non-PDF uploads are rejected.
 - Uploads over 10 MB are rejected.
-- Structured-output failures return an analyst-facing error.
+- Provider connection, timeout, and rate-limit failures are retried up to three times; exhausted/model validation failures return an analyst-facing error.
 - Ambiguous and adversarial synthetic cases are retained for evaluation.
 - Human rejection records the rationale instead of silently changing the draft.
 - The browser intake route redirects signed-out users to login, but the upload API endpoint does not currently enforce the same role check; do not present the demo as securely access-controlled.

@@ -18,5 +18,5 @@
 - Use the sample PDF and synthetic cases for the live walkthrough.
 - Show the repository folders and point judges to the exact artifacts behind each claim.
 - Distinguish guarded browser pages from API endpoint authorization; in particular, the PDF upload POST is not currently role-gated.
-- Present the three-vote committee rule as prototype behavior, not approved governance policy; the endpoint accepts approve, reject, and approve-with-conditions, but not defer.
+- Present the three-vote committee rule as prototype behavior, not approved governance policy; two approvals approve, two rejections reject, and no majority defers.
 - Quote the latest live-evaluation metrics with the small synthetic sample caveat. Risk-level agreement is not extraction accuracy.
