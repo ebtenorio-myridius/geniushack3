@@ -17,7 +17,7 @@ Regenerate the deck after changing slide content or measured results:
 python tools/generate_presentation.py
 ```
 
-Verified local evidence on 2026-09-30: 60 pytest cases pass; the latest recorded
+Verified local evidence on 2026-10-02: 62 pytest cases pass; the latest recorded
 live evaluation completed 8/8 synthetic cases with 67.5% field accuracy
 (54/80 fields), 100% risk-level agreement, and 2,790 ms mean latency. These
 metrics are a small synthetic sample, not a production accuracy claim.

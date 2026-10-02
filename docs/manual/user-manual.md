@@ -174,15 +174,21 @@ identity.
 
 ## 8. Accept or Reject the Draft
 
+To review an open case, sign in as an FCRM analyst and open it from the Analyst
+dashboard. Draft and analyst-review cases provide a review form on the case
+detail page. After extraction, the upload result also provides the same review
+actions.
+
 To finalize the analyst review:
 
-1. Enter the actor name to record with this review.
-2. Enter a rationale.
-3. Select **Accept draft** or **Reject draft**.
+1. Enter a rationale.
+2. Select **Finalize assessment** or **Reject draft**.
 
 An accepted case moves to analyst-finalized status. A rejected case records the
-rejection and rationale. The inline result form uses a fixed demo analyst
-header; the entered actor is not a verified identity.
+rejection and rationale. On the analyst case-detail route, the event actor is
+the signed-in demo analyst. This demo identity is not production authentication.
+The upload result's inline forms remain demo-only and should not be treated as a
+security boundary.
 
 A rationale should explain what was checked and why the decision is appropriate. For example:
 
@@ -199,11 +205,10 @@ Use one of these sample files:
 - Low risk: `evals/data/pdfs/SYN-001.pdf` - online banking dashboard accessibility refresh.
 - Medium risk: `evals/data/pdfs/SYN-004.pdf` - vendor onboarding for document digitization.
 
-1. Sign in and upload the PDF from `/intake`.
-2. Review the extracted fields, score, rationales, and policy evidence.
-3. Edit and rescore if any extracted value is incomplete or incorrect.
-4. Enter the actor name to record and a review rationale.
-5. Select **Accept draft**.
+1. Sign in as the product owner and upload the PDF from `/intake`, or open an existing draft from the analyst dashboard.
+2. Sign in as `analyst-1` with the FCRM analyst role and open the case detail.
+3. Review the extracted fields, score, rationales, and policy evidence.
+4. Enter a review rationale and select **Finalize assessment**.
 
 The case moves to:
 
@@ -227,21 +232,20 @@ Use one of these sample files:
 - Critical risk: `evals/data/pdfs/SYN-003.pdf` - cross-border remittance product with vendor and sanctions exposure.
 - High risk: `evals/data/pdfs/SYN-008.pdf` - new invoice-financing product across multiple channels.
 
-1. Sign in and upload the PDF from `/intake`.
-2. Review the extraction, score, rationales, and policy evidence.
-3. Edit and rescore if needed.
-4. Select **Accept draft** and finalize the analyst review.
-5. Enter the escalation rationale in **Submit to committee**.
-6. Select **Submit committee review**.
-7. A committee member signs in and opens **Cases to review** from the Committee dashboard.
-8. Review the finalized assessment and analyst rationale.
-9. Each committee member signs in separately and casts one vote:
+1. Sign in as the product owner and upload the PDF, or open an existing draft from the analyst dashboard.
+2. Sign in as `analyst-1` with the FCRM analyst role and open the case detail.
+3. Review the extraction, score, rationales, and policy evidence; edit and rescore if needed.
+4. Finalize the analyst review with a rationale.
+5. Enter the escalation rationale and select **Submit to committee**.
+6. A committee member signs in and opens **Cases to review** from the Committee dashboard.
+7. Review the finalized assessment and analyst rationale.
+8. Each committee member signs in separately and casts one vote:
    - **Approve**
    - **Reject**
    - **Defer**
    - **Approve with conditions**
-10. Enter the committee rationale and conditions when applicable.
-11. Repeat with `committee-1`, `committee-2`, and `committee-3` until three votes are recorded.
+9. Enter the committee rationale and conditions when applicable.
+10. Repeat with `committee-1`, `committee-2`, and `committee-3` until three votes are recorded.
 
 The case remains pending until three distinct votes are recorded. After the
 third vote, two or more approvals (including **Approve with conditions**)

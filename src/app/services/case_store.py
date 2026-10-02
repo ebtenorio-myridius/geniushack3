@@ -100,6 +100,11 @@ class CaseStore:
         extracted: ExtractedChangeRequest,
         assessment: RiskAssessmentDraft,
         policy_evidence: list[PolicyEvidence] | None = None,
+        *,
+        initial_actor: str = "system",
+        initial_rationale: str = "Initial model extraction",
+        event_actor: str = "system",
+        event_rationale: str = "Initial extraction and draft score",
     ) -> CaseRecord:
         now = datetime.now(timezone.utc)
         case = CaseRecord(
@@ -129,9 +134,9 @@ class CaseStore:
                 )
                 connection.execute(
                     "INSERT INTO extraction_versions VALUES (?, ?, ?, ?, ?, ?)",
-                    (case.case_id, 1, extracted.model_dump_json(), "system", "Initial model extraction", now.isoformat()),
+                    (case.case_id, 1, extracted.model_dump_json(), initial_actor, initial_rationale, now.isoformat()),
                 )
-                self._record_event(connection, case.case_id, "case_created", "system", "Initial extraction and draft score")
+                self._record_event(connection, case.case_id, "case_created", event_actor, event_rationale)
         return case
 
     def get_case(self, case_id: str) -> CaseRecord | None:

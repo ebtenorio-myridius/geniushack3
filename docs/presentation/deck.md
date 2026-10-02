@@ -93,7 +93,7 @@ The scorer produces category scores, rationales, an overall score, risk level, a
 
 **Latest recorded live run:** 8/8 successful calls; 54/80 expected fields correct (67.5% field accuracy); deterministic risk-level agreement was 8/8 (100%); mean latency was 2,790 ms. This is a small synthetic evaluation, not a production accuracy estimate. Perfect risk agreement does not mean all extracted fields were correct.
 
-**Automated tests:** 60 passed in the latest local full-suite run. CI is configured to run pytest on pushes and pull requests to `master`; a successful hosted CI run is not claimed here.
+**Automated tests:** 62 passed in the latest local full-suite run. CI is configured to run pytest on pushes and pull requests to `master`; a successful hosted CI run is not claimed here.
 
 ### Slide 8 - SDLC evidence
 
@@ -103,7 +103,7 @@ The scorer produces category scores, rationales, an overall score, risk level, a
 
 **Development:** structured extraction, deterministic scoring, persistence, and analyst review in `/src`.
 
-**Testing:** 60 passing local pytest cases, CI configuration, and an eight-case synthetic live-evaluation fixture in `/tests`, `.github/workflows/ci.yml`, and `/evals`.
+**Testing:** 62 passing local pytest cases, CI configuration, and an eight-case synthetic live-evaluation fixture in `/tests`, `.github/workflows/ci.yml`, and `/evals`.
 
 **Deployment:** Dockerfile, Compose, database volume, environment configuration, and health endpoint.
 

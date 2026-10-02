@@ -229,7 +229,7 @@ async def analyst_case_detail(request: Request, case_id: str):
     return templates.TemplateResponse(
         request,
         "analyst_case.html",
-        {"case": case, "events": case_store.list_events(case_id)},
+        {"case": case, "events": case_store.list_events(case_id), "demo_user": user},
     )
 
 
@@ -290,14 +290,18 @@ async def review_change_request(
     request: Request,
     case_id: str,
     decision: CaseStatus = Form(...),
-    actor: str = Form(...),
+    actor: str = Form(""),
     rationale: str = Form(...),
     demo_user: str | None = Header(default=None, alias="X-Demo-User"),
     demo_role: str | None = Header(default=None, alias="X-Demo-Role"),
 ):
-    require_role(UserRole.analyst, demo_user or request.cookies.get("demo_user"), demo_role or request.cookies.get("demo_role"))
+    analyst_actor = require_role(
+        UserRole.analyst,
+        demo_user or request.cookies.get("demo_user"),
+        demo_role or request.cookies.get("demo_role"),
+    )
     try:
-        case = case_store.review_case(case_id, AnalystReview(decision=decision, actor=actor, rationale=rationale))
+        case = case_store.review_case(case_id, AnalystReview(decision=decision, actor=analyst_actor, rationale=rationale))
     except KeyError:
         return templates.TemplateResponse(request, "partials/error.html", {"message": "Case not found."}, status_code=404)
     except ValueError as exc:

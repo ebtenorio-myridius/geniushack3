@@ -36,6 +36,23 @@ def test_case_store_persists_and_audits_analyst_review(tmp_path):
     assert reopened.status == CaseStatus.analyst_finalized
 
 
+def test_case_store_records_manual_seed_provenance(tmp_path):
+    store = CaseStore(str(tmp_path / "cases.db"))
+    case = store.create_case(
+        "synthetic-manual-seed",
+        _request(),
+        score_change_request(_request()),
+        initial_actor="sample-seed",
+        initial_rationale="Manually seeded synthetic sample; no PDF or model extraction used.",
+        event_actor="sample-seed",
+        event_rationale="Created manual synthetic case for analyst review.",
+    )
+
+    event = store.list_events(case.case_id)[0]
+    assert event["actor"] == "sample-seed"
+    assert event["rationale"] == "Created manual synthetic case for analyst review."
+
+
 def test_case_store_rejects_second_review(tmp_path):
     store = CaseStore(str(tmp_path / "cases.db"))
     case = store.create_case("synthetic.pdf", _request(), score_change_request(_request()))

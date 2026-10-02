@@ -56,6 +56,37 @@
     <p class="panel__hint"><strong>{{ event.event_type.replace("_", " ") }}</strong> · {{ event.actor }} · {{ event.occurred_at }}<br>{{ event.rationale }}</p>
     {% endfor %}
 
-    <p class="flag flag--warn">Read-only analyst view. Committee decisions are available only to a committee member in the committee workspace.</p>
+    {% if case.status.value in ['draft', 'analyst_review'] %}
+    <form class="review-form" hx-post="/intake/{{ case.case_id }}/review" hx-target="#analyst-review-result">
+        <h3>Analyst review</h3>
+        <p class="panel__hint">Verify the extracted details and score, then finalize or reject this draft.</p>
+        <input type="hidden" name="actor" value="{{ demo_user }}">
+        <label class="field">
+            <span class="field__label">Review rationale</span>
+            <textarea name="rationale" required rows="3" placeholder="Explain your assessment or any disagreement"></textarea>
+        </label>
+        <button class="button" name="decision" value="analyst_accepted" type="submit">Finalize assessment</button>
+        <button class="button button--secondary" name="decision" value="analyst_rejected" type="submit">Reject draft</button>
+    </form>
+    <div id="analyst-review-result"></div>
+    {% elif case.status.value == 'analyst_finalized' and case.assessment.requires_committee_review %}
+    <form class="review-form" hx-post="/intake/{{ case.case_id }}/committee/submit" hx-target="#analyst-review-result">
+        <h3>Committee escalation</h3>
+        <p class="panel__hint">This high/critical case is finalized and flagged for committee review.</p>
+        <input type="hidden" name="actor" value="{{ demo_user }}">
+        <label class="field">
+            <span class="field__label">Escalation rationale</span>
+            <textarea name="rationale" required rows="3" placeholder="Explain why committee review is needed"></textarea>
+        </label>
+        <button class="button" type="submit">Submit to committee</button>
+    </form>
+    <div id="analyst-review-result"></div>
+    {% elif case.status.value == 'analyst_finalized' %}
+    <p class="flag flag--success">Analyst review is finalized. No committee decision is required for this risk level.</p>
+    {% elif case.status.value == 'analyst_rejected' %}
+    <p class="flag flag--warn">This draft was rejected by the analyst.</p>
+    {% else %}
+    <p class="flag flag--warn">This case is no longer open for analyst review.</p>
+    {% endif %}
 </section>
 {% endblock %}
