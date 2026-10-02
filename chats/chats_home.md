@@ -6362,4 +6362,20 @@ Conversation summary since the previous entry:
 - Removed automatic username population when a role is selected, retaining server-side username/role validation.
 - Final automated test result: 46 passed, with one existing `reportlab` deprecation warning.
 
+## 2026-10-02
+
+### 11:58:28Z - Conversation Summary (capture time; original turn timestamps unavailable)
+
+#### User request
+
+The user said they were on the home network and asked for a live retest of the app's OpenAI API flow because office-network access is blocked.
+
+#### Assistant actions and result
+
+Configured the repository virtual environment and checked that `.env` and the synthetic sample PDF were present without displaying any secret values. Submitted `evals/data/sample_change_request.pdf` through the FastAPI upload route.
+
+The PDF parsed, but Python/httpx failed TLS certificate verification with `self-signed certificate in certificate chain`. The app returned its expected HTTP `502`; no case was created. A separate unauthenticated request using Windows/.NET TLS reached `api.openai.com` and returned `401 Unauthorized`, showing that Windows trusted the endpoint certificate while Python did not. No proxy environment overrides were found, and WinHTTP reported direct access.
+
+The user noted Netskope had recently been installed by the company and may be intercepting or restricting API access; they plan to repeat the test on a personal machine. Certificate verification was not disabled.
+
 
