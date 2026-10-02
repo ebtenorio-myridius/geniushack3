@@ -1,31 +1,40 @@
-# Live Extraction Evaluation (latest recorded run)
+# Live PDF Extraction Evaluation (latest recorded run)
 
-Generated from `evals/run_extraction_eval.py` against the eight synthetic
-cases using `gpt-4o-mini`. The comparison normalizes case and list ordering;
-missing fields and semantic mismatches still count as incorrect. Detailed model
-outputs are recorded in `evals/results/latest.json`.
+Run date: 2026-10-02. Each of the eight PDFs in `evals/data/pdfs/` was submitted
+through the app's FastAPI `POST /intake/upload` route using `gpt-4o-mini`. This
+exercised PDF text extraction, the live structured OpenAI extraction call,
+deterministic scoring, and case creation. Test cases and telemetry used a
+temporary SQLite database.
 
-- Cases attempted: 8
-- Successful calls: 8 of 8
-- Field accuracy: 67.5% (54 of 80 expected fields)
+Expected fields were compared with `expected_extraction` in
+`evals/data/synthetic_cases.json`, excluding `extraction_confidence`. String
+comparisons ignore case and surrounding whitespace; list comparisons ignore
+case, surrounding whitespace, and ordering. Missing or different values count
+as incorrect.
+
+- PDF uploads attempted: 8
+- Successful HTTP responses and saved cases: 8 of 8
+- Field accuracy: 100% (80 of 80 expected fields)
 - Risk-level agreement: 100% (8 of 8 cases)
-- Mean latency: 2,790 ms per case
+- Mean end-to-end latency: 3,615 ms per PDF
 - Provider errors: none
 
-| Case | Field accuracy | Risk agreement | Latency |
+| PDF | Field accuracy | Risk agreement | Latency |
 | --- | ---: | --- | ---: |
-| SYN-001 | 8/10 (80%) | Yes (low) | 3,313 ms |
-| SYN-002 | 7/10 (70%) | Yes (medium) | 2,867 ms |
-| SYN-003 | 7/10 (70%) | Yes (critical) | 2,200 ms |
-| SYN-004 | 6/10 (60%) | Yes (medium) | 2,651 ms |
-| SYN-005 | 5/10 (50%) | Yes (medium) | 2,813 ms |
-| SYN-006 | 7/10 (70%) | Yes (low) | 2,455 ms |
-| SYN-007 | 7/10 (70%) | Yes (medium) | 2,960 ms |
-| SYN-008 | 7/10 (70%) | Yes (high) | 3,061 ms |
+| SYN-001.pdf | 10/10 (100%) | Yes (low) | 5,810 ms |
+| SYN-002.pdf | 10/10 (100%) | Yes (medium) | 2,771 ms |
+| SYN-003.pdf | 10/10 (100%) | Yes (critical) | 4,444 ms |
+| SYN-004.pdf | 10/10 (100%) | Yes (medium) | 3,183 ms |
+| SYN-005.pdf | 10/10 (100%) | Yes (medium) | 3,314 ms |
+| SYN-006.pdf | 10/10 (100%) | Yes (low) | 2,719 ms |
+| SYN-007.pdf | 10/10 (100%) | Yes (medium) | 3,443 ms |
+| SYN-008.pdf | 10/10 (100%) | Yes (high) | 3,237 ms |
 
-This is a small synthetic evaluation, not a production accuracy estimate.
-Risk-level agreement reflects the deterministic scorer applied to extracted
-fields; it does not establish that the extracted fields themselves are all
-correct. Re-run the explicitly paid live evaluation with
-`python evals/run_extraction_eval.py` after changing the prompt, model, or
-extraction schema.
+The temporary database was discarded after the run. Per-case extraction
+payloads were not retained; `latest.json` records the measured counts,
+latencies, and outcomes. This small synthetic set is not a production accuracy
+estimate. Perfect agreement here does not establish general model reliability.
+
+This was an upload-route PDF evaluation, not the separate
+`evals/run_extraction_eval.py` source-text run. Running that script writes a new
+`latest.json` and replaces these PDF-run results with its source-text metrics.
