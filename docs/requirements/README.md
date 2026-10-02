@@ -1,14 +1,12 @@
 # Requirements
 
-This is where the expanded specification lives — the brief was deliberately
-short and incomplete, and turning it into a real spec is graded.
+This folder records the expanded product requirements, decisions made where
+the brief was ambiguous, and the research context for the prototype scoring
+categories. It distinguishes intended behavior from what the current demo
+actually enforces; see the implementation-status notes in each document.
 
-Suggested contents (fill in during Week 1):
-
-- `spec.md` — the expanded specification: personas, workflow states,
-  in/out of scope
-- `supervisory-frameworks.md` — which published frameworks you grounded
-  the risk decomposition in, and why (per the brief's constraint: "not
-  invented")
-- `open-questions.md` — ambiguities you resolved yourself and how, since
-  no clarification is coming (see hackathon FAQ)
+- `spec.md` — users, workflow, acceptance criteria, and implementation status.
+- `open-questions.md` — resolved scope decisions, owners, consequences, and
+  remaining governance choices.
+- `supervisory-frameworks.md` — research sources informing broad risk
+  categories, with explicit limits on how the prototype uses them.
