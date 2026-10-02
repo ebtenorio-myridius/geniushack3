@@ -6378,4 +6378,34 @@ The PDF parsed, but Python/httpx failed TLS certificate verification with `self-
 
 The user noted Netskope had recently been installed by the company and may be intercepting or restricting API access; they plan to repeat the test on a personal machine. Certificate verification was not disabled.
 
+### 14:00:25Z - Conversation Summary (capture time; original turn timestamps unavailable)
+
+#### User request
+
+The user said they were now on their personal machine and home Wi-Fi and asked for an OpenAI API test that feeds all eight PDFs from `evals/data/pdfs/` through the app.
+
+#### Assistant actions and result
+
+Confirmed that all eight PDF fixtures existed and that the app was configured to use `gpt-4o-mini`. Checked the configured key without displaying it and confirmed it was not the example placeholder. An initial inline PowerShell execution attempt failed during shell quoting before making any API requests; the test was then run with the workspace Python execution tool.
+
+Submitted `SYN-001.pdf` through `SYN-008.pdf` individually to the FastAPI `POST /intake/upload` endpoint. The real PDF text extraction and OpenAI structured extraction path ran for each file. Each upload returned HTTP 200 and produced a case in a temporary SQLite database. The outputs were compared field-by-field with the expected synthetic labels, excluding model-reported extraction confidence.
+
+Results:
+
+- Successful PDF uploads/API extractions: 8 of 8
+- Exact expected fields: 80 of 80 (100%)
+- Expected risk-level agreement: 8 of 8 (100%)
+- Mean end-to-end upload latency: 3,615 ms
+- Per-case latency: SYN-001 5,810 ms; SYN-002 2,771 ms; SYN-003 4,444 ms; SYN-004 3,183 ms; SYN-005 3,314 ms; SYN-006 2,719 ms; SYN-007 3,443 ms; SYN-008 3,237 ms
+
+The temporary database was discarded after the test. The normal demo database and `evals/results/latest.json` / `latest.md` were not changed. The results apply to this small synthetic PDF set and are not a production accuracy estimate.
+
+### 14:00:25Z - User
+
+Update `chats_home.md` to reflect the prompts/chats and results of this latest conversation. I want everything documented.
+
+### 14:00:25Z - Assistant
+
+Appended this timestamped record of the live eight-PDF API test, its method, per-case and aggregate metrics, the failed preflight shell-quoting attempt, and the fact that normal evaluation files and the demo database were left untouched.
+
 
