@@ -6408,4 +6408,31 @@ Update `chats_home.md` to reflect the prompts/chats and results of this latest c
 
 Appended this timestamped record of the live eight-PDF API test, its method, per-case and aggregate metrics, the failed preflight shell-quoting attempt, and the fact that normal evaluation files and the demo database were left untouched.
 
+### 17:00:11Z - Conversation Summary (capture time; original turn timestamps unavailable)
+
+#### User requests
+
+The user asked whether `docs/requirements/` still matched the current application, requested that the documents be updated, then asked for a synthetic analyst case without PDF extraction. After opening the generated low-risk case, the user reported that the page called itself read-only and implied that only a committee member could act.
+
+#### Requirements review and updates
+
+- Compared `README.md`, `spec.md`, `open-questions.md`, and `supervisory-frameworks.md` with the current schemas, scoring code, case store, and routes.
+- Updated all four documents to distinguish implemented behavior from requirements and production gaps: three-vote committee logic, non-enforced high/critical escalation, demo-only/inconsistent authorization, synthetic-only usage not enforced by upload validation, application-level rather than database-enforced audit records, and conceptual framework mapping rather than source-derived prototype weights.
+- Clarified that `scoring_method` is a static label, not a versioned rule registry. Documented the direct internal committee-decision helper separately from the user-facing three-vote route.
+- Requirements-document diff and diagnostics checks were clean.
+
+#### Synthetic analyst cases and workflow correction
+
+- Manually seeded critical synthetic draft `CASE-8DFF20B94C` with a transparent manual-seed audit rationale, no PDF, and no OpenAI call.
+- Manually seeded low-risk draft `CASE-9751C00F20`; it scored low at 1.65 and did not require committee review.
+- The low-risk case detail initially showed a hard-coded read-only analyst message and exposed no analyst review controls. Updated `analyst_case.html` to provide finalize/reject controls for draft and analyst-review cases, while retaining committee submission for finalized high/critical cases.
+- Bound the review audit actor to the signed-in analyst identity rather than trusting a supplied actor field.
+- Added a route-level regression test covering low-risk case display, acceptance, finalized status, and actor attribution.
+- Verified the running localhost analyst page returned HTTP 200 and displayed the actions for `CASE-9751C00F20`.
+- Full test suite passed: `62 passed` (two existing dependency deprecation warnings). Synchronized test counts in the runbook, assessment, presentation outline/index, and regenerated the deck.
+
+#### Security note
+
+An attachment exposed an API credential. The assistant did not reproduce or use it and advised the user to revoke and replace it before further API testing.
+
 
