@@ -15,6 +15,16 @@ approval system or a production banking platform.
 - **pypdf** — PDF text extraction
 - **pytest** — tests
 
+## Live demo
+
+The app is currently running on Render at:
+
+- https://risk-management-smtv.onrender.com/intake/login
+
+This is a free-tier deployment, so the service may sleep after inactivity and the SQLite database resets on restart. The public instance is intended for demo use and should not be treated as a production system.
+
+For the step-by-step Render setup, see [docs/deployment/Render_Free_Tier_Deployment_Guide.md](docs/deployment/Render_Free_Tier_Deployment_Guide.md). The required environment variables are `OPENAI_API_KEY`, `OPENAI_MODEL`, and `DATABASE_PATH=/tmp/risk_workbench.db`.
+
 ## Quick start
 
 From the repository root in PowerShell, create an environment and install
