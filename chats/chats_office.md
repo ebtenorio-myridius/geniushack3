@@ -759,6 +759,49 @@ committee-2         Risk committee member
 committee-3         Risk committee member
 ```
 
+## 2026-10-07 - Render Deployment Status and README Refresh
+
+### Timestamp
+- 2026-10-07 13:43:58 -04:00
+
+### Request
+Review the Render deployment guide and update the project documentation to reflect the currently live public demo URL and the deployment environment requirements.
+
+### Actions
+- Reviewed `docs/deployment/Render_Free_Tier_Deployment_Guide.md`.
+- Confirmed the live demo endpoint:
+
+```text
+https://risk-management-smtv.onrender.com/intake/login
+```
+
+- Updated `README.md` to include:
+  - the public Render URL;
+  - a note that the free-tier app may sleep after inactivity and reset SQLite state on restart;
+  - a link to the deployment guide;
+  - the required environment variables for Render deployment:
+    - `OPENAI_API_KEY`
+    - `OPENAI_MODEL`
+    - `DATABASE_PATH=/tmp/risk_workbench.db`
+
+### Result
+The repository README now reflects the current live demo deployment and points users to the deployment runbook for setup, validation, and common troubleshooting.
+
+## 2026-10-07 - Office Chat Log Update
+
+### Timestamp
+- 2026-10-07 13:50:00 -04:00
+
+### Request
+Record the latest deployment-related discussion in the office chat history file so the project timeline includes the newest documentation and public-demo work.
+
+### Actions
+- Added the current Render deployment status and README update to `chats/chats_office.md`.
+- Kept the historical format consistent with prior office entries by using a dated section and structured request/action/result notes.
+
+### Result
+The office chat history now includes the most recent deployment and documentation activity alongside the earlier local-run, evaluation, and product-role development milestones.
+
 ## Current Known Office Limitation
 
 OpenAI live extraction cannot be tested reliably from the office network due to Python TLS certificate verification failure caused by a self-signed certificate in the chain. This is an office network / proxy trust issue, not an application logic failure.
