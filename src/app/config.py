@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     openai_model: str = "gpt-4o-mini"
     database_path: str = "risk_workbench.db"
     prompt_version: str = "extract_change_request_v1"
+    governance_rules_path: str = "config/governance_rules.json"
+    source_document_dir: str = "data/source_documents"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

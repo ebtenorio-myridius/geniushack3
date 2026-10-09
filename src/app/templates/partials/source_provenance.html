@@ -1,0 +1,81 @@
+<section class="review-form">
+    <h3>Source evidence and scoring provenance</h3>
+    {% set provenance_extracted = case.extracted if case is defined else extracted %}
+    {% set provenance_assessment = case.assessment if case is defined else assessment %}
+    {% set provenance_rules = case.ruleset_snapshot if case is defined else assessment.ruleset_snapshot %}
+    {% set provenance_ruleset_digest = case.ruleset_sha256 if case is defined else assessment.ruleset_sha256 %}
+    {% if source_document %}
+    <p class="panel__hint">
+        Retained source: {{ source_document.filename }} · SHA-256 {{ source_document.sha256 }}
+        {% if case is defined %}
+        · <a href="/intake/{{ case.case_id }}/source-document">Download source PDF</a>
+        {% endif %}
+    </p>
+    {% else %}
+    <p class="panel__hint">No retained source document is available for this case.</p>
+    {% endif %}
+
+    {% if provenance_extracted.evidence %}
+    <div class="case-table-wrap">
+        <table class="score-table">
+            <thead><tr><th>Extracted field</th><th>Source citation</th></tr></thead>
+            <tbody>
+            {% for citation in provenance_extracted.evidence %}
+                <tr>
+                    <td>{{ citation.field_name.replace("_", " ") }}</td>
+                    <td>Page {{ citation.page_number }}: &quot;{{ citation.quote }}&quot;</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="panel__hint">No field-level source citations are recorded.</p>
+    {% endif %}
+
+    <h4>Score inputs</h4>
+    {% for score in provenance_assessment.category_scores %}
+    <div class="panel__hint">
+        <strong>{{ score.category }}</strong>
+        {% if score.input_fields %}
+        <ul>
+        {% for field in score.input_fields %}
+            {% set field_citations = provenance_extracted.evidence | selectattr("field_name", "equalto", field) | list %}
+            <li>
+                {{ field.replace("_", " ") }}
+                {% if field_citations %}
+                {% for citation in field_citations %}
+                    - Page {{ citation.page_number }}: &quot;{{ citation.quote }}&quot;
+                {% endfor %}
+                {% else %}- no direct source citation recorded (derived or absent field){% endif %}
+            </li>
+        {% endfor %}
+        </ul>
+        {% else %}No input fields were recorded.{% endif %}
+    </div>
+    {% endfor %}
+
+    {% if case is defined %}
+    <p class="panel__hint">
+        Ruleset {{ provenance_rules.version }} ({{ provenance_rules.approval_state }}) · Owner {{ provenance_rules.owner }}
+        · Effective {{ provenance_rules.effective_at }} · SHA-256 {{ provenance_ruleset_digest }}
+        {% if current_demo_role in ["analyst", "committee"] %}
+        · <a href="/intake/{{ case.case_id }}/examiner-export">Download local examiner-style export</a>
+        {% endif %}
+    </p>
+    <p class="panel__hint">
+        Local audit-chain verification:
+        {% if audit_verification.valid %}valid · {{ audit_verification.events_checked }} events checked · head {{ audit_verification.chain_head }}
+        {% else %}FAILED at event {{ audit_verification.first_invalid_event_id }}{% if audit_verification.error %}: {{ audit_verification.error }}{% endif %}{% endif %}
+        - hash chain is local tamper-evidence, not immutable storage.
+    </p>
+    {% if cycle_metrics.submitted_at %}
+    <p class="panel__hint">
+        Cycle time: {{ cycle_metrics.status }} · {{ cycle_metrics.total_elapsed_hours }} elapsed hours
+        ({{ cycle_metrics.active_elapsed_hours }} excluding information-wait time) · target
+        {{ cycle_metrics.end_to_end_sla_hours }} hours
+        {% if cycle_metrics.sla_met is not none %}· SLA {{ "met" if cycle_metrics.sla_met else "missed" }}{% endif %}
+    </p>
+    {% endif %}
+    {% endif %}
+</section>

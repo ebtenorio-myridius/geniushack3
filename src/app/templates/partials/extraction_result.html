@@ -77,6 +77,8 @@
         </div>
     </div>
 
+    {% include "partials/source_provenance.html" %}
+
     <p class="flag flag--warn">This is a draft. Submit it to place the case in the analyst work queue; it is not yet under review.</p>
     <form class="review-form" hx-post="/intake/{{ case_id }}/submit" hx-target="#submission-result">
         <button class="button" type="submit">Submit complete request for review</button>

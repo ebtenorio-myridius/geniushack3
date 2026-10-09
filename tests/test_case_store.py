@@ -1,3 +1,6 @@
+import pytest
+
+from src.app.models.governance import GovernanceRules, load_governance_rules
 from src.app.models.schemas import AnalystReview, CaseStatus, CommitteeReview, ExtractedChangeRequest
 from src.app.services.case_store import CaseStore
 from src.app.services.risk_scoring import score_change_request
@@ -97,10 +100,20 @@ def test_case_store_versions_edits_and_supports_committee_decision(tmp_path):
     assert finalized.status == CaseStatus.analyst_finalized
     submitted = store.submit_committee(case.case_id, "synthetic-analyst", "Escalated for committee review.")
     assert submitted.status == CaseStatus.committee_review
-    decided = store.decide_committee(
-        case.case_id,
-        CommitteeReview(decision="approve", actor="synthetic-committee", rationale="Approved synthetic case."),
-    )
+    with pytest.raises(ValueError, match="Direct committee decisions are disabled"):
+        store.decide_committee(
+            case.case_id,
+            CommitteeReview(decision="approve", actor="synthetic-committee", rationale="Approved synthetic case."),
+        )
+    for actor, decision in (
+        ("committee-1", "approve"),
+        ("committee-2", "approve"),
+        ("committee-3", "defer"),
+    ):
+        decided = store.cast_committee_vote(
+            case.case_id,
+            CommitteeReview(decision=decision, actor=actor, rationale="Reviewed synthetic case."),
+        )
     assert decided.status == CaseStatus.decisioned
 
 
@@ -155,6 +168,35 @@ def test_case_store_requires_three_committee_votes_for_final_decision(tmp_path):
     assert summary["approvals"] == 2
     assert summary["rejections"] == 1
     assert summary["result"] == "Approved"
+
+
+def test_case_uses_its_recorded_rules_snapshot_for_committee_quorum(tmp_path):
+    rules_data = load_governance_rules().model_dump(mode="json")
+    rules_data["version"] = "test-quorum-2"
+    rules_data["workflow"]["committee_votes_required"] = 2
+    rules_data["workflow"]["committee_majority_required"] = 2
+    rules = GovernanceRules.model_validate(rules_data)
+    store = CaseStore(str(tmp_path / "cases.db"))
+    request = _request()
+    case = store.create_case("synthetic.pdf", request, score_change_request(request, rules))
+
+    assert case.ruleset_version == "test-quorum-2"
+    store.review_case(
+        case.case_id,
+        AnalystReview(decision=CaseStatus.analyst_accepted, actor="analyst", rationale="Ready."),
+    )
+    store.submit_committee(case.case_id, "analyst", "Sent for committee vote.")
+    store.cast_committee_vote(
+        case.case_id,
+        CommitteeReview(decision="approve", actor="committee-1", rationale="Approve."),
+    )
+    decided = store.cast_committee_vote(
+        case.case_id,
+        CommitteeReview(decision="approve", actor="committee-2", rationale="Approve."),
+    )
+
+    assert decided.status == CaseStatus.decisioned
+    assert store.committee_vote_summary(case.case_id)["votes_needed"] == 2
 
 
 def test_case_store_rejects_duplicate_committee_vote(tmp_path):

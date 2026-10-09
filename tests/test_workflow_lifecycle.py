@@ -1,3 +1,7 @@
+import hashlib
+import io
+import json
+import zipfile
 from datetime import date
 
 import pytest
@@ -8,6 +12,7 @@ from src.app.models.schemas import (
     AnalystReview,
     CaseStatus,
     CommitteeReview,
+    EvidenceCitation,
     ExtractedChangeRequest,
 )
 from src.app.services.case_store import CaseStore
@@ -231,7 +236,24 @@ def test_role_headers_do_not_substitute_for_signed_in_demo_cookie(monkeypatch, t
 
 def test_product_owner_can_correct_incomplete_draft_before_submission(monkeypatch, tmp_path):
     store = CaseStore(str(tmp_path / "workflow.db"))
-    case = _case(store, business_unit=" ")
+    request = _request(
+        business_unit=" ",
+        evidence=[
+            EvidenceCitation(field_name="change_title", page_number=1, quote="Synthetic cross-border payment change"),
+            EvidenceCitation(field_name="change_type", page_number=1, quote="new product"),
+            EvidenceCitation(field_name="description", page_number=1, quote="Synthetic launch with updated payment flows."),
+            EvidenceCitation(field_name="geographies_involved", page_number=1, quote="United States; Philippines"),
+            EvidenceCitation(field_name="products_involved", page_number=1, quote="Remittance"),
+        ],
+    )
+    page_text = "Synthetic cross-border payment change; new product; Synthetic launch with updated payment flows.; United States; Philippines; Remittance; Payments"
+    case = store.create_case(
+        "synthetic.pdf",
+        request,
+        score_change_request(request),
+        source_document_bytes=b"synthetic source bytes",
+        source_pages=[page_text],
+    )
     monkeypatch.setattr(intake, "case_store", store)
     owner = TestClient(app)
     owner.cookies.set("demo_user", "product-owner-1")
@@ -247,11 +269,17 @@ def test_product_owner_can_correct_incomplete_draft_before_submission(monkeypatc
             "change_title": case.extracted.change_title,
             "business_unit": "Payments",
             "description": case.extracted.description,
+            "source_citations": "business_unit | 1 | Payments",
             "rationale": "Filled the missing value from the source request.",
         },
     )
     assert corrected.status_code == 200
     assert store.get_case(case.case_id).status == CaseStatus.draft
+    saved = store.get_case(case.case_id)
+    assert any(
+        item.field_name == "business_unit" and item.quote == "Payments"
+        for item in saved.extracted.evidence
+    )
 
     submitted = owner.post(f"/intake/{case.case_id}/submit")
     assert submitted.status_code == 200
@@ -318,7 +346,7 @@ def test_committee_decision_packet_renders_review_trace_and_reassessment_links(m
     assert response.status_code == 200
     assert "Assessment version 2" in response.text
     assert "Corrected title from source." in response.text
-    assert "Quorum: three distinct committee members" in response.text
+    assert "Quorum: 3 distinct committee members" in response.text
 
 
 def test_committee_route_persists_owner_due_date_and_condition_completion(monkeypatch, tmp_path):
@@ -385,3 +413,126 @@ def test_committee_route_persists_owner_due_date_and_condition_completion(monkey
     assert detail.status_code == 200
     assert "Complete screening test" in detail.text
     assert "2026-12-31" in detail.text
+
+
+def test_source_document_hash_and_audit_chain_verification(tmp_path):
+    store = CaseStore(str(tmp_path / "workflow.db"))
+    case = store.create_case(
+        "source.pdf",
+        _request(),
+        score_change_request(_request()),
+        source_document_bytes=b"retained synthetic document",
+        source_pages=["page one"],
+    )
+
+    metadata, content = store.read_source_document(case.case_id)
+    assert content == b"retained synthetic document"
+    assert metadata["sha256"] == case.source_sha256
+    assert store.list_source_pages(case.case_id) == [{"page_number": 1, "page_text": "page one"}]
+    assert store.verify_audit_chain(case.case_id)["valid"]
+
+    with store._connect() as connection:
+        connection.execute(
+            "UPDATE source_pages SET page_text = ? WHERE case_id = ?",
+            ("tampered page", case.case_id),
+        )
+    assert store.verify_audit_chain(case.case_id)["valid"] is False
+
+    with store._connect() as connection:
+        connection.execute(
+            "UPDATE source_pages SET page_text = ? WHERE case_id = ?",
+            ("page one", case.case_id),
+        )
+        connection.execute(
+            "UPDATE workflow_events SET rationale = ? WHERE case_id = ?",
+            ("tampered rationale", case.case_id),
+        )
+    verification = store.verify_audit_chain(case.case_id)
+    assert verification["valid"] is False
+    assert verification["first_invalid_event_id"] is not None
+
+    with store._connect() as connection:
+        connection.execute("DELETE FROM workflow_events WHERE case_id = ?", (case.case_id,))
+    verification = store.verify_audit_chain(case.case_id)
+    assert verification["valid"] is False
+    assert verification["error"] == "No workflow events are recorded for this case."
+
+
+def test_examiner_style_export_contains_verification_manifest_and_source(monkeypatch, tmp_path):
+    store = CaseStore(str(tmp_path / "workflow.db"))
+    case = store.create_case(
+        "source.pdf",
+        _request(),
+        score_change_request(_request()),
+        source_document_bytes=b"synthetic source",
+        source_pages=["source page"],
+    )
+    monkeypatch.setattr(intake, "case_store", store)
+    analyst = TestClient(app)
+    analyst.cookies.set("demo_user", "analyst-1")
+    analyst.cookies.set("demo_role", "analyst")
+
+    response = analyst.get(f"/intake/{case.case_id}/examiner-export")
+    assert response.status_code == 200
+    with zipfile.ZipFile(io.BytesIO(response.content)) as bundle:
+        record_bytes = bundle.read("case-record.json")
+        record = json.loads(record_bytes)
+        manifest = json.loads(bundle.read("manifest.json"))
+        source = bundle.read("source-document.pdf")
+
+    assert record["case"]["case_id"] == case.case_id
+    assert record["audit_verification"]["valid"] is True
+    assert record["source_pages"] == [{"page_number": 1, "page_text": "source page"}]
+    assert source == b"synthetic source"
+    assert manifest["files"]["source-document.pdf"]["sha256"] == case.source_sha256
+    assert manifest["files"]["case-record.json"]["sha256"] == hashlib.sha256(record_bytes).hexdigest()
+    assert manifest["files"]["case-record.json"]["byte_length"] == len(record_bytes)
+    assert manifest["audit_chain_head"] == record["audit_verification"]["chain_head"]
+
+    owner = TestClient(app)
+    owner.cookies.set("demo_user", "product-owner-1")
+    owner.cookies.set("demo_role", "product_owner")
+    download = owner.get(f"/intake/{case.case_id}/source-document")
+    assert download.status_code == 200
+    assert download.content == b"synthetic source"
+
+    assert TestClient(app).get(f"/intake/{case.case_id}/source-document").status_code == 403
+
+
+def test_low_risk_analyst_finalization_completes_cycle_time_measurement(tmp_path):
+    store = CaseStore(str(tmp_path / "workflow.db"))
+    case = _case(store)
+    store.submit_case(case.case_id, "product-owner-1")
+    store.review_case(
+        case.case_id,
+        AnalystReview(
+            decision=CaseStatus.analyst_accepted,
+            actor="analyst-1",
+            rationale="Reviewed the low-risk case.",
+        ),
+    )
+
+    metrics = store.cycle_time_metrics(case.case_id)
+    assert metrics["status"] == "complete"
+    assert metrics["decided_at"] is not None
+    assert metrics["decision_ready_hours"] is not None
+    assert metrics["sla_met"] is True
+    report = store.cycle_time_report()
+    assert report["completed_cases"] == 1
+    assert report["median_decision_ready_hours"] is not None
+
+
+def test_analyst_cycle_time_metrics_page_uses_recorded_report(monkeypatch, tmp_path):
+    store = CaseStore(str(tmp_path / "workflow.db"))
+    case = _case(store)
+    store.submit_case(case.case_id, "product-owner-1")
+    monkeypatch.setattr(intake, "case_store", store)
+    analyst = TestClient(app)
+    analyst.cookies.set("demo_user", "analyst-1")
+    analyst.cookies.set("demo_role", "analyst")
+
+    response = analyst.get("/intake/analyst/metrics")
+    assert response.status_code == 200
+    assert case.case_id in response.text
+    assert "does not establish a two-day performance claim" in response.text
+    assert "Decision-ready hours" in response.text

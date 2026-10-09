@@ -1,5 +1,6 @@
 from datetime import date, datetime
 from enum import Enum
+from typing import Any
 from pydantic import BaseModel, Field
 
 
@@ -11,6 +12,12 @@ class ChangeType(str, Enum):
     new_geography = "new_geography"
     new_customer_segment = "new_customer_segment"
     other = "other"
+
+
+class EvidenceCitation(BaseModel):
+    field_name: str = Field(min_length=1)
+    page_number: int = Field(ge=1)
+    quote: str = Field(min_length=1)
 
 
 class ExtractedChangeRequest(BaseModel):
@@ -38,12 +45,17 @@ class ExtractedChangeRequest(BaseModel):
     extraction_confidence: float = Field(
         ge=0.0, le=1.0, description="Model's own confidence in this extraction, 0-1"
     )
+    evidence: list[EvidenceCitation] = Field(
+        default_factory=list,
+        description="Verbatim source-page quotes supporting extracted fields",
+    )
 
 
 class RiskCategoryScore(BaseModel):
     category: str
     score: int = Field(ge=1, le=5)
     rationale: str
+    input_fields: list[str] = Field(default_factory=list)
 
 
 class RiskLevel(str, Enum):
@@ -93,6 +105,9 @@ class RiskAssessmentDraft(BaseModel):
     risk_level: RiskLevel
     requires_committee_review: bool
     scoring_method: str = "deterministic_weighted_v1"
+    ruleset_version: str = "legacy-unversioned"
+    ruleset_sha256: str = ""
+    ruleset_snapshot: dict[str, Any] = Field(default_factory=dict)
 
 
 class PolicyEvidence(BaseModel):
@@ -148,3 +163,7 @@ class CaseRecord(BaseModel):
     information_request: str | None = None
     awaiting_from: str | None = None
     decision: CommitteeDecision | None = None
+    source_sha256: str | None = None
+    ruleset_version: str = "legacy-unversioned"
+    ruleset_sha256: str = ""
+    ruleset_snapshot: dict[str, Any] = Field(default_factory=dict)

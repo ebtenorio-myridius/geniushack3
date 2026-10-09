@@ -9,6 +9,10 @@ class PdfExtractionError(Exception):
 
 
 def extract_text_from_pdf(file_bytes: bytes) -> str:
+    return "\n\n".join(extract_text_by_page_from_pdf(file_bytes)).strip()
+
+
+def extract_text_by_page_from_pdf(file_bytes: bytes) -> list[str]:
     """Pull plain text out of an uploaded PDF.
 
     This is the deterministic first step before anything touches the LLM —
@@ -25,12 +29,10 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
         pages_text = [page.extract_text() or "" for page in reader.pages]
     except PdfReadError as exc:
         raise PdfExtractionError("The uploaded file is not a readable PDF.") from exc
-    text = "\n\n".join(pages_text).strip()
-
-    if not text:
+    if not any(page.strip() for page in pages_text):
         raise PdfExtractionError(
             "No extractable text found. This may be a scanned/image-only PDF — "
             "consider an OCR or vision-model fallback."
         )
 
-    return text
+    return pages_text

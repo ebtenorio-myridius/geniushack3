@@ -46,6 +46,8 @@
         </div>
     </div>
 
+    {% include "partials/source_provenance.html" %}
+
     {% if case.policy_evidence %}
     <h3>Policy evidence</h3>
     {% for evidence in case.policy_evidence %}
@@ -72,7 +74,7 @@
     {% if case.status.value == 'analyst_review' %}
     <form class="review-form" hx-post="/intake/{{ case.case_id }}/edit" hx-target="#analyst-edit-result">
         <h3>Correct extraction and rescore</h3>
-        <p class="panel__hint">Edits create a versioned snapshot and recalculate the deterministic score. Explain each correction.</p>
+        <p class="panel__hint">Edits create a versioned snapshot and recalculate the deterministic score. Explain each correction. For every changed field, add a source citation as field_name | page_number | exact quote.</p>
         <label class="field"><span class="field__label">Change title</span><input name="change_title" value="{{ case.extracted.change_title }}" required></label>
         <label class="field"><span class="field__label">Change type</span>
             <select name="change_type" required>
@@ -90,12 +92,13 @@
         <label class="field"><span class="field__label">Products (comma separated)</span><input name="products_involved" value="{{ case.extracted.products_involved | join(', ') }}"></label>
         <label class="field"><span class="field__label">Stated risk factors (comma separated)</span><input name="stated_risk_factors" value="{{ case.extracted.stated_risk_factors | join(', ') }}"></label>
         <label class="field"><span class="field__label">Edit rationale</span><textarea name="rationale" required rows="2"></textarea></label>
+        <label class="field"><span class="field__label">Source citations for changed fields</span><textarea name="source_citations" rows="3" placeholder="description | 1 | exact words from page 1"></textarea></label>
         <button class="button button--secondary" type="submit">Save version and rescore</button>
     </form>
     <div id="analyst-edit-result"></div>
     <form class="review-form" hx-post="/intake/{{ case.case_id }}/review" hx-target="#analyst-review-result">
         <h3>Analyst review</h3>
-        <p class="panel__hint">Verify the extracted details and score. This prototype requires three distinct committee votes; two approvals or two rejections determine that outcome, otherwise the result is deferred.</p>
+        <p class="panel__hint">Verify the extracted details and score. This case's rules require {{ workflow_rules.committee_votes_required }} distinct committee votes; {{ workflow_rules.committee_majority_required }} approvals or rejections determine that outcome, otherwise the result is deferred.</p>
         <label class="field">
             <span class="field__label">Review rationale</span>
             <textarea name="rationale" required rows="3" placeholder="Explain your assessment or any disagreement"></textarea>

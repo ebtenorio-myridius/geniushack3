@@ -3,6 +3,9 @@ __pycache__/
 *.pyc
 .env
 *.db
+data/source_documents/
+risk_workbench.documents/
+source_documents/
 .pytest_cache/
 *.egg-info/
 .DS_Store

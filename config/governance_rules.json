@@ -1,0 +1,69 @@
+{
+  "version": "prototype-1",
+  "approval_state": "prototype",
+  "owner": "Risk Function",
+  "approved_by": null,
+  "effective_at": "2026-10-09",
+  "change_rationale": "Initial configurable prototype rules; not approved for operational use.",
+  "scoring": {
+    "weights": {
+      "customer_and_geography": 0.35,
+      "product_and_channel": 0.3,
+      "third_party": 0.2,
+      "change_complexity": 0.15
+    },
+    "risk_thresholds": {
+      "medium": 2.0,
+      "high": 3.0,
+      "critical": 4.0
+    },
+    "high_risk_geographies": ["russia", "iran", "north korea", "syria", "myanmar"],
+    "high_impact_risk_terms": [
+      "rapid funds movement",
+      "sanctions exposure",
+      "new lending product",
+      "cross-border payment flows"
+    ],
+    "higher_risk_change_types": ["new_product", "new_geography", "new_customer_segment"],
+    "geography": {
+      "high_risk_score": 5,
+      "many_geographies_count": 3,
+      "many_geographies_score": 3,
+      "known_geographies_score": 2,
+      "no_geographies_score": 1,
+      "customer_segment_increment": 1,
+      "maximum_score": 5
+    },
+    "product_and_channel": {
+      "higher_risk_base_score": 4,
+      "incremental_base_score": 2,
+      "multiple_products_count": 2,
+      "multiple_products_increment": 1,
+      "high_impact_increment": 1,
+      "maximum_score": 5
+    },
+    "third_party": {
+      "vendor_score": 4,
+      "no_vendor_score": 1
+    },
+    "change_complexity": {
+      "many_factors_count": 3,
+      "many_factors_score": 4,
+      "some_factors_score": 2,
+      "no_factors_score": 1,
+      "low_confidence_threshold": 0.6,
+      "low_confidence_increment": 1,
+      "maximum_score": 5
+    }
+  },
+  "workflow": {
+    "committee_votes_required": 3,
+    "committee_majority_required": 2,
+    "end_to_end_sla_hours": 48,
+    "stage_sla_hours": {
+      "analyst_review": 24,
+      "committee_review": 24,
+      "needs_information": 48
+    }
+  }
+}

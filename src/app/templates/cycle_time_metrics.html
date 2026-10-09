@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Cycle-Time Metrics — Risk Assessment Workbench{% endblock %}
+
+{% block content %}
+<nav class="dashboard-nav">
+    <strong>Analyst workspace</strong>
+    <a href="/intake/analyst/dashboard/demo">Submitted cases</a>
+    <a href="/intake/analyst/decisioned">Decisioned cases</a>
+    <a href="/intake/analyst/committee-cases">Cases for committee</a>
+</nav>
+
+<section class="panel">
+    <h1>Case cycle time</h1>
+    <p class="flag flag--warn">
+        The {{ report.target_hours }}-hour end-to-end target is a local prototype setting, not an approved SLA.
+        This report measures recorded workflow history; it does not establish a two-day performance claim.
+    </p>
+    <div class="grid-two">
+        <p><strong>Submitted cases:</strong> {{ report.submitted_cases }}</p>
+        <p><strong>Completed cases:</strong> {{ report.completed_cases }}</p>
+        <p><strong>Completed within target:</strong> {{ report.sla_met_cases }}</p>
+        <p><strong>Completed-case SLA attainment:</strong>
+            {% if report.sla_attainment_percent is not none %}{{ report.sla_attainment_percent }}%{% else %}Not yet measurable{% endif %}
+        </p>
+        <p><strong>Median intake-to-decision-ready:</strong>
+            {% if report.median_decision_ready_hours is not none %}{{ report.median_decision_ready_hours }} hours{% else %}Not yet measurable{% endif %}
+        </p>
+        <p><strong>Median completed cycle to outcome:</strong>
+            {% if report.median_decision_hours is not none %}{{ report.median_decision_hours }} hours{% else %}Not yet measurable{% endif %}
+        </p>
+    </div>
+    {% if report.cases %}
+    <div class="case-table-wrap">
+        <table class="score-table case-table">
+            <thead>
+                <tr><th>Case</th><th>State</th><th>Decision-ready hours</th><th>Outcome elapsed hours</th><th>Active hours*</th><th>Target</th><th>SLA</th><th>Stage hours / target</th></tr>
+            </thead>
+            <tbody>
+            {% for item in report.cases %}
+                <tr>
+                    <td>{{ item.case_id }}</td>
+                    <td>{{ item.status.replace("_", " ") }}</td>
+                    <td>{{ item.decision_ready_hours if item.decision_ready_hours is not none else "-" }}</td>
+                    <td>{{ item.total_elapsed_hours if item.total_elapsed_hours is not none else "Not submitted" }}</td>
+                    <td>{{ item.active_elapsed_hours if item.active_elapsed_hours is not none else "-" }}</td>
+                    <td>{{ item.end_to_end_sla_hours }} hours</td>
+                    <td>{% if item.sla_met is none %}In progress / not submitted{% elif item.sla_met %}Met{% else %}Missed{% endif %}</td>
+                    <td>
+                        {% for stage, target in item.stage_sla_hours.items() %}
+                        {{ stage.replace("_", " ") }}: {{ item.stage_hours.get(stage, 0) }} / {{ target }}h{% if stage in item.breached_stages %} (breached){% endif %}{% if not loop.last %}; {% endif %}
+                        {% else %}-{% endfor %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="panel__hint">* Active hours exclude time in the needs-information stage. In-progress cases are not included in completed-case attainment or median.</p>
+    {% else %}
+    <p class="panel__hint">No cases have been recorded.</p>
+    {% endif %}
+</section>
+{% endblock %}

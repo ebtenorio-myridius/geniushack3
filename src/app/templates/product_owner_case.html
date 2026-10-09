@@ -46,6 +46,8 @@
         </div>
     </div>
 
+    {% include "partials/source_provenance.html" %}
+
     <h3>Case history</h3>
     {% for event in events %}
     <p class="panel__hint"><strong>{{ event.event_type.replace("_", " ") }}</strong> · {{ event.actor }} · {{ event.occurred_at }}<br>{{ event.rationale }}</p>
@@ -55,10 +57,12 @@
     <form class="review-form" hx-post="/intake/{{ case.case_id }}/draft/edit" hx-target="#workflow-result">
         <h3>Complete or correct request details</h3>
         <p class="panel__hint">Use source-backed information. Title, business unit, and description are required for submission.</p>
+        <p class="panel__hint">For each changed field, add a citation in the format field_name | page_number | exact quote. Existing citations are retained for unchanged fields.</p>
         <label class="field"><span class="field__label">Change title</span><input name="change_title" value="{{ case.extracted.change_title }}" required></label>
         <label class="field"><span class="field__label">Business unit</span><input name="business_unit" value="{{ case.extracted.business_unit }}" required></label>
         <label class="field"><span class="field__label">Description</span><textarea name="description" required rows="3">{{ case.extracted.description }}</textarea></label>
         <label class="field"><span class="field__label">Correction rationale</span><textarea name="rationale" required rows="2"></textarea></label>
+        <label class="field"><span class="field__label">Source citations for changed fields</span><textarea name="source_citations" rows="3" placeholder="business_unit | 1 | exact words from page 1"></textarea></label>
         <button class="button button--secondary" type="submit">Save draft corrections</button>
     </form>
     <form class="review-form" hx-post="/intake/{{ case.case_id }}/submit" hx-target="#workflow-result">

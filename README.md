@@ -108,6 +108,9 @@ The user-facing flow and demo identities are documented in
 status and known gaps are summarized in
 [docs/assessment/assessment.md](docs/assessment/assessment.md). The automated
 quality gate is [.github/workflows/ci.yml](.github/workflows/ci.yml).
+The local evidence-retention, versioned-rules, hash-chain export, and
+cycle-time prototype limitations are documented in
+[docs/governance/README.md](docs/governance/README.md).
 
 The presentation pack is in [docs/presentation](docs/presentation). It reflects
 the current implementation and identifies remaining production increments such

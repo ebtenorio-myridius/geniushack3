@@ -5,6 +5,8 @@ from reportlab.pdfgen import canvas
 
 import src.app.routers.intake as intake
 from src.app.main import app
+from src.app.models.schemas import EvidenceCitation, ExtractedChangeRequest
+from src.app.services.case_store import CaseStore
 
 
 def _pdf_bytes(text: str | None = None) -> bytes:
@@ -78,6 +80,82 @@ def test_upload_returns_gateway_error_when_extraction_provider_fails(monkeypatch
     assert response.status_code == 502
     assert "couldn&#39;t produce a valid extraction" in response.text
     assert "synthetic provider failure" not in response.text
+
+
+def test_upload_retains_source_pages_and_verifiable_extraction(monkeypatch, tmp_path):
+    page_text = "Synthetic change request: New product for Payments. A synthetic change request."
+    extraction = ExtractedChangeRequest(
+        change_title="Synthetic change",
+        change_type="new_product",
+        business_unit="Payments",
+        description="A synthetic change request.",
+        extraction_confidence=0.9,
+        evidence=[
+            EvidenceCitation(field_name="change_title", page_number=1, quote="Synthetic change"),
+            EvidenceCitation(field_name="change_type", page_number=1, quote="New product"),
+            EvidenceCitation(field_name="business_unit", page_number=1, quote="Payments"),
+            EvidenceCitation(field_name="description", page_number=1, quote="A synthetic change request."),
+        ],
+    )
+
+    received = []
+
+    async def extract(text):
+        received.append(text)
+        return extraction
+
+    store = CaseStore(str(tmp_path / "intake.db"))
+    monkeypatch.setattr(intake, "case_store", store)
+    monkeypatch.setattr(intake, "extract_text_by_page_from_pdf", lambda _bytes: [page_text])
+    monkeypatch.setattr(intake, "draft_extraction", extract)
+    pdf = _pdf_bytes("Synthetic PDF fixture")
+
+    response = _owner_client().post(
+        "/intake/upload",
+        files={"file": ("request.pdf", pdf, "application/pdf")},
+    )
+
+    assert response.status_code == 200
+    assert "Page 1" in response.text
+    assert received == [f"[SOURCE PAGE 1]\n{page_text}"]
+    case = store.list_cases()[0]
+    metadata, retained_bytes = store.read_source_document(case.case_id)
+    assert metadata["filename"] == "request.pdf"
+    assert retained_bytes == pdf
+    assert store.list_source_pages(case.case_id)[0]["page_text"] == page_text
+
+
+def test_upload_rejects_unverifiable_extraction_citation(monkeypatch, tmp_path):
+    extraction = ExtractedChangeRequest(
+        change_title="Synthetic change",
+        change_type="new_product",
+        business_unit="Payments",
+        description="A synthetic change request.",
+        extraction_confidence=0.9,
+        evidence=[
+            EvidenceCitation(field_name="change_title", page_number=1, quote="not in source"),
+            EvidenceCitation(field_name="change_type", page_number=1, quote="New product"),
+            EvidenceCitation(field_name="business_unit", page_number=1, quote="Payments"),
+            EvidenceCitation(field_name="description", page_number=1, quote="A synthetic change request."),
+        ],
+    )
+
+    async def extract(_text):
+        return extraction
+
+    store = CaseStore(str(tmp_path / "intake.db"))
+    monkeypatch.setattr(intake, "case_store", store)
+    monkeypatch.setattr(intake, "extract_text_by_page_from_pdf", lambda _bytes: ["New product for Payments. A synthetic change request."])
+    monkeypatch.setattr(intake, "draft_extraction", extract)
+
+    response = _owner_client().post(
+        "/intake/upload",
+        files={"file": ("request.pdf", _pdf_bytes("Synthetic PDF fixture"), "application/pdf")},
+    )
+
+    assert response.status_code == 422
+    assert "not present on source page" in response.text
+    assert store.list_cases() == []
 
 
 def test_upload_requires_product_owner_role():

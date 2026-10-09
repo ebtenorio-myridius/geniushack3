@@ -1,22 +1,30 @@
+import hashlib
+import io
+import json
 import logging
+import zipfile
 from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
+from src.app.models.governance import GovernanceRules
 from src.app.models.schemas import (
     AnalystReview,
+    CaseRecord,
     CaseStatus,
     CommitteeDecision,
     CommitteeReview,
+    EvidenceCitation,
     ExtractedChangeRequest,
     UserRole,
 )
 from src.app.services.dependencies import case_store
 from src.app.services.llm_service import draft_extraction
-from src.app.services.pdf_extraction import PdfExtractionError, extract_text_from_pdf
+from src.app.services.pdf_extraction import PdfExtractionError, extract_text_by_page_from_pdf
 from src.app.services.risk_scoring import score_change_request
 from src.app.services.policy_service import find_policy_evidence
+from src.app.services.source_evidence import page_marked_text, validate_extraction_evidence
 from src.app.services.auth import require_role, validate_demo_login
 from src.app.templating import templates
 
@@ -31,6 +39,51 @@ def _identity(request: Request) -> tuple[str | None, str | None]:
         request.cookies.get("demo_user"),
         request.cookies.get("demo_role"),
     )
+
+
+def _apply_edit_citations(
+    extracted: ExtractedChangeRequest,
+    case: CaseRecord,
+    citation_lines: str,
+) -> None:
+    before = case.extracted.model_dump(mode="python")
+    after = extracted.model_dump(mode="python")
+    changed_fields = {
+        field
+        for field in after
+        if field not in {"evidence", "extraction_confidence"} and after[field] != before[field]
+    }
+    parsed_citations = []
+    for line_number, line in enumerate(citation_lines.splitlines(), start=1):
+        if not line.strip():
+            continue
+        parts = line.split("|", 2)
+        if len(parts) != 3:
+            raise ValueError(f"Citation line {line_number} must use: field_name | page_number | exact quote")
+        field_name, page_number_text, quote = (part.strip() for part in parts)
+        if field_name not in changed_fields:
+            raise ValueError(f"Citation line {line_number} must cite a changed field")
+        try:
+            page_number = int(page_number_text)
+        except ValueError as exc:
+            raise ValueError(f"Citation line {line_number} has an invalid page number") from exc
+        parsed_citations.append(
+            EvidenceCitation(field_name=field_name, page_number=page_number, quote=quote)
+        )
+
+    existing_citations = [
+        citation
+        for citation in case.extracted.evidence
+        if citation.field_name not in changed_fields
+    ]
+    if changed_fields and not case_store.get_source_document(case.case_id):
+        raise ValueError("This case has no retained source document; corrected fields cannot be verified.")
+    extracted.evidence = existing_citations + parsed_citations
+    if case_store.get_source_document(case.case_id):
+        pages = [page["page_text"] for page in case_store.list_source_pages(case.case_id)]
+        validate_extraction_evidence(extracted, pages)
+    elif extracted.evidence:
+        raise ValueError("Source pages are unavailable for validating the recorded citations.")
 
 
 @router.get("/login", response_class=HTMLResponse)
@@ -121,9 +174,20 @@ def _case_detail_context(case_id: str):
     conditions = case_store.list_conditions(case_id)
     for condition in conditions:
         condition["overdue"] = condition["status"] == "open" and condition["due_date"] < today
+    case = case_store.get_case(case_id)
+    if case is None:
+        raise KeyError(case_id)
+    evidence_by_field: dict[str, list[dict]] = {}
+    for citation in case.extracted.evidence:
+        evidence_by_field.setdefault(citation.field_name, []).append(citation.model_dump())
     return {
         "conditions": conditions,
         "versions": case_store.list_extraction_versions(case_id),
+        "evidence_by_field": evidence_by_field,
+        "source_document": case_store.get_source_document(case_id),
+        "audit_verification": case_store.verify_audit_chain(case_id),
+        "cycle_metrics": case_store.cycle_time_metrics(case_id),
+        "workflow_rules": (GovernanceRules.model_validate(case.ruleset_snapshot) if case.ruleset_snapshot else case_store.governance_rules).workflow,
     }
 
 
@@ -169,6 +233,17 @@ async def analyst_dashboard(request: Request):
         request,
         "analyst_dashboard.html",
         _queue_context(cases) | {"detail_base": "/intake/analyst/cases"},
+    )
+
+
+@router.get("/analyst/metrics", response_class=HTMLResponse)
+async def analyst_cycle_time_metrics(request: Request):
+    user, role = _identity(request)
+    require_role(UserRole.analyst, user, role)
+    return templates.TemplateResponse(
+        request,
+        "cycle_time_metrics.html",
+        {"report": case_store.cycle_time_report(), "demo_user": user},
     )
 
 
@@ -254,6 +329,122 @@ async def analyst_case_detail(request: Request, case_id: str):
     )
 
 
+@router.get("/{case_id}/source-document")
+async def source_document_download(request: Request, case_id: str):
+    user, role = _identity(request)
+    case = case_store.get_case(case_id)
+    if case is None:
+        raise HTTPException(status_code=404, detail="Case not found.")
+    if role == UserRole.product_owner.value:
+        require_role(UserRole.product_owner, user, role)
+        if case.submitted_by != user:
+            raise HTTPException(status_code=404, detail="Case not found.")
+    elif role == UserRole.analyst.value:
+        require_role(UserRole.analyst, user, role)
+    elif role == UserRole.committee.value:
+        require_role(UserRole.committee, user, role)
+    else:
+        raise HTTPException(status_code=403, detail="A signed-in workflow role is required.")
+    audit = case_store.verify_audit_chain(case_id)
+    if not audit["valid"]:
+        raise HTTPException(
+            status_code=409,
+            detail=audit.get("error") or f"Audit chain verification failed at event {audit['first_invalid_event_id']}.",
+        )
+    try:
+        _, content = case_store.read_source_document(case_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="No retained source document is available.") from exc
+    except (OSError, ValueError) as exc:
+        logger.exception("Source document integrity/read failure for %s", case_id)
+        raise HTTPException(status_code=409, detail="The retained source document could not be verified.") from exc
+    return Response(
+        content=content,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{case_id}-source.pdf"'},
+    )
+
+
+@router.get("/{case_id}/examiner-export")
+async def examiner_export(request: Request, case_id: str):
+    user, role = _identity(request)
+    if role == UserRole.analyst.value:
+        require_role(UserRole.analyst, user, role)
+    elif role == UserRole.committee.value:
+        require_role(UserRole.committee, user, role)
+    else:
+        raise HTTPException(status_code=403, detail="Analyst or committee role required.")
+
+    case = case_store.get_case(case_id)
+    if case is None:
+        raise HTTPException(status_code=404, detail="Case not found.")
+    audit = case_store.verify_audit_chain(case_id)
+    if not audit["valid"]:
+        raise HTTPException(
+            status_code=409,
+            detail=audit.get("error") or f"Audit chain verification failed at event {audit['first_invalid_event_id']}.",
+        )
+
+    source_metadata = case_store.get_source_document(case_id)
+    source_bytes = None
+    if source_metadata:
+        try:
+            source_metadata, source_bytes = case_store.read_source_document(case_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=409, detail="The retained source document record is missing.") from exc
+        except (OSError, ValueError) as exc:
+            logger.exception("Cannot create export due to source-document integrity failure for %s", case_id)
+            raise HTTPException(status_code=409, detail="The retained source document could not be verified.") from exc
+
+    record = {
+        "package_version": 1,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "guarantee": "Local prototype export; not immutable or examiner-certified.",
+        "case": case.model_dump(mode="json"),
+        "source_document": {
+            key: source_metadata[key]
+            for key in ("filename", "sha256", "byte_length", "uploaded_at")
+        } if source_metadata else None,
+        "source_pages": case_store.list_source_pages(case_id),
+        "extraction_versions": case_store.list_extraction_versions(case_id),
+        "workflow_events": case_store.list_events(case_id),
+        "committee_votes": case_store.list_committee_votes(case_id),
+        "conditions": case_store.list_conditions(case_id),
+        "cycle_time": case_store.cycle_time_metrics(case_id),
+        "audit_verification": audit,
+        "governance_rules_snapshot": case.ruleset_snapshot,
+        "limitations": [
+            "Demo-cookie identities are not independently verified.",
+            "A local database owner can rewrite the event chain and recompute its hashes.",
+            "Preserve this export and its manifest outside the app to establish an independent reference point.",
+        ],
+    }
+    record_bytes = json.dumps(record, indent=2, ensure_ascii=False, sort_keys=True).encode("utf-8")
+    files = {"case-record.json": record_bytes}
+    if source_bytes is not None:
+        files["source-document.pdf"] = source_bytes
+    manifest = {
+        "case_id": case_id,
+        "files": {
+            name: {"sha256": hashlib.sha256(content).hexdigest(), "byte_length": len(content)}
+            for name, content in files.items()
+        },
+        "audit_chain_head": audit["chain_head"],
+        "audit_events_checked": audit["events_checked"],
+    }
+
+    archive = io.BytesIO()
+    with zipfile.ZipFile(archive, mode="w", compression=zipfile.ZIP_DEFLATED) as bundle:
+        for name, content in files.items():
+            bundle.writestr(name, content)
+        bundle.writestr("manifest.json", json.dumps(manifest, indent=2, sort_keys=True))
+    return Response(
+        content=archive.getvalue(),
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{case_id}-examiner-export.zip"'},
+    )
+
+
 @router.post("/upload", response_class=HTMLResponse)
 async def upload_change_request(request: Request, file: UploadFile = File(...)):
     """Handles the PDF upload from the intake form and returns an HTML
@@ -274,14 +465,14 @@ async def upload_change_request(request: Request, file: UploadFile = File(...)):
         )
 
     try:
-        raw_text = extract_text_from_pdf(file_bytes)
+        source_pages = extract_text_by_page_from_pdf(file_bytes)
     except PdfExtractionError as exc:
         return templates.TemplateResponse(
             request, "partials/error.html", {"message": str(exc)}, status_code=422
         )
 
     try:
-        extracted = await draft_extraction(raw_text)
+        extracted = await draft_extraction(page_marked_text(source_pages))
     except Exception:
         logger.exception("LLM extraction failed for %s", file.filename)
         return templates.TemplateResponse(
@@ -291,6 +482,17 @@ async def upload_change_request(request: Request, file: UploadFile = File(...)):
             status_code=502,
         )
 
+    try:
+        validate_extraction_evidence(extracted, source_pages)
+    except ValueError as exc:
+        logger.warning("Extraction citations failed validation for %s: %s", file.filename, exc)
+        return templates.TemplateResponse(
+            request,
+            "partials/error.html",
+            {"message": f"The extraction did not include verifiable source citations: {exc}"},
+            status_code=422,
+        )
+
     assessment = score_change_request(extracted)
     case = case_store.create_case(
         file.filename or "unnamed.pdf",
@@ -298,6 +500,8 @@ async def upload_change_request(request: Request, file: UploadFile = File(...)):
         assessment,
         find_policy_evidence(extracted),
         submitted_by=owner,
+        source_document_bytes=file_bytes,
+        source_pages=source_pages,
     )
 
     return templates.TemplateResponse(
@@ -311,6 +515,7 @@ async def upload_change_request(request: Request, file: UploadFile = File(...)):
             "assessment": assessment,
             "policy_evidence": case.policy_evidence,
             "submitted_by": case.submitted_by,
+            "source_document": case_store.get_source_document(case.case_id),
         },
     )
 
@@ -360,6 +565,7 @@ async def edit_change_request(
     vendor_name: str = Form(""),
     products_involved: str = Form(""),
     stated_risk_factors: str = Form(""),
+    source_citations: str = Form(""),
     rationale: str = Form(...),
 ):
     analyst = require_role(UserRole.analyst, request.cookies.get("demo_user"), request.cookies.get("demo_role"))
@@ -382,7 +588,17 @@ async def edit_change_request(
             raise KeyError(case_id)
         if case_before_edit.status != CaseStatus.analyst_review:
             raise ValueError("Only submitted cases in analyst review can be edited")
-        case = case_store.update_extraction(case_id, extracted, score_change_request(extracted), analyst, rationale, find_policy_evidence(extracted))
+        _apply_edit_citations(extracted, case_before_edit, source_citations)
+        rules = case_before_edit.assessment.ruleset_snapshot
+        governance = GovernanceRules.model_validate(rules) if rules else None
+        case = case_store.update_extraction(
+            case_id,
+            extracted,
+            score_change_request(extracted, governance),
+            analyst,
+            rationale,
+            find_policy_evidence(extracted),
+        )
     except KeyError:
         return templates.TemplateResponse(request, "partials/error.html", {"message": "Case not found."}, status_code=404)
     except ValueError as exc:
@@ -486,6 +702,7 @@ async def edit_product_owner_draft(
     change_title: str = Form(...),
     business_unit: str = Form(...),
     description: str = Form(...),
+    source_citations: str = Form(""),
     rationale: str = Form(...),
 ):
     user, role = _identity(request)
@@ -503,10 +720,13 @@ async def edit_product_owner_draft(
                 "description": description,
             })
         )
+        _apply_edit_citations(extracted, case, source_citations)
+        rules = case.assessment.ruleset_snapshot
+        governance = GovernanceRules.model_validate(rules) if rules else None
         case = case_store.update_draft(
             case_id,
             extracted,
-            score_change_request(extracted),
+            score_change_request(extracted, governance),
             actor,
             rationale,
             find_policy_evidence(extracted),

@@ -1,10 +1,14 @@
+import hashlib
 import json
+import os
 import sqlite3
+import statistics
 from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
+from src.app.models.governance import GovernanceRules, load_governance_rules
 from src.app.models.schemas import (
     AnalystReview,
     CaseRecord,
@@ -21,11 +25,50 @@ from src.app.models.schemas import (
 class CaseStore:
     """Small SQLite store for cases and append-only workflow events."""
 
-    def __init__(self, database_path: str = "risk_workbench.db"):
+    def __init__(
+        self,
+        database_path: str = "risk_workbench.db",
+        source_document_dir: str | None = None,
+        governance_rules: GovernanceRules | None = None,
+    ):
         self.database_path = database_path
+        self.source_document_dir = Path(
+            source_document_dir
+            if source_document_dir is not None
+            else (Path(database_path).with_suffix(".documents") if database_path != ":memory:" else "source_documents")
+        )
+        self.governance_rules = governance_rules or load_governance_rules()
         if database_path != ":memory:":
             Path(database_path).parent.mkdir(parents=True, exist_ok=True)
         self._initialize()
+
+    @staticmethod
+    def _canonical_event_payload(event: dict) -> bytes:
+        payload = {
+            "event_id": event["event_id"],
+            "case_id": event["case_id"],
+            "event_type": event["event_type"],
+            "actor": event["actor"],
+            "rationale": event["rationale"],
+            "occurred_at": event["occurred_at"],
+            "stage": event["stage"],
+            "metadata_json": event["metadata_json"],
+        }
+        return json.dumps(
+            payload,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
+
+    @classmethod
+    def _event_digest(cls, previous_hash: str, event: dict) -> str:
+        return hashlib.sha256(previous_hash.encode("ascii") + cls._canonical_event_payload(event)).hexdigest()
+
+    @staticmethod
+    def _source_pages_digest(source_pages: list[str]) -> str:
+        canonical = json.dumps(source_pages, ensure_ascii=False, separators=(",", ":"))
+        return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
     def _connect(self):
         connection = sqlite3.connect(self.database_path)
@@ -69,6 +112,26 @@ class CaseStore:
                         actor TEXT NOT NULL,
                         rationale TEXT NOT NULL,
                         occurred_at TEXT NOT NULL,
+                        stage TEXT NOT NULL DEFAULT 'legacy',
+                        metadata_json TEXT NOT NULL DEFAULT '{}',
+                        prev_hash TEXT NOT NULL DEFAULT '',
+                        event_hash TEXT,
+                        FOREIGN KEY(case_id) REFERENCES cases(case_id)
+                    );
+                    CREATE TABLE IF NOT EXISTS source_documents (
+                        case_id TEXT PRIMARY KEY,
+                        filename TEXT NOT NULL,
+                        storage_key TEXT NOT NULL,
+                        sha256 TEXT NOT NULL,
+                        byte_length INTEGER NOT NULL,
+                        uploaded_at TEXT NOT NULL,
+                        FOREIGN KEY(case_id) REFERENCES cases(case_id)
+                    );
+                    CREATE TABLE IF NOT EXISTS source_pages (
+                        case_id TEXT NOT NULL,
+                        page_number INTEGER NOT NULL,
+                        page_text TEXT NOT NULL,
+                        PRIMARY KEY(case_id, page_number),
                         FOREIGN KEY(case_id) REFERENCES cases(case_id)
                     );
                     CREATE TABLE IF NOT EXISTS committee_votes (
@@ -122,14 +185,52 @@ class CaseStore:
                     ("information_request", "TEXT"),
                     ("awaiting_from", "TEXT"),
                     ("decision", "TEXT"),
+                    ("source_sha256", "TEXT"),
+                    ("ruleset_version", "TEXT NOT NULL DEFAULT 'legacy-unversioned'"),
+                    ("ruleset_sha256", "TEXT NOT NULL DEFAULT ''"),
+                    ("ruleset_snapshot_json", "TEXT NOT NULL DEFAULT '{}'"),
                 ):
                     if name not in columns:
                         connection.execute(f"ALTER TABLE cases ADD COLUMN {name} {definition}")
+                event_columns = {row[1] for row in connection.execute("PRAGMA table_info(workflow_events)")}
+                for name, definition in (
+                    ("stage", "TEXT NOT NULL DEFAULT 'legacy'"),
+                    ("metadata_json", "TEXT NOT NULL DEFAULT '{}'"),
+                    ("prev_hash", "TEXT NOT NULL DEFAULT ''"),
+                    ("event_hash", "TEXT"),
+                ):
+                    if name not in event_columns:
+                        connection.execute(f"ALTER TABLE workflow_events ADD COLUMN {name} {definition}")
                 vote_columns = {row[1] for row in connection.execute("PRAGMA table_info(committee_votes)")}
                 if "conditions_owner" not in vote_columns:
                     connection.execute("ALTER TABLE committee_votes ADD COLUMN conditions_owner TEXT NOT NULL DEFAULT ''")
                 if "conditions_due_date" not in vote_columns:
                     connection.execute("ALTER TABLE committee_votes ADD COLUMN conditions_due_date TEXT")
+                self._backfill_event_hashes(connection)
+
+    def _backfill_event_hashes(self, connection: sqlite3.Connection) -> None:
+        rows = connection.execute(
+            "SELECT event_id, case_id, event_type, actor, rationale, occurred_at, stage, metadata_json, prev_hash, event_hash "
+            "FROM workflow_events WHERE event_hash IS NULL ORDER BY case_id, event_id"
+        ).fetchall()
+        previous_by_case: dict[str, str] = {}
+        for row in rows:
+            case_id = row["case_id"]
+            if case_id not in previous_by_case:
+                last = connection.execute(
+                    "SELECT event_hash FROM workflow_events WHERE case_id = ? AND event_hash IS NOT NULL AND event_id < ? ORDER BY event_id DESC LIMIT 1",
+                    (case_id, row["event_id"]),
+                ).fetchone()
+                previous_by_case[case_id] = last["event_hash"] if last else ""
+            previous_hash = previous_by_case[case_id]
+            event = dict(row)
+            event["prev_hash"] = previous_hash
+            digest = self._event_digest(previous_hash, event)
+            connection.execute(
+                "UPDATE workflow_events SET prev_hash = ?, event_hash = ? WHERE event_id = ?",
+                (previous_hash, digest, row["event_id"]),
+            )
+            previous_by_case[case_id] = digest
 
     def create_case(
         self,
@@ -144,8 +245,22 @@ class CaseStore:
         event_rationale: str = "Initial extraction and draft score",
         submitted_by: str = "product-owner-1",
         parent_case_id: str | None = None,
+        source_document_bytes: bytes | None = None,
+        source_pages: list[str] | None = None,
     ) -> CaseRecord:
         now = datetime.now(timezone.utc)
+        source_sha256 = hashlib.sha256(source_document_bytes).hexdigest() if source_document_bytes is not None else None
+        rules_snapshot = assessment.ruleset_snapshot
+        ruleset_version = assessment.ruleset_version
+        ruleset_sha256 = assessment.ruleset_sha256
+        storage_key = f"{uuid4().hex}.pdf" if source_document_bytes is not None else None
+        stored_path = self.source_document_dir / storage_key if storage_key else None
+        temporary_path = stored_path.with_suffix(".tmp") if stored_path is not None else None
+        if stored_path is not None:
+            self.source_document_dir.mkdir(parents=True, exist_ok=True)
+            assert temporary_path is not None
+            temporary_path.write_bytes(source_document_bytes)
+            os.replace(temporary_path, stored_path)
         case = CaseRecord(
             case_id=f"CASE-{uuid4().hex[:10].upper()}",
             filename=filename,
@@ -157,31 +272,70 @@ class CaseStore:
             submitted_by=submitted_by,
             assigned_to="analyst-1",
             parent_case_id=parent_case_id,
+            source_sha256=source_sha256,
+            ruleset_version=ruleset_version,
+            ruleset_sha256=ruleset_sha256,
+            ruleset_snapshot=rules_snapshot,
         )
-        with closing(self._connect()) as connection:
-            with connection:
-                connection.execute(
-                    "INSERT INTO cases (case_id, filename, extracted_json, assessment_json, status, created_at, updated_at, policy_evidence_json, extraction_version, submitted_by, assigned_to, parent_case_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    (
+        try:
+            with closing(self._connect()) as connection:
+                with connection:
+                    connection.execute(
+                        "INSERT INTO cases (case_id, filename, extracted_json, assessment_json, status, created_at, updated_at, policy_evidence_json, extraction_version, submitted_by, assigned_to, parent_case_id, source_sha256, ruleset_version, ruleset_sha256, ruleset_snapshot_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        (
+                            case.case_id,
+                            case.filename,
+                            extracted.model_dump_json(),
+                            assessment.model_dump_json(),
+                            case.status.value,
+                            now.isoformat(),
+                            now.isoformat(),
+                            json.dumps([item.model_dump(mode="json") for item in case.policy_evidence]),
+                            case.extraction_version,
+                            case.submitted_by,
+                            case.assigned_to,
+                            case.parent_case_id,
+                            source_sha256,
+                            ruleset_version,
+                            ruleset_sha256,
+                            json.dumps(rules_snapshot, sort_keys=True),
+                        ),
+                    )
+                    connection.execute(
+                        "INSERT INTO extraction_versions VALUES (?, ?, ?, ?, ?, ?)",
+                        (case.case_id, 1, extracted.model_dump_json(), initial_actor, initial_rationale, now.isoformat()),
+                    )
+                    if stored_path is not None and storage_key is not None and source_document_bytes is not None:
+                        connection.execute(
+                            "INSERT INTO source_documents (case_id, filename, storage_key, sha256, byte_length, uploaded_at) VALUES (?, ?, ?, ?, ?, ?)",
+                            (case.case_id, filename, storage_key, source_sha256, len(source_document_bytes), now.isoformat()),
+                        )
+                    if source_pages:
+                        connection.executemany(
+                            "INSERT INTO source_pages (case_id, page_number, page_text) VALUES (?, ?, ?)",
+                            [(case.case_id, number, text) for number, text in enumerate(source_pages, start=1)],
+                        )
+                    self._record_event(
+                        connection,
                         case.case_id,
-                        case.filename,
-                        extracted.model_dump_json(),
-                        assessment.model_dump_json(),
-                        case.status.value,
-                        now.isoformat(),
-                        now.isoformat(),
-                        json.dumps([item.model_dump() for item in case.policy_evidence]),
-                        case.extraction_version,
-                        case.submitted_by,
-                        case.assigned_to,
-                        case.parent_case_id,
-                    ),
-                )
-                connection.execute(
-                    "INSERT INTO extraction_versions VALUES (?, ?, ?, ?, ?, ?)",
-                    (case.case_id, 1, extracted.model_dump_json(), initial_actor, initial_rationale, now.isoformat()),
-                )
-                self._record_event(connection, case.case_id, "case_created", event_actor, event_rationale)
+                        "case_created",
+                        event_actor,
+                        event_rationale,
+                        metadata={
+                            "source_sha256": source_sha256,
+                            "source_pages_sha256": self._source_pages_digest(source_pages) if source_pages is not None else None,
+                            "ruleset_version": ruleset_version,
+                            "ruleset_sha256": ruleset_sha256,
+                            "extracted_sha256": hashlib.sha256(extracted.model_dump_json().encode("utf-8")).hexdigest(),
+                            "assessment_sha256": hashlib.sha256(assessment.model_dump_json().encode("utf-8")).hexdigest(),
+                        },
+                    )
+        except Exception:
+            if stored_path is not None:
+                stored_path.unlink(missing_ok=True)
+            if temporary_path is not None:
+                temporary_path.unlink(missing_ok=True)
+            raise
         return case
 
     def get_case(self, case_id: str) -> CaseRecord | None:
@@ -205,6 +359,10 @@ class CaseStore:
             information_request=row["information_request"],
             awaiting_from=row["awaiting_from"],
             decision=CommitteeDecision(row["decision"]) if row["decision"] else None,
+            source_sha256=row["source_sha256"],
+            ruleset_version=row["ruleset_version"],
+            ruleset_sha256=row["ruleset_sha256"],
+            ruleset_snapshot=json.loads(row["ruleset_snapshot_json"]),
         )
 
     def list_extraction_versions(self, case_id: str) -> list[dict]:
@@ -302,6 +460,9 @@ class CaseStore:
             raise KeyError(case_id)
         if original.status not in (CaseStatus.decisioned, CaseStatus.conditions_pending, CaseStatus.closed):
             raise ValueError("Only decisioned or closed cases can be reassessed")
+        source_document = self.get_source_document(case_id)
+        source_bytes = self.read_source_document(case_id)[1] if source_document else None
+        source_pages = self.list_source_pages(case_id) if source_document else []
         reassessment = self.create_case(
             f"Reassessment of {original.filename}",
             original.extracted,
@@ -313,6 +474,8 @@ class CaseStore:
             event_rationale=f"Reassessment created from {case_id}; analyst must review updated facts.",
             submitted_by=original.submitted_by,
             parent_case_id=case_id,
+            source_document_bytes=source_bytes,
+            source_pages=[page["page_text"] for page in source_pages],
         )
         now = datetime.now(timezone.utc)
         with closing(self._connect()) as connection:
@@ -386,36 +549,58 @@ class CaseStore:
                     raise ValueError(f"Only {expected_status.value.replace('_', ' ')} cases can be edited")
                 version = row["extraction_version"] + 1
                 evidence_json = json.dumps([item.model_dump() for item in (policy_evidence or [])])
-                connection.execute("UPDATE cases SET extracted_json = ?, assessment_json = ?, policy_evidence_json = ?, extraction_version = ?, updated_at = ? WHERE case_id = ?", (extracted.model_dump_json(), assessment.model_dump_json(), evidence_json, version, now.isoformat(), case_id))
+                connection.execute(
+                    "UPDATE cases SET extracted_json = ?, assessment_json = ?, policy_evidence_json = ?, extraction_version = ?, "
+                    "ruleset_version = ?, ruleset_sha256 = ?, ruleset_snapshot_json = ?, updated_at = ? WHERE case_id = ?",
+                    (
+                        extracted.model_dump_json(),
+                        assessment.model_dump_json(),
+                        evidence_json,
+                        version,
+                        assessment.ruleset_version,
+                        assessment.ruleset_sha256,
+                        json.dumps(assessment.ruleset_snapshot, sort_keys=True),
+                        now.isoformat(),
+                        case_id,
+                    ),
+                )
                 connection.execute("INSERT INTO extraction_versions VALUES (?, ?, ?, ?, ?, ?)", (case_id, version, extracted.model_dump_json(), actor, rationale, now.isoformat()))
-                self._record_event(connection, case_id, "extraction_edited", actor, rationale)
+                self._record_event(
+                    connection,
+                    case_id,
+                    "extraction_edited",
+                    actor,
+                    rationale,
+                    metadata={
+                        "extraction_version": version,
+                        "extracted_sha256": hashlib.sha256(extracted.model_dump_json().encode("utf-8")).hexdigest(),
+                        "assessment_sha256": hashlib.sha256(assessment.model_dump_json().encode("utf-8")).hexdigest(),
+                        "ruleset_version": assessment.ruleset_version,
+                        "ruleset_sha256": assessment.ruleset_sha256,
+                    },
+                )
         return self.get_case(case_id)
 
     def submit_committee(self, case_id: str, actor: str, rationale: str) -> CaseRecord:
         return self._transition(case_id, CaseStatus.analyst_finalized, CaseStatus.committee_review, actor, rationale)
 
     def decide_committee(self, case_id: str, review: CommitteeReview) -> CaseRecord:
-        rationale = review.rationale
-        if review.conditions:
-            rationale = f"{rationale} Conditions: {review.conditions}"
-        self._transition(case_id, CaseStatus.committee_review, CaseStatus.decisioned, review.actor, f"{review.decision.value}: {rationale}")
-        with closing(self._connect()) as connection:
-            with connection:
-                connection.execute(
-                    "UPDATE cases SET decision = ? WHERE case_id = ?",
-                    (review.decision.value, case_id),
-                )
-        return self.get_case(case_id)
+        raise ValueError("Direct committee decisions are disabled; record the required distinct member votes.")
 
     def cast_committee_vote(self, case_id: str, review: CommitteeReview) -> CaseRecord:
         now = datetime.now(timezone.utc)
         with closing(self._connect()) as connection:
             with connection:
-                row = connection.execute("SELECT status, submitted_by FROM cases WHERE case_id = ?", (case_id,)).fetchone()
+                row = connection.execute(
+                    "SELECT status, submitted_by, ruleset_snapshot_json FROM cases WHERE case_id = ?",
+                    (case_id,),
+                ).fetchone()
                 if row is None:
                     raise KeyError(case_id)
                 if row["status"] != CaseStatus.committee_review.value:
                     raise ValueError("Case must be committee_review before committee voting")
+                rules = self._workflow_rules(row["ruleset_snapshot_json"])
+                workflow_rules = rules.workflow
                 if review.decision == CommitteeDecision.approve_with_conditions:
                     if not self._condition_lines(review.conditions):
                         raise ValueError("Add at least one condition before voting to approve with conditions")
@@ -438,7 +623,20 @@ class CaseStore:
                 vote_rationale = review.rationale
                 if review.conditions:
                     vote_rationale = f"{vote_rationale} Conditions: {review.conditions}"
-                self._record_event(connection, case_id, "committee_vote", review.actor, f"{review.decision.value}: {vote_rationale}")
+                self._record_event(
+                    connection,
+                    case_id,
+                    "committee_vote",
+                    review.actor,
+                    f"{review.decision.value}: {vote_rationale}",
+                    metadata={
+                        "decision": review.decision.value,
+                        "conditions": review.conditions,
+                        "conditions_owner": review.conditions_owner,
+                        "conditions_due_date": review.conditions_due_date.isoformat() if review.conditions_due_date else None,
+                        "ruleset_version": rules.version,
+                    },
+                )
 
                 votes = connection.execute(
                     "SELECT decision, rationale, conditions, conditions_owner, conditions_due_date FROM committee_votes WHERE case_id = ? ORDER BY occurred_at",
@@ -447,14 +645,14 @@ class CaseStore:
                 approvals = sum(1 for vote in votes if vote["decision"] in (CommitteeDecision.approve.value, CommitteeDecision.approve_with_conditions.value))
                 rejections = sum(1 for vote in votes if vote["decision"] == CommitteeDecision.reject.value)
                 deferred = sum(1 for vote in votes if vote["decision"] == CommitteeDecision.defer.value)
-                if len(votes) >= 3:
-                    if approvals >= 2:
+                if len(votes) >= workflow_rules.committee_votes_required:
+                    if approvals >= workflow_rules.committee_majority_required:
                         final_decision = CommitteeDecision.approve_with_conditions.value if any(
                             vote["decision"] in (CommitteeDecision.approve.value, CommitteeDecision.approve_with_conditions.value)
                             and (vote["decision"] == CommitteeDecision.approve_with_conditions.value or vote["conditions"])
                             for vote in votes
                         ) else CommitteeDecision.approve.value
-                    elif rejections >= 2:
+                    elif rejections >= workflow_rules.committee_majority_required:
                         final_decision = CommitteeDecision.reject.value
                     else:
                         final_decision = CommitteeDecision.defer.value
@@ -478,7 +676,20 @@ class CaseStore:
                                     "INSERT INTO conditions (case_id, description, owner, due_date) VALUES (?, ?, ?, ?)",
                                     (case_id, item, vote["conditions_owner"], vote["conditions_due_date"]),
                                 )
-                    self._record_event(connection, case_id, CaseStatus.decisioned.value, "committee", f"{final_decision}: Vote result {approvals} approvals, {rejections} rejections, {deferred} deferrals")
+                    self._record_event(
+                        connection,
+                        case_id,
+                        CaseStatus.decisioned.value,
+                        "committee",
+                        f"{final_decision}: Vote result {approvals} approvals, {rejections} rejections, {deferred} deferrals",
+                        metadata={
+                            "decision": final_decision,
+                            "approvals": approvals,
+                            "rejections": rejections,
+                            "deferred": deferred,
+                            "ruleset_version": rules.version,
+                        },
+                    )
         return self.get_case(case_id)
 
     def list_committee_votes(self, case_id: str) -> list[dict]:
@@ -518,7 +729,14 @@ class CaseStore:
                 )
                 if updated.rowcount != 1:
                     raise ValueError("Condition not found or already completed")
-                self._record_event(connection, case_id, "condition_completed", actor, evidence)
+                self._record_event(
+                    connection,
+                    case_id,
+                    "condition_completed",
+                    actor,
+                    evidence,
+                    metadata={"condition_id": condition_id},
+                )
         return self.get_case(case_id)
 
     def close_case(self, case_id: str, actor: str, rationale: str) -> CaseRecord:
@@ -553,11 +771,17 @@ class CaseStore:
         rejections = sum(1 for vote in votes if vote["decision"] == CommitteeDecision.reject.value)
         deferred = sum(1 for vote in votes if vote["decision"] == CommitteeDecision.defer.value)
         votes_cast = len(votes)
-        if votes_cast < 3:
+        case = self.get_case(case_id)
+        if case is None:
+            raise KeyError(case_id)
+        rules = GovernanceRules.model_validate(case.ruleset_snapshot) if case.ruleset_snapshot else self.governance_rules
+        votes_needed = rules.workflow.committee_votes_required
+        majority_needed = rules.workflow.committee_majority_required
+        if votes_cast < votes_needed:
             result = "Pending"
-        elif approvals >= 2:
+        elif approvals >= majority_needed:
             result = "Approved"
-        elif rejections >= 2:
+        elif rejections >= majority_needed:
             result = "Rejected"
         else:
             result = "Deferred"
@@ -566,10 +790,15 @@ class CaseStore:
             "rejections": rejections,
             "deferred": deferred,
             "votes_cast": votes_cast,
-            "votes_needed": 3,
+            "votes_needed": votes_needed,
+            "majority_needed": majority_needed,
             "result": result,
             "votes": votes,
         }
+
+    def _workflow_rules(self, snapshot_json: str) -> GovernanceRules:
+        snapshot = json.loads(snapshot_json) if snapshot_json else {}
+        return GovernanceRules.model_validate(snapshot) if snapshot else self.governance_rules
 
     def _transition(self, case_id: str, expected: CaseStatus, target: CaseStatus, actor: str, rationale: str) -> CaseRecord:
         now = datetime.now(timezone.utc)
@@ -610,14 +839,279 @@ class CaseStore:
     def list_events(self, case_id: str) -> list[dict]:
         with closing(self._connect()) as connection:
             rows = connection.execute(
-                "SELECT event_type, actor, rationale, occurred_at FROM workflow_events WHERE case_id = ? ORDER BY event_id",
+                "SELECT event_id, event_type, actor, rationale, occurred_at, stage, metadata_json, prev_hash, event_hash "
+                "FROM workflow_events WHERE case_id = ? ORDER BY event_id",
+                (case_id,),
+            ).fetchall()
+        events = []
+        for row in rows:
+            event = dict(row)
+            event["metadata"] = json.loads(event.pop("metadata_json"))
+            events.append(event)
+        return events
+
+    def get_source_document(self, case_id: str) -> dict | None:
+        with closing(self._connect()) as connection:
+            row = connection.execute(
+                "SELECT filename, storage_key, sha256, byte_length, uploaded_at "
+                "FROM source_documents WHERE case_id = ?",
+                (case_id,),
+            ).fetchone()
+        return dict(row) if row else None
+
+    def read_source_document(self, case_id: str) -> tuple[dict, bytes]:
+        document = self.get_source_document(case_id)
+        if document is None:
+            raise KeyError(case_id)
+        case = self.get_case(case_id)
+        if case is None:
+            raise KeyError(case_id)
+        if case.source_sha256 != document["sha256"]:
+            raise ValueError("Source document hash does not match the case record")
+        storage_key = Path(document["storage_key"])
+        if storage_key.name != document["storage_key"]:
+            raise ValueError("Invalid source document storage key")
+        path = self.source_document_dir / storage_key
+        content = path.read_bytes()
+        actual_hash = hashlib.sha256(content).hexdigest()
+        if actual_hash != document["sha256"]:
+            raise ValueError("Source document integrity verification failed")
+        return document, content
+
+    def list_source_pages(self, case_id: str) -> list[dict]:
+        with closing(self._connect()) as connection:
+            rows = connection.execute(
+                "SELECT page_number, page_text FROM source_pages WHERE case_id = ? ORDER BY page_number",
                 (case_id,),
             ).fetchall()
         return [dict(row) for row in rows]
 
-    @staticmethod
-    def _record_event(connection, case_id: str, event_type: str, actor: str, rationale: str):
-        connection.execute(
-            "INSERT INTO workflow_events (case_id, event_type, actor, rationale, occurred_at) VALUES (?, ?, ?, ?, ?)",
-            (case_id, event_type, actor, rationale, datetime.now(timezone.utc).isoformat()),
+    def verify_audit_chain(self, case_id: str) -> dict:
+        with closing(self._connect()) as connection:
+            rows = connection.execute(
+                "SELECT event_id, case_id, event_type, actor, rationale, occurred_at, stage, metadata_json, prev_hash, event_hash "
+                "FROM workflow_events WHERE case_id = ? ORDER BY event_id",
+                (case_id,),
+            ).fetchall()
+        if not rows:
+            return {
+                "valid": False,
+                "events_checked": 0,
+                "first_invalid_event_id": None,
+                "chain_head": "",
+                "error": "No workflow events are recorded for this case.",
+            }
+        previous_hash = ""
+        for row in rows:
+            event = dict(row)
+            if event["prev_hash"] != previous_hash:
+                return {
+                    "valid": False,
+                    "events_checked": len(rows),
+                    "first_invalid_event_id": event["event_id"],
+                    "chain_head": previous_hash,
+                }
+            expected_hash = self._event_digest(previous_hash, event)
+            if event["event_hash"] != expected_hash:
+                return {
+                    "valid": False,
+                    "events_checked": len(rows),
+                    "first_invalid_event_id": event["event_id"],
+                    "chain_head": previous_hash,
+                }
+            previous_hash = expected_hash
+        creation_event = next(
+            (dict(row) for row in rows if row["event_type"] == "case_created"),
+            None,
         )
+        if creation_event is not None:
+            creation_metadata = json.loads(creation_event["metadata_json"])
+            expected_pages_hash = creation_metadata.get("source_pages_sha256")
+            if expected_pages_hash is not None:
+                actual_pages_hash = self._source_pages_digest(
+                    [page["page_text"] for page in self.list_source_pages(case_id)]
+                )
+                if actual_pages_hash != expected_pages_hash:
+                    return {
+                        "valid": False,
+                        "events_checked": len(rows),
+                        "first_invalid_event_id": creation_event["event_id"],
+                        "chain_head": previous_hash,
+                    }
+            expected_source_hash = creation_metadata.get("source_sha256")
+            if expected_source_hash is not None:
+                try:
+                    document, content = self.read_source_document(case_id)
+                except (KeyError, OSError, ValueError):
+                    return {
+                        "valid": False,
+                        "events_checked": len(rows),
+                        "first_invalid_event_id": creation_event["event_id"],
+                        "chain_head": previous_hash,
+                    }
+                if (
+                    document["sha256"] != expected_source_hash
+                    or hashlib.sha256(content).hexdigest() != expected_source_hash
+                ):
+                    return {
+                        "valid": False,
+                        "events_checked": len(rows),
+                        "first_invalid_event_id": creation_event["event_id"],
+                        "chain_head": previous_hash,
+                    }
+        return {
+            "valid": True,
+            "events_checked": len(rows),
+            "first_invalid_event_id": None,
+            "chain_head": previous_hash,
+        }
+
+    def cycle_time_metrics(self, case_id: str, now: datetime | None = None) -> dict:
+        case = self.get_case(case_id)
+        if case is None:
+            raise KeyError(case_id)
+        rules = GovernanceRules.model_validate(case.ruleset_snapshot) if case.ruleset_snapshot else self.governance_rules
+        events = self.list_events(case_id)
+        start_index = next(
+            (index for index, event in enumerate(events) if event["stage"] == CaseStatus.analyst_review.value),
+            None,
+        )
+        if start_index is None:
+            return {
+                "case_id": case_id,
+                "status": "not_submitted",
+                "submitted_at": None,
+                "decision_ready_at": None,
+                "decided_at": None,
+                "total_elapsed_hours": None,
+                "active_elapsed_hours": None,
+                "end_to_end_sla_hours": rules.workflow.end_to_end_sla_hours,
+                "stage_sla_hours": rules.workflow.stage_sla_hours,
+                "sla_met": None,
+                "stage_hours": {},
+                "breached_stages": [],
+            }
+
+        timed_events = events[start_index:]
+        start_at = datetime.fromisoformat(timed_events[0]["occurred_at"])
+        is_high_risk = case.assessment.requires_committee_review
+        decision_ready_at = None
+        decided_at = None
+        stage_hours: dict[str, float] = {}
+        end_at = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
+        final_stages = {CaseStatus.decisioned.value, CaseStatus.conditions_pending.value, CaseStatus.closed.value}
+
+        for index, event in enumerate(timed_events):
+            event_at = datetime.fromisoformat(event["occurred_at"]).astimezone(timezone.utc)
+            stage = event["stage"]
+            if decision_ready_at is None and stage in (
+                CaseStatus.committee_review.value,
+                CaseStatus.analyst_finalized.value,
+                CaseStatus.analyst_rejected.value,
+            ):
+                decision_ready_at = event_at
+            low_risk_analyst_decision = (
+                stage == CaseStatus.analyst_finalized.value and not is_high_risk
+            )
+            if stage == CaseStatus.analyst_rejected.value or stage in final_stages or low_risk_analyst_decision:
+                decided_at = event_at
+                end_at = event_at
+                timed_events = timed_events[: index + 1]
+                break
+
+        for index, event in enumerate(timed_events):
+            event_at = datetime.fromisoformat(event["occurred_at"]).astimezone(timezone.utc)
+            next_at = (
+                datetime.fromisoformat(timed_events[index + 1]["occurred_at"]).astimezone(timezone.utc)
+                if index + 1 < len(timed_events)
+                else end_at
+            )
+            seconds = max(0.0, (next_at - event_at).total_seconds())
+            stage_hours[event["stage"]] = stage_hours.get(event["stage"], 0.0) + seconds / 3600
+
+        total_hours = max(0.0, (end_at - start_at).total_seconds() / 3600)
+        active_hours = sum(hours for stage, hours in stage_hours.items() if stage != CaseStatus.needs_information.value)
+        target = rules.workflow.end_to_end_sla_hours
+        completed = decided_at is not None
+        stage_targets = rules.workflow.stage_sla_hours
+        breached_stages = sorted(
+            stage for stage, hours in stage_hours.items()
+            if stage in stage_targets and hours > stage_targets[stage]
+        )
+        return {
+            "case_id": case_id,
+            "status": "complete" if completed else "in_progress",
+            "submitted_at": start_at.isoformat(),
+            "decision_ready_at": decision_ready_at.isoformat() if decision_ready_at else None,
+            "decided_at": decided_at.isoformat() if decided_at else None,
+            "total_elapsed_hours": round(total_hours, 2),
+            "active_elapsed_hours": round(active_hours, 2),
+            "decision_ready_hours": round((decision_ready_at - start_at).total_seconds() / 3600, 2) if decision_ready_at else None,
+            "end_to_end_sla_hours": target,
+            "stage_sla_hours": stage_targets,
+            "sla_met": total_hours <= target if completed else None,
+            "stage_hours": {stage: round(hours, 2) for stage, hours in stage_hours.items()},
+            "breached_stages": breached_stages,
+        }
+
+    def cycle_time_report(self) -> dict:
+        cases = self.list_cases()
+        metrics = [self.cycle_time_metrics(case.case_id) for case in cases]
+        submitted = [item for item in metrics if item["submitted_at"]]
+        completed = [item for item in submitted if item["sla_met"] is not None]
+        elapsed = [item["total_elapsed_hours"] for item in completed]
+        decision_ready_elapsed = [
+            item["decision_ready_hours"]
+            for item in submitted
+            if item["decision_ready_hours"] is not None
+        ]
+        return {
+            "target_hours": self.governance_rules.workflow.end_to_end_sla_hours,
+            "submitted_cases": len(submitted),
+            "completed_cases": len(completed),
+            "sla_met_cases": sum(1 for item in completed if item["sla_met"]),
+            "sla_attainment_percent": round(
+                100 * sum(1 for item in completed if item["sla_met"]) / len(completed), 1
+            ) if completed else None,
+            "median_decision_hours": statistics.median(elapsed) if elapsed else None,
+            "median_decision_ready_hours": statistics.median(decision_ready_elapsed) if decision_ready_elapsed else None,
+            "cases": metrics,
+        }
+
+    @classmethod
+    def _record_event(
+        cls,
+        connection: sqlite3.Connection,
+        case_id: str,
+        event_type: str,
+        actor: str,
+        rationale: str,
+        metadata: dict | None = None,
+    ):
+        case_row = connection.execute("SELECT status FROM cases WHERE case_id = ?", (case_id,)).fetchone()
+        if case_row is None:
+            raise KeyError(case_id)
+        occurred_at = datetime.now(timezone.utc).isoformat()
+        metadata_json = json.dumps(metadata or {}, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        previous = connection.execute(
+            "SELECT event_hash FROM workflow_events WHERE case_id = ? ORDER BY event_id DESC LIMIT 1",
+            (case_id,),
+        ).fetchone()
+        previous_hash = previous["event_hash"] if previous else ""
+        cursor = connection.execute(
+            "INSERT INTO workflow_events (case_id, event_type, actor, rationale, occurred_at, stage, metadata_json, prev_hash) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (case_id, event_type, actor, rationale, occurred_at, case_row["status"], metadata_json, previous_hash),
+        )
+        event = {
+            "event_id": cursor.lastrowid,
+            "case_id": case_id,
+            "event_type": event_type,
+            "actor": actor,
+            "rationale": rationale,
+            "occurred_at": occurred_at,
+            "stage": case_row["status"],
+            "metadata_json": metadata_json,
+        }
+        digest = cls._event_digest(previous_hash, event)
+        connection.execute("UPDATE workflow_events SET event_hash = ? WHERE event_id = ?", (digest, cursor.lastrowid))

@@ -1,3 +1,4 @@
+from src.app.models.governance import GovernanceRules
 from src.app.models.schemas import (
     ChangeType,
     ExtractedChangeRequest,
@@ -5,126 +6,153 @@ from src.app.models.schemas import (
     RiskCategoryScore,
     RiskLevel,
 )
-
-# Placeholder starting weights. Swap for figures grounded in a real
-# supervisory framework (BSA/AML, FFIEC, FATF risk categories, etc.) once
-# the BA has done that research — see /docs/requirements. Keeping these
-# named constants (not magic numbers inline) makes that swap a one-line
-# change per category.
-_CATEGORY_WEIGHTS = {
-    "customer_and_geography": 0.35,
-    "product_and_channel": 0.30,
-    "third_party": 0.20,
-    "change_complexity": 0.15,
-}
-
-_HIGH_RISK_GEOGRAPHY_KEYWORDS = {"russia", "iran", "north korea", "syria", "myanmar"}
-_HIGH_IMPACT_RISK_TERMS = {
-    "rapid funds movement",
-    "sanctions exposure",
-    "new lending product",
-    "cross-border payment flows",
-}
+from src.app.services.governance_service import active_governance_rules
 
 
-def _score_customer_and_geography(req: ExtractedChangeRequest) -> RiskCategoryScore:
-    geographies = {g.lower() for g in req.geographies_involved}
-    flagged = geographies & _HIGH_RISK_GEOGRAPHY_KEYWORDS
-
+def _score_customer_and_geography(
+    request: ExtractedChangeRequest,
+    rules: GovernanceRules,
+) -> RiskCategoryScore:
+    params = rules.scoring.geography
+    geographies = {place.lower() for place in request.geographies_involved}
+    flagged = geographies & set(rules.scoring.high_risk_geographies)
     if flagged:
-        score, rationale = 5, f"Involves higher-risk geographies: {', '.join(flagged)}"
-    elif len(geographies) > 2:
-        score, rationale = 3, f"Spans {len(geographies)} geographies — broader exposure"
+        score = params.high_risk_score
+        rationale = f"Involves higher-risk geographies: {', '.join(sorted(flagged))}"
+    elif len(geographies) >= params.many_geographies_count:
+        score = params.many_geographies_score
+        rationale = f"Spans {len(geographies)} geographies — broader exposure"
     elif geographies:
-        score, rationale = 2, "Limited, known geography exposure"
+        score = params.known_geographies_score
+        rationale = "Limited, known geography exposure"
     else:
-        score, rationale = 1, "No new geography exposure identified"
+        score = params.no_geographies_score
+        rationale = "No new geography exposure identified"
 
-    if req.customer_segments_involved:
-        score = min(5, score + 1)
-        rationale += f"; new/changed customer segment(s): {', '.join(req.customer_segments_involved)}"
+    if request.customer_segments_involved:
+        score = min(params.maximum_score, score + params.customer_segment_increment)
+        rationale += f"; new/changed customer segment(s): {', '.join(request.customer_segments_involved)}"
 
-    return RiskCategoryScore(category="Customer & Geography", score=score, rationale=rationale)
+    return RiskCategoryScore(
+        category="Customer & Geography",
+        score=min(score, params.maximum_score),
+        rationale=rationale,
+        input_fields=["geographies_involved", "customer_segments_involved"],
+    )
 
 
-def _score_product_and_channel(req: ExtractedChangeRequest) -> RiskCategoryScore:
-    higher_risk_types = {ChangeType.new_product, ChangeType.new_geography, ChangeType.new_customer_segment}
-    if req.change_type in higher_risk_types:
-        score = 4
-        rationale = f"Change type '{req.change_type.value}' is inherently higher risk"
+def _score_product_and_channel(
+    request: ExtractedChangeRequest,
+    rules: GovernanceRules,
+) -> RiskCategoryScore:
+    params = rules.scoring.product_and_channel
+    higher_risk_types = {ChangeType(value) for value in rules.scoring.higher_risk_change_types}
+    if request.change_type in higher_risk_types:
+        score = params.higher_risk_base_score
+        rationale = f"Change type '{request.change_type.value}' is inherently higher risk"
     else:
-        score = 2
-        rationale = f"Change type '{req.change_type.value}' is incremental"
+        score = params.incremental_base_score
+        rationale = f"Change type '{request.change_type.value}' is incremental"
 
-    if len(req.products_involved) > 1:
-        score = min(5, score + 1)
-        rationale += f"; touches {len(req.products_involved)} products"
+    if len(request.products_involved) >= params.multiple_products_count:
+        score += params.multiple_products_increment
+        rationale += f"; touches {len(request.products_involved)} products"
 
-    explicit_terms = {factor.lower() for factor in req.stated_risk_factors}
-    high_impact_terms = explicit_terms & _HIGH_IMPACT_RISK_TERMS
+    high_impact_terms = {
+        term.lower() for term in request.stated_risk_factors
+    } & set(rules.scoring.high_impact_risk_terms)
     if high_impact_terms:
-        score = min(5, score + 1)
+        score += params.high_impact_increment
         rationale += f"; explicit high-impact factors: {', '.join(sorted(high_impact_terms))}"
 
-    return RiskCategoryScore(category="Product & Channel", score=score, rationale=rationale)
+    return RiskCategoryScore(
+        category="Product & Channel",
+        score=min(score, params.maximum_score),
+        rationale=rationale,
+        input_fields=["change_type", "products_involved", "stated_risk_factors"],
+    )
 
 
-def _score_third_party(req: ExtractedChangeRequest) -> RiskCategoryScore:
-    if req.vendor_involved:
+def _score_third_party(
+    request: ExtractedChangeRequest,
+    rules: GovernanceRules,
+) -> RiskCategoryScore:
+    params = rules.scoring.third_party
+    if request.vendor_involved:
         return RiskCategoryScore(
             category="Third-Party / Vendor",
-            score=4,
-            rationale=f"Vendor involved ({req.vendor_name or 'unnamed'}) — introduces third-party risk",
+            score=params.vendor_score,
+            rationale=f"Vendor involved ({request.vendor_name or 'unnamed'}) — introduces third-party risk",
+            input_fields=["vendor_involved", "vendor_name"],
         )
-    return RiskCategoryScore(category="Third-Party / Vendor", score=1, rationale="No vendor involvement identified")
+    return RiskCategoryScore(
+        category="Third-Party / Vendor",
+        score=params.no_vendor_score,
+        rationale="No vendor involvement identified",
+        input_fields=["vendor_involved"],
+    )
 
 
-def _score_change_complexity(req: ExtractedChangeRequest) -> RiskCategoryScore:
-    factor_count = len(req.stated_risk_factors)
-    if factor_count >= 3:
-        score, rationale = 4, f"{factor_count} distinct risk factors stated in source document"
-    elif factor_count >= 1:
-        score, rationale = 2, f"{factor_count} risk factor(s) stated in source document"
+def _score_change_complexity(
+    request: ExtractedChangeRequest,
+    rules: GovernanceRules,
+) -> RiskCategoryScore:
+    params = rules.scoring.change_complexity
+    factor_count = len(request.stated_risk_factors)
+    if factor_count >= params.many_factors_count:
+        score = params.many_factors_score
+        rationale = f"{factor_count} distinct risk factors stated in source document"
+    elif factor_count:
+        score = params.some_factors_score
+        rationale = f"{factor_count} risk factor(s) stated in source document"
     else:
-        score, rationale = 1, "No explicit risk factors stated"
+        score = params.no_factors_score
+        rationale = "No explicit risk factors stated"
 
-    if req.extraction_confidence < 0.6:
-        score = min(5, score + 1)
+    if request.extraction_confidence < params.low_confidence_threshold:
+        score = min(params.maximum_score, score + params.low_confidence_increment)
         rationale += "; low extraction confidence increases uncertainty — analyst should verify source"
 
-    return RiskCategoryScore(category="Change Complexity", score=score, rationale=rationale)
-
-
-def score_change_request(req: ExtractedChangeRequest) -> RiskAssessmentDraft:
-    """Deterministic, rule-based scoring — no LLM in this path.
-
-    Rationale for this being plain code rather than a model call: risk
-    scoring here follows fixed, defensible rules a committee needs to be
-    able to reproduce and challenge. That's a good fit for deterministic
-    logic; an LLM's job upstream was structuring the unstructured input,
-    not deciding the number. Document this trade-off in /docs/architecture.
-    """
-    category_scores = [
-        _score_customer_and_geography(req),
-        _score_product_and_channel(req),
-        _score_third_party(req),
-        _score_change_complexity(req),
-    ]
-
-    weight_by_category = dict(
-        zip(
-            ["Customer & Geography", "Product & Channel", "Third-Party / Vendor", "Change Complexity"],
-            _CATEGORY_WEIGHTS.values(),
-        )
+    return RiskCategoryScore(
+        category="Change Complexity",
+        score=min(score, params.maximum_score),
+        rationale=rationale,
+        input_fields=["stated_risk_factors", "extraction_confidence"],
     )
-    overall = sum(cs.score * weight_by_category[cs.category] for cs in category_scores)
-    overall = round(overall, 2)
 
-    if overall >= 4.0:
+
+def score_change_request(
+    request: ExtractedChangeRequest,
+    rules: GovernanceRules | None = None,
+) -> RiskAssessmentDraft:
+    """Apply the selected versioned scoring configuration without model decisions."""
+    rules = rules or active_governance_rules
+    category_scores = [
+        _score_customer_and_geography(request, rules),
+        _score_product_and_channel(request, rules),
+        _score_third_party(request, rules),
+        _score_change_complexity(request, rules),
+    ]
+    category_keys = {
+        "Customer & Geography": "customer_and_geography",
+        "Product & Channel": "product_and_channel",
+        "Third-Party / Vendor": "third_party",
+        "Change Complexity": "change_complexity",
+    }
+    overall = round(
+        sum(
+            item.score * rules.scoring.weights[category_keys[item.category]]
+            for item in category_scores
+        ),
+        2,
+    )
+
+    thresholds = rules.scoring.risk_thresholds
+    if overall >= thresholds["critical"]:
         level = RiskLevel.critical
-    elif overall >= 3.0:
+    elif overall >= thresholds["high"]:
         level = RiskLevel.high
-    elif overall >= 2.0:
+    elif overall >= thresholds["medium"]:
         level = RiskLevel.medium
     else:
         level = RiskLevel.low
@@ -134,4 +162,7 @@ def score_change_request(req: ExtractedChangeRequest) -> RiskAssessmentDraft:
         overall_score=overall,
         risk_level=level,
         requires_committee_review=level in (RiskLevel.high, RiskLevel.critical),
+        ruleset_version=rules.version,
+        ruleset_sha256=rules.sha256,
+        ruleset_snapshot=rules.model_dump(mode="json"),
     )

@@ -44,6 +44,8 @@
         </div>
     </div>
 
+    {% include "partials/source_provenance.html" %}
+
     {% if case.policy_evidence %}
     <h3>Policy evidence</h3>
     {% for evidence in case.policy_evidence %}
@@ -80,7 +82,7 @@
 
     <h3>Committee vote status</h3>
     <p class="panel__hint">{{ vote_summary.approvals }} approvals · {{ vote_summary.rejections }} rejections · {{ vote_summary.deferred }} deferrals · {{ vote_summary.votes_cast }}/{{ vote_summary.votes_needed }} votes cast · Result: {{ vote_summary.result }}</p>
-    <p class="panel__hint">Quorum: three distinct committee members. At least two approvals or two rejections determine the result; otherwise the case is deferred.</p>
+    <p class="panel__hint">Quorum: {{ workflow_rules.committee_votes_required }} distinct committee members. At least {{ workflow_rules.committee_majority_required }} approvals or rejections determine the result; otherwise the case is deferred.</p>
     {% if vote_summary.votes %}
     <table class="score-table">
         <thead><tr><th>Member</th><th>Vote</th><th>Rationale</th></tr></thead>
