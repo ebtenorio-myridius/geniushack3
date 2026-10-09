@@ -7,6 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src ./src
 COPY ai ./ai
+COPY config ./config
 
 EXPOSE 8000
 
