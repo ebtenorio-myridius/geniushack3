@@ -7297,3 +7297,78 @@ This file captures the office chat and development decisions. A separate file sh
 chats/chats_home.md
 ```
 
+## 2026-10-09
+
+### 11:00 -04:00 - Conversation Summary
+
+#### User request
+
+The user asked to run the updated app locally and test it for each user type before pushing the changes.
+
+#### Actions
+
+- Started an isolated app instance on port 8002 using a temporary SQLite database and temporary source-document directory. The existing app on port 8000 was left untouched.
+- Created a synthetic high-risk PDF case and exercised the HTTP workflows with separate demo-cookie identities for the product owner, analyst, and all three committee members.
+- Verified the product owner could view cited source provenance, download the retained PDF, submit the case, and respond to an analyst information request. Confirmed the owner could not access the committee export.
+- Verified the analyst could see the submitted case, citations, ruleset and audit status; request information; finalize the assessment; send the case to committee; and view cycle-time metrics.
+- Verified each committee member could see the case and provenance and cast a distinct vote. The case remained in committee review after the first two votes and reached a recorded outcome only after the third.
+- Downloaded the examiner-style ZIP and checked its source PDF, all three votes, audit report, and manifest.
+- Stopped the isolated server and removed only its temporary synthetic test data.
+
+#### Results
+
+- The complete automated suite had passed: `86 passed`.
+- The first manual-flow attempt exposed an overly specific assertion about the metrics page title; a follow-up request confirmed the page rendered correctly and included the case.
+- All role-based HTTP workflow checks passed on the completed run, including a valid final local audit-chain verification.
+- The existing port-8000 app continued responding after the isolated test server was stopped.
+- The local audit chain and export remain prototype controls, not immutable or examiner-certified records.
+
+### 11:03 -04:00 - Conversation Summary
+
+#### User request
+
+The user asked for a suggested commit message for the evidence, governance, audit, export, and cycle-time implementation.
+
+#### Assistant response
+
+Suggested a commit message titled “Add evidence provenance, versioned governance, and audit exports.” The body summarized local source retention and citations, score-input provenance, per-case rules snapshots, hash-chain export, prototype cycle-time reporting, and the limitations of the local controls and illustrative targets.
+
+### 11:14 -04:00 - Render Startup Failure
+
+#### User request
+
+The user reported that the latest deployment appeared to have a build error on Render and attached `Render_Logs.txt` for investigation.
+
+#### Findings and actions
+
+- Read the deployment log. Docker completed all image build steps successfully; the failure occurred later when Uvicorn started the app.
+- Traced the startup traceback to `FileNotFoundError` for `/code/config/governance_rules.json`, loaded while importing the governance service.
+- Inspected the Dockerfile and found it copied the application source and AI prompt directory but did not copy the new `config` directory.
+- Added `COPY config ./config` so the image includes the rules file at the expected `/code/config` path.
+
+#### Validation
+
+- The Docker executable was unavailable in the local environment, so a container image build could not be run.
+- Verified that the rules file exists in the Docker build context and the Dockerfile copies the directory to the required image path.
+- Ran the governance and application startup tests: `23 passed`.
+- `git diff --check` passed. The Dockerfile fix remains uncommitted until the user commits and redeploys it.
+
+### 11:16 -04:00 - Render Fix Commit Message
+
+#### User request
+
+The user asked for a commit message for the Docker startup fix.
+
+#### Assistant response
+
+Suggested “Fix Docker deployment startup by copying governance config,” with a short body explaining that `config/governance_rules.json` must be present in the image for startup rule loading.
+
+### 11:23 -04:00 - Chat Archive Update
+
+#### User request
+
+The user asked to add the latest relevant conversations to this history file while leaving out unrelated earlier discussion.
+
+#### Action
+
+Added this dated summary of the local role-based test, the commit-message suggestions, the Render startup diagnosis and Dockerfile correction, and the associated validation.
