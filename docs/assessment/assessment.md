@@ -1,6 +1,6 @@
 # Genius Hacks 2026 Submission Assessment
 
-Assessment date: 2026-09-24 (refreshed 2026-09-28)
+Assessment date: 2026-09-24 (refreshed 2026-10-09)
 
 Source brief: https://myridius.com/genius-hacks-q3-2026
 
@@ -14,15 +14,32 @@ PDF
 -> structured OpenAI extraction
 -> deterministic risk scoring
 -> SQLite persistence
+-> product-owner submission gate
 -> analyst edit/rescore
+-> analyst information-request loop
 -> analyst finalization
 -> committee queue
--> committee decision
+-> committee information-request loop and three-member decision
+-> condition tracking and evidence
+-> closure or linked reassessment
 ```
 
 The app addresses the central problem substantially and is suitable for a credible demonstration. It is not yet a production-ready banking platform. The largest remaining risks are prototype-level authentication, incomplete residual-risk/control modeling, limited measured cost optimization, and limited preservation of the actual AI output/review trail for the requirements and design stages.
 
-Estimated current rubric position: approximately **60.25/100** (up from 59.25/100 as of 2026-09-24). This is an engineering estimate, not an official judging score. The assessment reflects verified policy citations, explicit six-stage delivery evidence, improved scoring signals, synchronized governance documentation, and 62 passing tests. The `APIConnectionError` that previously failed all eight live-evaluation calls was traced to the office network blocking outbound OpenAI API access; rerunning from an unblocked network succeeded. The latest recorded evaluation has 8/8 successful calls, 54/80 fields correct (67.5%), and 100% risk-level agreement (see `evals/results/latest.md`). That incident and the subsequent malformed-PDF, retry, and quorum hardening are documented in `ops/monitoring.md` and `docs/sdlc/ai-delivery-evidence.md`. One evaluation finding remains: on the contradictory-input case (`SYN-005`), the model's reported extraction confidence was higher than the expected value, indicating a confidence-calibration gap.
+The prior rubric estimate was approximately **60.25/100** as of 2026-09-28; it
+is an engineering estimate, not an official judging score, and has not been
+recalculated for the workflow increment described here. The full automated
+suite now passes **76 tests** (2026-10-09). The `APIConnectionError` that
+previously failed all eight live-evaluation calls was traced to the office
+network blocking outbound OpenAI API access; rerunning from an unblocked
+network succeeded. The latest recorded evaluation has 8/8 successful calls,
+54/80 fields correct (67.5%), and 100% risk-level agreement (see
+`evals/results/latest.md`). That incident and the subsequent malformed-PDF,
+retry, and quorum hardening are documented in `ops/monitoring.md` and
+`docs/sdlc/ai-delivery-evidence.md`. One evaluation finding remains: on the
+contradictory-input case (`SYN-005`), the model's reported extraction
+confidence was higher than the expected value, indicating a
+confidence-calibration gap.
 
 ## 1. Problem Statement Compliance
 
@@ -52,6 +69,12 @@ Implemented:
 - SQLite case persistence;
 - extraction versioning;
 - analyst edits and rescoring;
+- explicit product-owner submission gate and per-case owner/analyst assignment;
+- analyst/committee information requests that pause and resume the requesting stage;
+- committee packet history showing changed extraction fields and rationale;
+- condition owner, due date, completion evidence, and overdue tracking;
+- closure gates and linked reassessment cases that preserve prior outcomes;
+- queue next-action and elapsed-waiting indicators;
 - policy evidence attachment using synthetic policy sources;
 - analyst finalization;
 - committee queue;
@@ -65,7 +88,7 @@ Partial or missing:
 - control effectiveness and residual-risk scoring;
 - FCRM approval of the published supervisory-framework mapping;
 - immutable audit enforcement at the database permission layer;
-- real identity and role management;
+- production identity and role management (demo-role authorization is implemented, not production SSO);
 - production committee identity and institutionally approved decision policy beyond the demo three-vote rule;
 - source-page citations and document hashes;
 - production database, object storage, and background processing.
@@ -253,7 +276,7 @@ recorded on 2026-09-24.
 | Evaluation definitions | Present in `evals/README.md` and runner |
 | Synthetic datasets | Present in JSON and generated PDFs |
 | Evaluation results | Present in `evals/results/` |
-| Automated tests | Present; 24 pass |
+| Automated tests | Present; 76 pass |
 | Deployment approach | Present in `ops/` |
 | Monitoring approach | Present, but no dashboard or alerts |
 | Token analysis | Present, but measured cost analysis is limited |
@@ -281,7 +304,7 @@ The judges assess the surrounding design, orchestration, governance, evaluation,
 
 ### Humans decide
 
-The system must prepare evidence. It must not automatically approve or reject a change. The current committee decision is human-triggered, which aligns with this requirement. Demo header roles are not production authentication.
+The system must prepare evidence. It must not automatically approve or reject a change. The current committee decision is human-triggered, which aligns with this requirement. Demo identity cookies are not production authentication.
 
 ### Ambiguity is part of the assessment
 
@@ -302,7 +325,7 @@ The page requires a credible deployment and operations approach. A running deplo
 
 Executed checks:
 
-- full automated suite: **62 passed**;
+- full automated suite: **76 passed**;
 - Python compilation for application, tests, tools, and evals: passed;
 - eight generated PDF inputs: validated through the app's PDF extractor;
 - live evaluation: latest recorded run had **8/8 successful calls** from a
@@ -319,7 +342,7 @@ The test suite reported one ReportLab deprecation warning. It does not currently
 
 1. Obtain FCRM approval for the cited supervisory-framework mapping and scoring taxonomy.
 2. Add controls, control effectiveness, residual-risk scoring, remediation conditions, and source-page evidence.
-3. Replace demo headers with real authentication if claiming production readiness.
+3. Replace demo cookies with real authentication if claiming production readiness.
 4. Add multi-member committee votes, quorum, and conflict-of-interest handling.
 5. Add a measured token/cost report and optimization comparison.
 6. Continue preserving prompt/evaluation failure iterations as dated artifacts (started with the `ops/monitoring.md` connectivity incident record); investigate and address the `SYN-005` confidence-calibration gap next.

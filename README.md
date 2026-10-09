@@ -2,9 +2,10 @@
 
 FastAPI + Jinja2 + HTMX workbench for Genius Hacks 2026. The synthetic-data
 prototype demonstrates **demo sign-in -> PDF text extraction -> structured LLM
-extraction -> deterministic risk score -> analyst review -> three-member
-committee vote**. It prepares evidence for human review; it is not an automatic
-approval system or a production banking platform.
+extraction -> explicit product-owner submission -> analyst review and
+information requests -> three-member committee vote -> condition tracking,
+closure, and linked reassessment**. It prepares evidence for human review; it
+is not an automatic approval system or a production banking platform.
 
 ## Stack
 
@@ -146,28 +147,33 @@ The latest recorded live extraction evaluation completed all 8 synthetic cases:
 
 This small synthetic evaluation is not a production accuracy estimate; perfect
 risk-level agreement does not mean the extracted fields were all correct. The
-latest local automated test run on 2026-09-28 passed **46 tests** (one
-third-party `reportlab` deprecation warning). Run the tests and inspect the
-current [evaluation report](evals/results/latest.md) before presenting these
-figures, as results can change.
+full automated test suite passed **76 tests on 2026-10-09** (two
+third-party deprecation warnings). Run the tests and inspect the current
+[evaluation report](evals/results/latest.md) before presenting these figures,
+as results can change.
 
 ## Current limitations and next steps
 
 The current demo implements PDF text extraction, structured extraction,
 deterministic scoring, SQLite persistence, analyst editing/rescoring, policy
-evidence lookup with fallback, three-member committee voting, demo login,
-telemetry, and a live evaluation runner. Important prototype limitations:
+evidence lookup with fallback, three-member committee voting, product-owner
+submission and information-response loops, condition ownership/due dates and
+evidence, case closure, linked reassessments, case ownership and queue aging,
+demo login, telemetry, and a live evaluation runner. Important prototype
+limitations:
 
 - Demo identities and cookies are not production authentication.
-- Authorization is inconsistent across endpoints: `/intake` is guarded, but
-  the PDF upload POST and browser-friendly committee demo queue are not
-  role-gated. Inline analyst forms use a fixed demo analyst header.
+- Workflow endpoints are role-gated using demo identities, not production
+  authentication or institution-managed authorization.
 - Workflow events are append-only by application behavior, not
   database-enforced or tamper-proof. Actor values are not uniformly tied to a
   verified identity.
 - Committee voting is prototype logic, not an institutionally approved
   decision policy; the endpoint accepts approve, reject, or approve with
   conditions, and requires three distinct demo voters.
+- Case queues display elapsed waiting days but have no configured case-stage
+  service-level targets. Conditions have individual due dates and overdue
+  indicators.
 - Policy documents and evaluation inputs are synthetic. Scoring weights are
   placeholders; controls and residual-risk assessment are not implemented.
 - Uploaded PDF bytes are not persisted; OCR for image-only PDFs is unavailable.

@@ -34,10 +34,9 @@ extraction versions rather than discarding the prior extraction.
 inspectable.
 
 **Boundary:** append-only describes current application behavior only. The
-SQLite database does not enforce write-once event storage, and actor values
-are not uniformly bound to verified identity. The inline analyst form uses a
-fixed demo analyst header. This is not a production audit or authorization
-control.
+SQLite database does not enforce write-once event storage. Demo identity
+cookies are not signed credentials and do not provide production
+authentication or authorization.
 
 ## SQLite for the demo
 
@@ -80,12 +79,10 @@ role pair; login and switch-role flows set or clear these cookies.
 **Reason:** allow a repeatable hackathon walkthrough without implementing an
 identity provider.
 
-**Boundary:** this is not authentication suitable for production. Endpoint
-checks are inconsistent: the PDF upload POST and `/intake/committee-queue/demo`
-are not role-gated, the regular committee queue checks only the role string,
-and actor handling is not uniformly tied to the signed-in principal. Do not
-use real or sensitive data. Production requires real identity and consistent
-authorization on every page and API endpoint.
+**Boundary:** this is not authentication suitable for production. The fixed
+demo identity cookies are not signed credentials and can be forged by a
+client. Do not use real or sensitive data. Production requires a real identity
+provider and authorization backed by verified principals.
 
 ## Committee voting rule
 

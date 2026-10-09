@@ -32,12 +32,10 @@ performs the same validation. The login form starts blank; a successful login
 sets the identity cookies, and the switch-role link clears them before
 returning to login.
 
-The upload POST endpoint does not apply the same role check as the browser
-intake page. The `/intake/committee-queue/demo` page is also not role-gated;
-the regular committee queue checks the role string but does not validate the
-username-role pair. Analyst actions submitted from the extraction result use a
-fixed demo analyst header and an editable actor field. These are material demo
-limitations: the browser checks are not a complete authorization boundary.
+Workflow routes validate the fixed demo username-role mapping from the
+identity cookies; client-supplied role headers do not grant access. The
+cookies are demo identity selectors, not signed credentials, and can be
+forged by a client. This remains unsuitable for production authorization.
 
 The LLM structures untrusted source text; it does not make an approval
 decision. Scoring is deterministic so category scores and thresholds can be
@@ -60,6 +58,6 @@ production database migration would require a persistence adapter and
 migrations; domain contracts can remain stable, but there is not currently a
 separate repository abstraction.
 
-Production increments include consistent endpoint authorization and real
-identity, database-enforced audit controls, source-document storage, approved
-policy and decision mappings, and control-effectiveness/residual-risk data.
+Production increments include real identity, database-enforced audit
+controls, source-document storage, approved policy and decision mappings, and
+control-effectiveness/residual-risk data.

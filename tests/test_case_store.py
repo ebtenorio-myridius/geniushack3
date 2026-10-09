@@ -74,6 +74,7 @@ def test_case_store_rejects_second_review(tmp_path):
 def test_case_store_versions_edits_and_supports_committee_decision(tmp_path):
     store = CaseStore(str(tmp_path / "cases.db"))
     case = store.create_case("synthetic.pdf", _request(), score_change_request(_request()))
+    store.submit_case(case.case_id, "product-owner-1")
     edited = _request(change_title="Edited synthetic change")
     updated = store.update_extraction(
         case.case_id,
@@ -101,6 +102,25 @@ def test_case_store_versions_edits_and_supports_committee_decision(tmp_path):
         CommitteeReview(decision="approve", actor="synthetic-committee", rationale="Approved synthetic case."),
     )
     assert decided.status == CaseStatus.decisioned
+
+
+def test_product_owner_draft_correction_keeps_submission_gate_closed(tmp_path):
+    store = CaseStore(str(tmp_path / "cases.db"))
+    incomplete = _request(business_unit="")
+    case = store.create_case("synthetic.pdf", incomplete, score_change_request(incomplete))
+    corrected = _request(business_unit="Payments")
+
+    updated = store.update_draft(
+        case.case_id,
+        corrected,
+        score_change_request(corrected),
+        "product-owner-1",
+        "Completed missing business unit from the source request.",
+    )
+    assert updated.status == CaseStatus.draft
+    assert updated.extraction_version == 2
+    assert store.list_events(case.case_id)[-1]["actor"] == "product-owner-1"
+    assert store.submit_case(case.case_id, "product-owner-1").status == CaseStatus.analyst_review
 
 
 def test_case_store_requires_three_committee_votes_for_final_decision(tmp_path):

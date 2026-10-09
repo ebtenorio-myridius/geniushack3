@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from enum import Enum
 from pydantic import BaseModel, Field
 
@@ -56,11 +56,14 @@ class RiskLevel(str, Enum):
 class CaseStatus(str, Enum):
     draft = "draft"
     analyst_review = "analyst_review"
+    needs_information = "needs_information"
     analyst_finalized = "analyst_finalized"
     analyst_accepted = "analyst_accepted"
     analyst_rejected = "analyst_rejected"
     committee_review = "committee_review"
     decisioned = "decisioned"
+    conditions_pending = "conditions_pending"
+    closed = "closed"
 
 
 class CommitteeDecision(str, Enum):
@@ -114,6 +117,8 @@ class CommitteeReview(BaseModel):
     actor: str = Field(min_length=1)
     rationale: str = Field(min_length=1)
     conditions: str = ""
+    conditions_owner: str = ""
+    conditions_due_date: date | None = None
 
 
 class TelemetryRecord(BaseModel):
@@ -137,5 +142,9 @@ class CaseRecord(BaseModel):
     status: CaseStatus = CaseStatus.draft
     created_at: datetime
     updated_at: datetime
-
-
+    submitted_by: str = "product-owner-1"
+    assigned_to: str | None = None
+    parent_case_id: str | None = None
+    information_request: str | None = None
+    awaiting_from: str | None = None
+    decision: CommitteeDecision | None = None

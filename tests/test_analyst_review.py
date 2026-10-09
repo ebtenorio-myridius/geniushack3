@@ -21,6 +21,7 @@ def test_analyst_can_finalize_low_risk_case_from_case_detail(monkeypatch, tmp_pa
     assessment = score_change_request(extracted)
     assert assessment.risk_level == RiskLevel.low
     case = store.create_case("manual synthetic sample", extracted, assessment)
+    store.submit_case(case.case_id, "product-owner-1")
     monkeypatch.setattr(intake, "case_store", store)
 
     client = TestClient(app)

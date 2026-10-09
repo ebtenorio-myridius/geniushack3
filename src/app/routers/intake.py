@@ -1,9 +1,17 @@
 import logging
+from datetime import date, datetime, timezone
 
-from fastapi import APIRouter, File, Form, Header, Request, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from src.app.models.schemas import AnalystReview, CaseStatus, ExtractedChangeRequest, UserRole
+from src.app.models.schemas import (
+    AnalystReview,
+    CaseStatus,
+    CommitteeDecision,
+    CommitteeReview,
+    ExtractedChangeRequest,
+    UserRole,
+)
 from src.app.services.dependencies import case_store
 from src.app.services.llm_service import draft_extraction
 from src.app.services.pdf_extraction import PdfExtractionError, extract_text_from_pdf
@@ -20,8 +28,8 @@ _MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 
 def _identity(request: Request) -> tuple[str | None, str | None]:
     return (
-        request.headers.get("X-Demo-User") or request.cookies.get("demo_user"),
-        request.headers.get("X-Demo-Role") or request.cookies.get("demo_role"),
+        request.cookies.get("demo_user"),
+        request.cookies.get("demo_role"),
     )
 
 
@@ -97,9 +105,25 @@ async def intake_form(request: Request):
 
 
 def _queue_context(cases):
+    now = datetime.now(timezone.utc)
     return {
         "cases": cases,
         "events_by_case": {case.case_id: case_store.list_events(case.case_id) for case in cases},
+        "age_days_by_case": {
+            case.case_id: max(0, (now - case.updated_at.astimezone(timezone.utc)).days)
+            for case in cases
+        },
+    }
+
+
+def _case_detail_context(case_id: str):
+    today = datetime.now(timezone.utc).date().isoformat()
+    conditions = case_store.list_conditions(case_id)
+    for condition in conditions:
+        condition["overdue"] = condition["status"] == "open" and condition["due_date"] < today
+    return {
+        "conditions": conditions,
+        "versions": case_store.list_extraction_versions(case_id),
     }
 
 
@@ -111,7 +135,7 @@ async def product_owner_dashboard(request: Request):
     return templates.TemplateResponse(
         request,
         "product_owner_dashboard.html",
-        {"cases": cases, "detail_base": "/intake/product-owner/cases"},
+        _queue_context([case for case in cases if case.submitted_by == user]) | {"detail_base": "/intake/product-owner/cases"},
     )
 
 
@@ -140,14 +164,11 @@ def _decision_status_labels(cases):
 async def analyst_dashboard(request: Request):
     user, role = _identity(request)
     require_role(UserRole.analyst, user, role)
-    cases = case_store.list_cases()
+    cases = case_store.list_cases((CaseStatus.analyst_review, CaseStatus.needs_information))
     return templates.TemplateResponse(
         request,
         "analyst_dashboard.html",
-        _queue_context(cases) | {
-            "decisioned_cases": [case for case in cases if case.status == CaseStatus.decisioned],
-            "detail_base": "/intake/analyst/cases",
-        },
+        _queue_context(cases) | {"detail_base": "/intake/analyst/cases"},
     )
 
 
@@ -167,8 +188,8 @@ async def committee_dashboard(request: Request):
 async def analyst_decisioned(request: Request):
     user, role = _identity(request)
     require_role(UserRole.analyst, user, role)
-    cases = case_store.list_cases((CaseStatus.decisioned,))
-    return templates.TemplateResponse(request, "case_list.html", {"title": "Decisioned cases", "role": "analyst", "cases": cases, "detail_base": "/intake/analyst/cases", "status_labels": _decision_status_labels(cases)})
+    cases = case_store.list_cases((CaseStatus.decisioned, CaseStatus.conditions_pending, CaseStatus.closed))
+    return templates.TemplateResponse(request, "case_list.html", _queue_context(cases) | {"title": "Decisioned cases", "role": "analyst", "detail_base": "/intake/analyst/cases", "status_labels": _decision_status_labels(cases)})
 
 
 @router.get("/analyst/committee-cases", response_class=HTMLResponse)
@@ -179,7 +200,7 @@ async def analyst_committee_cases(request: Request):
     return templates.TemplateResponse(
         request,
         "case_list.html",
-        {"title": "Cases awaiting committee decision", "role": "analyst", "cases": cases, "detail_base": "/intake/analyst/cases"},
+        _queue_context(cases) | {"title": "Cases awaiting committee decision", "role": "analyst", "detail_base": "/intake/analyst/cases"},
     )
 
 
@@ -187,8 +208,8 @@ async def analyst_committee_cases(request: Request):
 async def committee_decisioned(request: Request):
     user, role = _identity(request)
     require_role(UserRole.committee, user, role)
-    cases = case_store.list_cases((CaseStatus.decisioned,))
-    return templates.TemplateResponse(request, "case_list.html", {"title": "Decisioned cases", "role": "committee", "cases": cases, "detail_base": "/intake/committee/cases", "status_labels": _decision_status_labels(cases)})
+    cases = case_store.list_cases((CaseStatus.decisioned, CaseStatus.conditions_pending, CaseStatus.closed))
+    return templates.TemplateResponse(request, "case_list.html", _queue_context(cases) | {"title": "Decisioned cases", "role": "committee", "detail_base": "/intake/committee/cases", "status_labels": _decision_status_labels(cases)})
 
 
 @router.get("/committee/cases/{case_id}", response_class=HTMLResponse)
@@ -201,7 +222,7 @@ async def committee_case_detail(request: Request, case_id: str):
     return templates.TemplateResponse(
         request,
         "committee_case.html",
-        {"case": case, "events": case_store.list_events(case_id), "vote_summary": case_store.committee_vote_summary(case_id)},
+        {"case": case, "events": case_store.list_events(case_id), "vote_summary": case_store.committee_vote_summary(case_id), "demo_user": user} | _case_detail_context(case_id),
     )
 
 
@@ -210,12 +231,12 @@ async def product_owner_case_detail(request: Request, case_id: str):
     user, role = _identity(request)
     require_role(UserRole.product_owner, user, role)
     case = case_store.get_case(case_id)
-    if case is None:
+    if case is None or case.submitted_by != user:
         return templates.TemplateResponse(request, "partials/error.html", {"message": "Case not found."}, status_code=404)
     return templates.TemplateResponse(
         request,
         "product_owner_case.html",
-        {"case": case, "events": case_store.list_events(case_id)},
+        {"case": case, "events": case_store.list_events(case_id), "demo_user": user} | _case_detail_context(case_id),
     )
 
 
@@ -229,7 +250,7 @@ async def analyst_case_detail(request: Request, case_id: str):
     return templates.TemplateResponse(
         request,
         "analyst_case.html",
-        {"case": case, "events": case_store.list_events(case_id), "demo_user": user},
+        {"case": case, "events": case_store.list_events(case_id), "demo_user": user, "vote_summary": case_store.committee_vote_summary(case_id)} | _case_detail_context(case_id),
     )
 
 
@@ -239,6 +260,8 @@ async def upload_change_request(request: Request, file: UploadFile = File(...)):
     fragment (not a full page) — this is the endpoint HTMX swaps into the
     page, so the person never leaves the intake form while it processes.
     """
+    user, role = _identity(request)
+    owner = require_role(UserRole.product_owner, user, role)
     if file.content_type != "application/pdf":
         return templates.TemplateResponse(
             request, "partials/error.html", {"message": "Only PDF documents are accepted."}, status_code=415
@@ -269,7 +292,13 @@ async def upload_change_request(request: Request, file: UploadFile = File(...)):
         )
 
     assessment = score_change_request(extracted)
-    case = case_store.create_case(file.filename or "unnamed.pdf", extracted, assessment, find_policy_evidence(extracted))
+    case = case_store.create_case(
+        file.filename or "unnamed.pdf",
+        extracted,
+        assessment,
+        find_policy_evidence(extracted),
+        submitted_by=owner,
+    )
 
     return templates.TemplateResponse(
         request,
@@ -281,6 +310,7 @@ async def upload_change_request(request: Request, file: UploadFile = File(...)):
             "extracted": extracted,
             "assessment": assessment,
             "policy_evidence": case.policy_evidence,
+            "submitted_by": case.submitted_by,
         },
     )
 
@@ -290,17 +320,19 @@ async def review_change_request(
     request: Request,
     case_id: str,
     decision: CaseStatus = Form(...),
-    actor: str = Form(""),
     rationale: str = Form(...),
-    demo_user: str | None = Header(default=None, alias="X-Demo-User"),
-    demo_role: str | None = Header(default=None, alias="X-Demo-Role"),
 ):
     analyst_actor = require_role(
         UserRole.analyst,
-        demo_user or request.cookies.get("demo_user"),
-        demo_role or request.cookies.get("demo_role"),
+        request.cookies.get("demo_user"),
+        request.cookies.get("demo_role"),
     )
     try:
+        case = case_store.get_case(case_id)
+        if case is None:
+            raise KeyError(case_id)
+        if case.status != CaseStatus.analyst_review:
+            raise ValueError("Only submitted cases in analyst review can be finalized")
         case = case_store.review_case(case_id, AnalystReview(decision=decision, actor=analyst_actor, rationale=rationale))
     except KeyError:
         return templates.TemplateResponse(request, "partials/error.html", {"message": "Case not found."}, status_code=404)
@@ -328,12 +360,9 @@ async def edit_change_request(
     vendor_name: str = Form(""),
     products_involved: str = Form(""),
     stated_risk_factors: str = Form(""),
-    actor: str = Form(...),
     rationale: str = Form(...),
-    demo_user: str | None = Header(default=None, alias="X-Demo-User"),
-    demo_role: str | None = Header(default=None, alias="X-Demo-Role"),
 ):
-    require_role(UserRole.analyst, demo_user or request.cookies.get("demo_user"), demo_role or request.cookies.get("demo_role"))
+    analyst = require_role(UserRole.analyst, request.cookies.get("demo_user"), request.cookies.get("demo_role"))
     extracted = ExtractedChangeRequest(
         change_title=change_title,
         change_type=change_type,
@@ -348,7 +377,12 @@ async def edit_change_request(
         extraction_confidence=1.0,
     )
     try:
-        case = case_store.update_extraction(case_id, extracted, score_change_request(extracted), actor, rationale, find_policy_evidence(extracted))
+        case_before_edit = case_store.get_case(case_id)
+        if case_before_edit is None:
+            raise KeyError(case_id)
+        if case_before_edit.status != CaseStatus.analyst_review:
+            raise ValueError("Only submitted cases in analyst review can be edited")
+        case = case_store.update_extraction(case_id, extracted, score_change_request(extracted), analyst, rationale, find_policy_evidence(extracted))
     except KeyError:
         return templates.TemplateResponse(request, "partials/error.html", {"message": "Case not found."}, status_code=404)
     except ValueError as exc:
@@ -357,11 +391,11 @@ async def edit_change_request(
 
 
 @router.post("/{case_id}/committee/submit", response_class=HTMLResponse)
-async def submit_committee_review(request: Request, case_id: str, actor: str = Form(...), rationale: str = Form(...)):
+async def submit_committee_review(request: Request, case_id: str, rationale: str = Form(...)):
     try:
         user, role = _identity(request)
-        require_role(UserRole.analyst, user, role)
-        case = case_store.submit_committee(case_id, actor, rationale)
+        verified_actor = require_role(UserRole.analyst, user, role)
+        case = case_store.submit_committee(case_id, verified_actor, rationale)
     except KeyError:
         return templates.TemplateResponse(request, "partials/error.html", {"message": "Case not found."}, status_code=404)
     except ValueError as exc:
@@ -372,38 +406,183 @@ async def submit_committee_review(request: Request, case_id: str, actor: str = F
 @router.get("/committee-queue", response_class=HTMLResponse)
 async def committee_queue(request: Request):
     user, role = _identity(request)
-    if role != UserRole.committee.value:
-        return templates.TemplateResponse(
-            request,
-            "partials/committee_access.html",
-            {},
-            status_code=403,
-        )
+    require_role(UserRole.committee, user, role)
     cases = case_store.list_committee_cases()
     return templates.TemplateResponse(
         request,
         "partials/committee_queue.html",
-        {"cases": cases, "events_by_case": {case.case_id: case_store.list_events(case.case_id) for case in cases}, "vote_summary_by_case": {case.case_id: case_store.committee_vote_summary(case.case_id) for case in cases}},
+        _queue_context(cases) | {"vote_summary_by_case": {case.case_id: case_store.committee_vote_summary(case.case_id) for case in cases}},
     )
 
 
 @router.get("/committee-queue/demo", response_class=HTMLResponse)
 async def demo_committee_queue(request: Request):
     """Browser-friendly local demo entry point for the committee queue."""
+    user, role = _identity(request)
+    require_role(UserRole.committee, user, role)
+    cases = case_store.list_committee_cases()
     return templates.TemplateResponse(
         request,
         "committee_queue.html",
-        {"cases": (cases := case_store.list_committee_cases()), "events_by_case": {case.case_id: case_store.list_events(case.case_id) for case in cases}, "vote_summary_by_case": {case.case_id: case_store.committee_vote_summary(case.case_id) for case in cases}},
+        _queue_context(cases) | {"vote_summary_by_case": {case.case_id: case_store.committee_vote_summary(case.case_id) for case in cases}},
     )
 
 
 @router.post("/{case_id}/committee/decision", response_class=HTMLResponse)
-async def committee_decision(request: Request, case_id: str, decision: str = Form(...), rationale: str = Form(...), conditions: str = Form("")):
-    from src.app.models.schemas import CommitteeDecision, CommitteeReview
+async def committee_decision(
+    request: Request,
+    case_id: str,
+    decision: str = Form(...),
+    rationale: str = Form(...),
+    conditions: str = Form(""),
+    conditions_owner: str = Form(""),
+    conditions_due_date: str = Form(""),
+):
     user, role = _identity(request)
     actor = require_role(UserRole.committee, user, role)
     try:
-        case = case_store.cast_committee_vote(case_id, CommitteeReview(decision=CommitteeDecision(decision), actor=actor, rationale=rationale, conditions=conditions))
+        due_date = date.fromisoformat(conditions_due_date) if conditions_due_date else None
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="Condition due date must be a valid date.") from exc
+    try:
+        case = case_store.cast_committee_vote(
+            case_id,
+            CommitteeReview(
+                decision=CommitteeDecision(decision),
+                actor=actor,
+                rationale=rationale,
+                conditions=conditions,
+                conditions_owner=conditions_owner,
+                conditions_due_date=due_date,
+            ),
+        )
     except (KeyError, ValueError) as exc:
         return templates.TemplateResponse(request, "partials/error.html", {"message": str(exc)}, status_code=409)
     return templates.TemplateResponse(request, "partials/review_result.html", {"case": case})
+
+
+@router.post("/{case_id}/submit", response_class=HTMLResponse)
+async def submit_change_request(request: Request, case_id: str):
+    user, role = _identity(request)
+    actor = require_role(UserRole.product_owner, user, role)
+    try:
+        case = case_store.get_case(case_id)
+        if case is None:
+            raise KeyError(case_id)
+        if case.submitted_by != actor:
+            raise ValueError("Only the submitting product owner can submit this case")
+        case = case_store.submit_case(case_id, actor)
+    except KeyError:
+        return templates.TemplateResponse(request, "partials/error.html", {"message": "Case not found."}, status_code=404)
+    except ValueError as exc:
+        return templates.TemplateResponse(request, "partials/error.html", {"message": str(exc)}, status_code=409)
+    return templates.TemplateResponse(request, "partials/review_result.html", {"case": case})
+
+
+@router.post("/{case_id}/draft/edit", response_class=HTMLResponse)
+async def edit_product_owner_draft(
+    request: Request,
+    case_id: str,
+    change_title: str = Form(...),
+    business_unit: str = Form(...),
+    description: str = Form(...),
+    rationale: str = Form(...),
+):
+    user, role = _identity(request)
+    actor = require_role(UserRole.product_owner, user, role)
+    try:
+        case = case_store.get_case(case_id)
+        if case is None:
+            raise KeyError(case_id)
+        if case.submitted_by != actor:
+            raise ValueError("Only the submitting product owner can edit this draft")
+        extracted = ExtractedChangeRequest(
+            **(case.extracted.model_dump() | {
+                "change_title": change_title,
+                "business_unit": business_unit,
+                "description": description,
+            })
+        )
+        case = case_store.update_draft(
+            case_id,
+            extracted,
+            score_change_request(extracted),
+            actor,
+            rationale,
+            find_policy_evidence(extracted),
+        )
+    except KeyError:
+        return templates.TemplateResponse(request, "partials/error.html", {"message": "Case not found."}, status_code=404)
+    except ValueError as exc:
+        return templates.TemplateResponse(request, "partials/error.html", {"message": str(exc)}, status_code=409)
+    return templates.TemplateResponse(request, "partials/review_result.html", {"case": case})
+
+
+@router.post("/{case_id}/request-information", response_class=HTMLResponse)
+async def request_case_information(request: Request, case_id: str, rationale: str = Form(...)):
+    user, role = _identity(request)
+    if role == UserRole.analyst.value:
+        actor = require_role(UserRole.analyst, user, role)
+    elif role == UserRole.committee.value:
+        actor = require_role(UserRole.committee, user, role)
+    else:
+        raise HTTPException(status_code=403, detail="Analyst or committee role required")
+    try:
+        case = case_store.request_information(case_id, actor, rationale)
+    except KeyError:
+        return templates.TemplateResponse(request, "partials/error.html", {"message": "Case not found."}, status_code=404)
+    except ValueError as exc:
+        return templates.TemplateResponse(request, "partials/error.html", {"message": str(exc)}, status_code=409)
+    return templates.TemplateResponse(request, "partials/review_result.html", {"case": case})
+
+
+@router.post("/{case_id}/information-response", response_class=HTMLResponse)
+async def respond_to_case_information(request: Request, case_id: str, response: str = Form(...)):
+    user, role = _identity(request)
+    actor = require_role(UserRole.product_owner, user, role)
+    try:
+        case = case_store.respond_to_information(case_id, actor, response)
+    except KeyError:
+        return templates.TemplateResponse(request, "partials/error.html", {"message": "Case not found."}, status_code=404)
+    except ValueError as exc:
+        return templates.TemplateResponse(request, "partials/error.html", {"message": str(exc)}, status_code=409)
+    return templates.TemplateResponse(request, "partials/review_result.html", {"case": case})
+
+
+@router.post("/{case_id}/conditions/{condition_id}/complete", response_class=HTMLResponse)
+async def complete_case_condition(request: Request, case_id: str, condition_id: int, evidence: str = Form(...)):
+    user, role = _identity(request)
+    actor = require_role(UserRole.product_owner, user, role)
+    try:
+        case = case_store.complete_condition(case_id, condition_id, actor, evidence)
+    except KeyError:
+        return templates.TemplateResponse(request, "partials/error.html", {"message": "Case not found."}, status_code=404)
+    except ValueError as exc:
+        return templates.TemplateResponse(request, "partials/error.html", {"message": str(exc)}, status_code=409)
+    return templates.TemplateResponse(request, "partials/review_result.html", {"case": case})
+
+
+@router.post("/{case_id}/close", response_class=HTMLResponse)
+async def close_case(request: Request, case_id: str, rationale: str = Form(...)):
+    user, role = _identity(request)
+    actor = require_role(UserRole.analyst, user, role)
+    try:
+        case = case_store.close_case(case_id, actor, rationale)
+    except KeyError:
+        return templates.TemplateResponse(request, "partials/error.html", {"message": "Case not found."}, status_code=404)
+    except ValueError as exc:
+        return templates.TemplateResponse(request, "partials/error.html", {"message": str(exc)}, status_code=409)
+    return templates.TemplateResponse(request, "partials/review_result.html", {"case": case})
+
+
+@router.post("/{case_id}/reassess", response_class=HTMLResponse)
+async def reassess_case(request: Request, case_id: str):
+    user, role = _identity(request)
+    actor = require_role(UserRole.analyst, user, role)
+    try:
+        case = case_store.create_reassessment(case_id, actor)
+    except KeyError:
+        return templates.TemplateResponse(request, "partials/error.html", {"message": "Case not found."}, status_code=404)
+    except ValueError as exc:
+        return templates.TemplateResponse(request, "partials/error.html", {"message": str(exc)}, status_code=409)
+    return templates.TemplateResponse(request, "partials/reassessment_result.html", {"case": case})

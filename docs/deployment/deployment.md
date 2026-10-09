@@ -1,6 +1,6 @@
 # Deployment
 
-This guide covers local operation and free or free-to-start hosting for the current FastAPI application. The application uses SQLite, stores case data locally, calls OpenAI for extraction, and uses demo role headers rather than production authentication. It is suitable for a synthetic-data demo, not for public production use.
+This guide covers local operation and free or free-to-start hosting for the current FastAPI application. The application uses SQLite, stores case data locally, calls OpenAI for extraction, and uses forgeable demo identity cookies rather than production authentication. It is suitable for a synthetic-data demo, not for public production use.
 
 ## Choose a target
 
@@ -22,7 +22,7 @@ OpenAI model calls are not free. Hosting may be free while extraction still incu
 2. Keep `.env` local. It is ignored by Git, but never commit it or copy it into a Docker image.
 3. Configure `OPENAI_API_KEY` through the hosting provider's secret manager.
 4. Use synthetic data only. Do not upload customer, employee, regulated, or confidential documents.
-5. Do not treat `X-Demo-User` and `X-Demo-Role` as authentication. They are demo controls.
+5. Do not treat the demo identity cookies as authentication. They are forgeable demo controls, not production authorization.
 6. Set spending limits and usage alerts for the OpenAI account.
 
 Required environment variables:

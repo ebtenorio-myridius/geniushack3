@@ -15,7 +15,11 @@
             <h1>{{ case.extracted.change_title }}</h1>
             <p class="case-header__source">Case {{ case.case_id }} · {{ case.filename }}</p>
         </div>
-        <span class="badge badge--{{ case.assessment.risk_level.value }}">{{ case.assessment.risk_level.value }} risk</span>
+        <div>
+            <span class="badge badge--{{ case.assessment.risk_level.value }}">{{ case.assessment.risk_level.value }} risk</span>
+            <p class="panel__hint">Status: {{ case.status.value.replace("_", " ") }} · Submitted by {{ case.submitted_by }} · Assigned analyst: {{ case.assigned_to or "Unassigned" }}</p>
+            {% if case.parent_case_id %}<p class="panel__hint">Reassessment of <a href="/intake/product-owner/cases/{{ case.parent_case_id }}">{{ case.parent_case_id }}</a></p>{% endif %}
+        </div>
     </div>
 
     <div class="grid-two">
@@ -47,6 +51,50 @@
     <p class="panel__hint"><strong>{{ event.event_type.replace("_", " ") }}</strong> · {{ event.actor }} · {{ event.occurred_at }}<br>{{ event.rationale }}</p>
     {% endfor %}
 
-    <p class="flag flag--warn">Read-only product owner view. Assessment changes and decisions are handled by analyst and committee workspaces.</p>
+    {% if case.status.value == 'draft' %}
+    <form class="review-form" hx-post="/intake/{{ case.case_id }}/draft/edit" hx-target="#workflow-result">
+        <h3>Complete or correct request details</h3>
+        <p class="panel__hint">Use source-backed information. Title, business unit, and description are required for submission.</p>
+        <label class="field"><span class="field__label">Change title</span><input name="change_title" value="{{ case.extracted.change_title }}" required></label>
+        <label class="field"><span class="field__label">Business unit</span><input name="business_unit" value="{{ case.extracted.business_unit }}" required></label>
+        <label class="field"><span class="field__label">Description</span><textarea name="description" required rows="3">{{ case.extracted.description }}</textarea></label>
+        <label class="field"><span class="field__label">Correction rationale</span><textarea name="rationale" required rows="2"></textarea></label>
+        <button class="button button--secondary" type="submit">Save draft corrections</button>
+    </form>
+    <form class="review-form" hx-post="/intake/{{ case.case_id }}/submit" hx-target="#workflow-result">
+        <h3>Submit request</h3>
+        <p class="panel__hint">Required fields—title, business unit, and description—must be complete before analyst review begins.</p>
+        <button class="button" type="submit">Submit for analyst review</button>
+    </form>
+    {% elif case.status.value == 'needs_information' %}
+    <div class="review-form">
+        <h3>Information requested</h3>
+        <p>{{ case.information_request }}</p>
+        <form hx-post="/intake/{{ case.case_id }}/information-response" hx-target="#workflow-result">
+            <label class="field"><span class="field__label">Response and supporting details</span><textarea name="response" required rows="4"></textarea></label>
+            <button class="button" type="submit">Send response and resume review</button>
+        </form>
+    </div>
+    {% endif %}
+
+    {% if conditions %}
+    <h3>Decision conditions</h3>
+    {% for condition in conditions %}
+    <div class="panel__hint">
+        <strong>{{ condition.description }}</strong><br>
+        Owner: {{ condition.owner }} · Due: {{ condition.due_date }} · Status: {{ condition.status }}{% if condition.overdue %} · OVERDUE{% endif %}
+        {% if condition.completion_evidence %}<p>Completion evidence: {{ condition.completion_evidence }}</p>{% endif %}
+        {% if condition.status == 'open' %}
+        <form hx-post="/intake/{{ case.case_id }}/conditions/{{ condition.condition_id }}/complete" hx-target="#workflow-result">
+            <label class="field"><span class="field__label">Completion evidence</span><textarea name="evidence" required rows="2"></textarea></label>
+            <button class="button" type="submit">Submit condition evidence</button>
+        </form>
+        {% endif %}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div id="workflow-result"></div>
+    <p class="flag flag--warn">Assessment changes and decisions are handled by analyst and committee workspaces.</p>
 </section>
 {% endblock %}

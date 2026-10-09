@@ -10,9 +10,13 @@ not a database-enforced governance or immutability layer.
 The `cases` table stores a generated case ID, source filename, current
 structured extraction, draft risk assessment, workflow status, UTC creation
 and update timestamps, serialized policy evidence, and the current extraction
-version. The `CaseRecord` response model exposes these values to the app.
-Uploaded PDF bytes and source text are not persisted, so the source document
-cannot be retrieved from the case store.
+version. It also records the submitting product owner, assigned demo analyst,
+optional parent case for reassessments, the stage to resume after an
+information request, the current request/waiting role, and committee outcome
+independently of lifecycle status. Product-owner submission moves a complete
+draft into analyst review; reassessment creates a linked case and leaves the
+earlier record intact. Uploaded PDF bytes and source text are not persisted,
+so the source document cannot be retrieved from the case store.
 
 ## Extraction and Assessment
 
@@ -21,8 +25,20 @@ confidence. `RiskAssessmentDraft` contains category scores and rationales,
 weighted overall score, risk level, committee-review flag, and scoring-method
 label. Analyst edits replace the current extraction/assessment values and
 increment the version number; the prior extraction JSON is retained in
-`extraction_versions`. Prompt/model configuration is not stored as a complete
-per-case immutable snapshot.
+`extraction_versions` with editor and rationale. The case workspace compares
+those snapshots to show changed fields. Prompt/model configuration is not
+stored as a complete per-case immutable snapshot.
+
+## Workflow and Conditions
+
+Lifecycle states include draft, analyst review, needs information, analyst
+finalized/rejected, committee review, decisioned, conditions pending, and
+closed. Information requests store the workflow stage to resume and pause
+committee requests until the submitting product owner responds. Committee
+conditions are stored separately with owner, due date, completion evidence,
+and completion actor/time. Open conditions block closure; overdue conditions
+are flagged in the workspaces. Case queues show elapsed calendar days since
+the last update, but no case-stage service-level targets are configured.
 
 The assessment has no control inventory, control effectiveness, residual-risk
 calculation, approved rule-set version, or source-page/span citations.
@@ -39,17 +55,17 @@ strings in the database are not independently verified identities.
 ## Committee Votes
 
 `committee_votes` stores case ID, actor, decision, rationale, optional
-conditions, and UTC timestamp. Its primary key `(case_id, actor)` prevents the
+conditions, condition owner/due date, and UTC timestamp. Its primary key `(case_id, actor)` prevents the
 same actor string from voting twice. The HTTP voting route validates the
 committee demo cookie identity and uses that username as the actor. The case
 store itself enforces only actor-string uniqueness, not the identity mapping.
 
 The prototype endpoint accepts approve, reject, defer, and
-approve-with-conditions. A case becomes decisioned after three votes. At least
-two approvals produce approval (conditional if a conditional vote or
-conditions are present); at least two rejections produce rejection. If neither
-has a majority, the result is deferred. This implementation is not an
-institutionally approved decision policy.
+approve-with-conditions. A case receives an outcome after three votes. At
+least two approvals produce approval (with a conditions-pending lifecycle
+state if an approving vote includes conditions); at least two rejections
+produce rejection. If neither has a majority, the result is deferred. This
+implementation is not an institutionally approved decision policy.
 
 ## Telemetry and Policy Evidence
 

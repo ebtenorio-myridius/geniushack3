@@ -77,28 +77,12 @@
         </div>
     </div>
 
-    <form class="review-form" hx-post="/intake/{{ case_id }}/review" hx-target="#review-result" hx-headers='{"X-Demo-User":"analyst-1","X-Demo-Role":"analyst"}'>
-        <h3>Analyst review</h3>
-        <label class="field"><span class="field__label">Analyst</span><input name="actor" required placeholder="Synthetic analyst"></label>
-        <label class="field"><span class="field__label">Rationale</span><textarea name="rationale" required rows="3" placeholder="Confirm evidence and explain any disagreement"></textarea></label>
-        <button class="button" name="decision" value="analyst_accepted" type="submit">Accept draft</button>
-        <button class="button button--secondary" name="decision" value="analyst_rejected" type="submit">Reject draft</button>
+    <p class="flag flag--warn">This is a draft. Submit it to place the case in the analyst work queue; it is not yet under review.</p>
+    <form class="review-form" hx-post="/intake/{{ case_id }}/submit" hx-target="#submission-result">
+        <button class="button" type="submit">Submit complete request for review</button>
+        <a class="button button--secondary" href="/intake/product-owner/cases/{{ case_id }}">Open case details</a>
     </form>
-    <form class="review-form" hx-post="/intake/{{ case_id }}/edit" hx-target="#review-result" hx-headers='{"X-Demo-User":"analyst-1","X-Demo-Role":"analyst"}'>
-        <h3>Edit extraction and rescore</h3>
-        <input name="change_title" value="{{ extracted.change_title }}" required>
-        <input name="change_type" value="{{ extracted.change_type.value }}" required>
-        <input name="business_unit" value="{{ extracted.business_unit }}" required>
-        <textarea name="description" required rows="2">{{ extracted.description }}</textarea>
-        <input name="geographies_involved" value="{{ extracted.geographies_involved | join(', ') }}" placeholder="Geographies, comma separated">
-        <input name="customer_segments_involved" value="{{ extracted.customer_segments_involved | join(', ') }}" placeholder="Customer segments, comma separated">
-        <input name="vendor_name" value="{{ extracted.vendor_name or '' }}" placeholder="Vendor name">
-        <input name="products_involved" value="{{ extracted.products_involved | join(', ') }}" placeholder="Products, comma separated">
-        <input name="stated_risk_factors" value="{{ extracted.stated_risk_factors | join(', ') }}" placeholder="Risk factors, comma separated">
-        <input name="actor" value="analyst-1" required>
-        <textarea name="rationale" required rows="2" placeholder="Explain the edit"></textarea>
-        <button class="button" type="submit">Save edit and rescore</button>
-    </form>
+    <div id="submission-result"></div>
     {% if policy_evidence %}
     <div class="review-form">
         <h3>Policy evidence</h3>
@@ -106,14 +90,5 @@
         <p><strong>{{ evidence.title }}</strong> · {{ evidence.section }}<br>{{ evidence.excerpt }}<br><small>Source: {{ evidence.source_path }}</small></p>
         {% endfor %}
     </div>
-    {% endif %}
-    <div id="review-result"></div>
-    {% if assessment.requires_committee_review and status.value == 'analyst_finalized' %}
-    <form class="review-form" hx-post="/intake/{{ case_id }}/committee/submit" hx-target="#review-result" hx-headers='{"X-Demo-User":"analyst-1","X-Demo-Role":"analyst"}'>
-        <h3>Submit to committee</h3>
-        <input type="hidden" name="actor" value="analyst-1">
-        <textarea name="rationale" required rows="2" placeholder="Explain why committee review is required"></textarea>
-        <button class="button" type="submit">Submit committee review</button>
-    </form>
     {% endif %}
 </section>

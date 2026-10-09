@@ -61,23 +61,30 @@ The login page does not display the previous identity while switching roles.
 ### Product owner
 
 After signing in as `product-owner-1`, select **Upload case** from the Product
-Owner dashboard to open `/intake`. Product owners can track submitted cases and
-open read-only case details from that dashboard.
+Owner dashboard to open `/intake`. The extraction result is a draft; select
+**Submit complete request for review** only after checking the required title,
+business unit, and description. The product owner dashboard tracks owned cases,
+their next action, and elapsed waiting days. Product owners can respond to
+analyst or committee information requests and provide completion evidence for
+assigned decision conditions.
 
 ### FCRM analyst
 
-The extraction result contains inline forms to edit/rescore and accept/reject
-the draft. Analyst case-detail pages reached later from the dashboard are
-read-only; review actions are not available there. The inline forms include a
-fixed demo analyst header and an editable actor field, so they do not provide a
-secure or authenticated role boundary.
+The analyst dashboard contains submitted cases awaiting review and cases
+paused for product-owner information. Open a case to verify the extracted
+fields and score, edit and rescore with a rationale, finalize or reject, or
+request additional information. Analyst actions use the signed-in demo identity.
+The dashboard also links to committee cases and completed decisions.
 
 ### Risk committee member
 
 After signing in as a committee member, select **Cases to review** from the
-Committee dashboard. Three distinct committee demo identities must vote before
-the case is finalized. Use **Sign in / switch role** to change identities
-between votes.
+Committee dashboard. The committee packet includes the current assessment,
+policy evidence, analyst rationale, extraction-version changes, and vote
+status. Before voting starts, the committee may pause review and request
+information from the product owner. Three distinct committee demo identities
+must vote before a final outcome is recorded. Use **Sign in / switch role** to
+change identities between votes.
 
 ## 4. Submit a Change Request
 
@@ -86,6 +93,9 @@ between votes.
 3. From the Product Owner dashboard, select **Upload case**. Signed-out or invalid sessions at `/intake` are redirected to login.
 4. Select a PDF change request and select **Submit for extraction**.
 5. Wait while the system reads the document and drafts the extraction.
+6. Check the draft fields and select **Submit complete request for review**.
+   A request with a blank title, business unit, or description cannot be
+   submitted.
 
 The system performs these steps:
 
@@ -109,15 +119,18 @@ or list:
 - Committee decisioned cases: `http://127.0.0.1:8000/intake/committee/decisioned`
 - Committee review queue: open **Cases to review** from the Committee dashboard. The underlying `/intake/committee-queue/demo` URL is a demo convenience and is not itself role-gated.
 
-The Product Owner workspace shows submitted cases and read-only case details.
-It is used to raise and track change requests.
+The Product Owner workspace shows cases submitted by the signed-in demo owner,
+including drafts, cases waiting on a response, committee outcomes, and
+conditions awaiting evidence.
 
-The analyst workspace shows every submitted case, regardless of risk level. It
-also links to cases already decisioned and to cases waiting for committee
-review. The analyst can return to the intake page to upload another PDF.
+The analyst workspace shows active analyst reviews and cases waiting on the
+product owner. Separate lists link to cases awaiting committee review and
+decisioned, condition-tracking, or closed cases. Queue rows show the request
+owner, assigned analyst, next action, and elapsed days since the last update.
 
 The committee workspace shows cases currently waiting for committee review. A
 separate **Decisioned cases** link provides completed decisions for reference.
+The committee's browser-friendly queue URL is also role-gated.
 
 These are browser-friendly demo workspaces. Production use requires real login,
 role-based authorization, and authenticated actors.
@@ -148,16 +161,14 @@ Treat the extraction and score as a draft. Check every important field against t
 
 ## 7. Edit and Rescore
 
-Use the **Edit extraction and rescore** form in the extraction result while it
-is still open. Analyst case-detail pages reached later from the dashboard are
-read-only.
+Open a submitted case from the analyst dashboard. Editing and rescoring are
+available while the case is in analyst review.
 
 If the extraction is incomplete or incorrect:
 
-1. Edit the fields in **Edit extraction and rescore**.
-2. Enter the actor name to record with this edit.
-3. Enter a rationale explaining the correction.
-4. Select **Save edit and rescore**.
+1. Edit the extracted fields in the analyst case workspace.
+2. Enter a rationale explaining the correction.
+3. Save the edit and rescore.
 
 The system:
 
@@ -167,17 +178,15 @@ The system:
 - refreshes the policy evidence; and
 - records the edit as an audit event.
 
-The original model extraction is retained. Do not use the edit form to invent
-facts that are not supported by the PDF. The inline form currently supplies a
-fixed demo analyst header; the actor field is not proof of a real authenticated
-identity.
+The original model extraction is retained. The review packet shows version
+history, changed fields, editor, and rationale. Do not enter facts that are not
+supported by the source. Demo identities are not production authentication.
 
 ## 8. Accept or Reject the Draft
 
-To review an open case, sign in as an FCRM analyst and open it from the Analyst
-dashboard. Draft and analyst-review cases provide a review form on the case
-detail page. After extraction, the upload result also provides the same review
-actions.
+To review a case, sign in as an FCRM analyst and open a submitted case from the
+Analyst dashboard. Drafts do not enter the review queue until the product
+owner explicitly submits them.
 
 To finalize the analyst review:
 
@@ -185,10 +194,12 @@ To finalize the analyst review:
 2. Select **Finalize assessment** or **Reject draft**.
 
 An accepted case moves to analyst-finalized status. A rejected case records the
-rejection and rationale. On the analyst case-detail route, the event actor is
-the signed-in demo analyst. This demo identity is not production authentication.
-The upload result's inline forms remain demo-only and should not be treated as a
-security boundary.
+rejection and rationale. The event actor is the signed-in demo analyst.
+
+If information is missing, use **Request more information** and state exactly
+what the product owner must provide. The case pauses in `needs_information`;
+only its submitting product owner can respond. The response is recorded in the
+case history and restores the review stage that requested it.
 
 A rationale should explain what was checked and why the decision is appropriate. For example:
 
@@ -205,17 +216,20 @@ Use one of these sample files:
 - Low risk: `evals/data/pdfs/SYN-001.pdf` - online banking dashboard accessibility refresh.
 - Medium risk: `evals/data/pdfs/SYN-004.pdf` - vendor onboarding for document digitization.
 
-1. Sign in as the product owner and upload the PDF from `/intake`, or open an existing draft from the analyst dashboard.
+1. Sign in as the product owner, upload the PDF from `/intake`, check the extraction, and explicitly submit it for review.
 2. Sign in as `analyst-1` with the FCRM analyst role and open the case detail.
 3. Review the extracted fields, score, rationales, and policy evidence.
 4. Enter a review rationale and select **Finalize assessment**.
+5. Close the case with a closure rationale once analyst work is complete.
 
 The case moves to:
 
 ```text
 Draft
+-> Product owner submission
 -> Analyst review
 -> Analyst finalized
+-> Closed
 ```
 
 The case is not automatically approved or rejected. The analyst action and
@@ -232,19 +246,19 @@ Use one of these sample files:
 - Critical risk: `evals/data/pdfs/SYN-003.pdf` - cross-border remittance product with vendor and sanctions exposure.
 - High risk: `evals/data/pdfs/SYN-008.pdf` - new invoice-financing product across multiple channels.
 
-1. Sign in as the product owner and upload the PDF, or open an existing draft from the analyst dashboard.
+1. Sign in as the product owner, upload the PDF, check the extraction, and explicitly submit it.
 2. Sign in as `analyst-1` with the FCRM analyst role and open the case detail.
 3. Review the extraction, score, rationales, and policy evidence; edit and rescore if needed.
 4. Finalize the analyst review with a rationale.
 5. Enter the escalation rationale and select **Submit to committee**.
 6. A committee member signs in and opens **Cases to review** from the Committee dashboard.
-7. Review the finalized assessment and analyst rationale.
+7. Review the assessment, policy evidence, analyst rationale, and extraction changes. Before any vote is cast, the committee may request information and pause the review.
 8. Each committee member signs in separately and casts one vote:
    - **Approve**
    - **Reject**
    - **Defer**
    - **Approve with conditions**
-9. Enter the committee rationale and conditions when applicable.
+9. Enter the committee rationale. For conditions, enter one condition per line, its owner, and due date.
 10. Repeat with `committee-1`, `committee-2`, and `committee-3` until three votes are recorded.
 
 The case remains pending until three distinct votes are recorded. After the
@@ -257,10 +271,12 @@ The case moves to:
 
 ```text
 Draft
+-> Product owner submission
 -> Analyst review
 -> Analyst finalized
 -> Committee review
--> Decisioned
+-> Decisioned or conditions pending
+-> Closed
 ```
 
 Each vote's rationale, conditions, demo actor, and timestamp are recorded as
@@ -271,16 +287,27 @@ Committee pages show the vote count, the pending or final result, and each
 committee member's vote and rationale. A committee member can vote only once on
 the same case.
 
+An approval with conditions creates tracked follow-up items. In this demo, the
+submitting product owner owns the conditions, provides a due date, and submits
+completion evidence. Open items block case closure; overdue items are flagged.
+An analyst closes the case after all conditions are complete. Cases with a
+recorded outcome can be reassessed by an analyst; a reassessment is linked to
+the earlier case and does not overwrite its decision.
+
+Queue rows show elapsed calendar days since the last case update. No case-stage
+service-level targets are configured, so case age is not labeled overdue.
+
 Decisioned case lists show the specific final result rather than only the
 workflow status. The visible outcomes are:
 
 - **Approved**;
 - **Rejected**; or
+- **Deferred**; or
 - **Approved with conditions**.
 
 Use the login form to sign in separately as `committee-1`, `committee-2`, and
 `committee-3` for the three votes. The demo queue URL is a browser convenience,
-not an authorization boundary; use only synthetic data.
+and requires a valid committee demo session. Use only synthetic data.
 
 ## 11. Workflow States
 
@@ -288,13 +315,18 @@ A case moves through the following states:
 
 ```text
 Draft
+-> Analyst review (only after product-owner submission)
+-> Needs information (optional; returns to the stage that requested it)
 -> Analyst review
 -> Analyst finalized
 -> Committee review
--> Decisioned
+-> Decisioned or Conditions pending
+-> Closed
 ```
 
-A case may also be rejected during analyst review.
+A case may be rejected during analyst review. Analyst-finalized low/medium-risk
+cases may be closed without a committee decision. A closed or decisioned case
+may be reassessed; the new case links to the previous case.
 
 Invalid transitions are refused. For example, a case cannot be sent to the committee before analyst finalization.
 
@@ -364,10 +396,9 @@ The app does not create a case or store the source PDF when extraction fails.
 ### Unauthorized action
 
 Sign in with a supported username/role pair. `/intake` redirects signed-out
-users to login, but endpoint authorization is inconsistent: the PDF upload
-POST is not role-gated, the inline analyst forms use a fixed demo header, and
-the demo committee queue route is not role-gated. These are prototype
-limitations, not security controls. Do not use real data.
+users to login. Workflow endpoints check the signed-in demo username and role,
+but those demo cookies are not production authentication or security controls.
+Do not use real data.
 
 ## 16. Recommended Demo Walkthrough
 
@@ -375,19 +406,20 @@ Use `evals/data/pdfs/SYN-001.pdf` for a simple case or a higher-risk PDF such as
 
 1. Sign in as `product-owner-1` with the Product owner role.
 2. Open **Upload case** and submit the PDF.
-3. Show the extracted fields, category scores, rationales, policy evidence if present, case ID, and draft status.
-4. Use the inline edit/review forms to demonstrate correction and analyst finalization; explain that these forms use a fixed demo analyst header and are not a real role boundary.
-5. For a high/critical case, submit it to committee review.
-6. Sign in as `committee-1`, cast the first vote, and show the case is pending.
-7. Repeat with `committee-2` and `committee-3`; after the third vote show the prototype rule's result.
-8. Explain the vote history, application-level workflow events, and extraction versions, including their non-production audit limitations.
+3. Show the extracted fields, category scores, policy evidence if present, case ID, and draft status.
+4. Explicitly submit the request and open the analyst workspace.
+5. Demonstrate a versioned correction or request information and respond as the submitting product owner.
+6. For a high/critical case, finalize it and submit it to committee review.
+7. Sign in as committee members and cast three votes; optionally approve with conditions and capture an owner and due date.
+8. Complete the condition with evidence, close the case, or create a linked reassessment.
+9. Explain the workflow history, vote rule, and the prototype's non-production audit limitations.
 
 ## 17. Important Limitations
 
 This is a synthetic-data demonstration and prototype. It does not currently provide:
 
 - production authentication or consistent endpoint authorization;
-- secure separation between product-owner and analyst actions in the inline result forms;
+- institution-managed user and role administration;
 - database-enforced, tamper-proof audit storage;
 - an institutionally approved committee decision policy;
 - full residual-risk and control-effectiveness scoring;
@@ -396,5 +428,9 @@ This is a synthetic-data demonstration and prototype. It does not currently prov
 - malware scanning;
 - OCR for scanned PDFs; or
 - production dashboards and alerting.
+
+The demo queues show elapsed days but do not yet apply case-stage SLAs. A
+reassessment copies the prior extracted facts as a starting point; analysts
+must update them with evidence for the changed initiative.
 
 Do not upload real customer, account, transaction, employee, or banking documents.

@@ -91,12 +91,14 @@ Recommended cases:
 - `SYN-003.pdf` - critical cross-border vendor/product case;
 - `SYN-008.pdf` - high-risk multi-channel product case.
 
-In the browser:
+Sign in as `product-owner-1` with the Product Owner role, then in the browser:
 
 1. Select the PDF file.
 2. Select **Submit for extraction**.
 3. Wait for the extraction result.
 4. Review the case ID, extracted fields, policy evidence, and draft score.
+5. Correct any missing required title, business unit, or description; then
+   explicitly submit the draft to the workflow.
 
 The application flow is:
 
@@ -105,19 +107,24 @@ PDF
 -> text extraction
 -> structured LLM JSON extraction
 -> deterministic risk scoring
--> SQLite case persistence
+-> Draft case
+-> Product-owner submission
+-> Analyst review
 ```
 
 ## 7. Analyst Review
 
-The result page provides an analyst review form.
+Sign in as `analyst-1` with the FCRM Analyst role and open the submitted case.
+The analyst can edit/rescore, request information from the submitting owner,
+finalize an eligible low/medium-risk case, or send a high/critical-risk case
+to committee review. Information requests pause the case and resume the same
+review stage when the owner responds.
 
 ### Edit and rescore
 
 1. Edit any incorrect extracted field.
-2. Enter the analyst identity.
-3. Enter a rationale for the correction.
-4. Select **Save edit and rescore**.
+2. Enter a rationale for the correction.
+3. Select **Save edit and rescore**.
 
 The app then:
 
@@ -127,37 +134,14 @@ The app then:
 - refreshes policy evidence; and
 - records an audit event.
 
-The original model extraction is retained.
-
-### Accept or reject
-
-1. Enter an analyst identity.
-2. Enter a review rationale.
-3. Select **Accept draft** or **Reject draft**.
-
-Accepted cases move to analyst-finalized status. Rejected cases remain recorded with the rejection rationale.
+The original model extraction is retained. Analyst changes are limited to
+the analyst-review stage and are recorded as new extraction versions.
 
 ## 8. Committee Review
 
-High- and critical-risk cases are flagged for committee review.
-
-After analyst finalization, submit the case to committee review. The committee queue can be accessed with the demo committee role.
-
-Demo analyst headers:
-
-```text
-X-Demo-User: analyst-1
-X-Demo-Role: analyst
-```
-
-Demo committee headers (for direct requests; browser login uses cookies):
-
-```text
-X-Demo-User: committee-1
-X-Demo-Role: committee
-```
-
-These headers are for local demonstration only. They are not production authentication.
+Sign in as `committee-1`, `committee-2`, or `committee-3` with the Committee
+role. Each distinct member records a vote and rationale; information requests
+are available before voting starts.
 
 Three distinct committee members are required for a final committee result.
 Committee votes are:
@@ -167,20 +151,23 @@ Committee votes are:
 - defer; or
 - approve with conditions.
 
-A committee decision requires an actor and rationale. Conditions can be added for conditional approval.
-Two approvals or rejections decide the result; if neither reaches a majority,
-the case is deferred after the third vote. This is prototype behavior, not an
-approved institutional decision rule.
+A conditional approval records condition text, owner, and due date. The
+submitting owner supplies completion evidence; the analyst can close the case
+after every condition is complete. Terminal cases can be used to create a
+linked reassessment without changing the prior decision. Two approvals or
+rejections decide the result; if neither reaches a majority, the case is
+deferred after the third vote. This is prototype behavior, not an approved
+institutional decision rule.
 
 The complete workflow is:
 
 ```text
-Submitted
--> Extracted
--> Analyst Review
--> Analyst Finalized
--> Committee Review
--> Decisioned
+Draft -> Submitted -> Analyst Review
+                    -> Information Requested -> Analyst Review
+                    -> Analyst Finalized -> Closed
+                    -> Committee Review -> Decision
+                    -> Conditions Pending -> Closed
+Terminal Case -> Linked Reassessment
 ```
 
 ## 9. SQLite State
@@ -214,7 +201,7 @@ python -m pytest -q
 Expected result:
 
 ```text
-62 passed
+76 passed
 ```
 
 Run focused tests:

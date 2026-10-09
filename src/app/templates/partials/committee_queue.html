@@ -4,7 +4,7 @@
     {% for case in cases %}
     <article class="queue-item">
         <h3>{{ case.extracted.change_title }}</h3>
-        <p>Case {{ case.case_id }} · {{ case.assessment.risk_level.value }} risk</p>
+        <p>Case {{ case.case_id }} · {{ case.assessment.risk_level.value }} risk · Owner {{ case.submitted_by }} · Assigned analyst {{ case.assigned_to or "Unassigned" }} · Waiting {{ (age_days_by_case | default({})).get(case.case_id, 0) }} days</p>
         <dl class="fact-list committee-facts">
             <dt>Change type</dt>
             <dd>{{ case.extracted.change_type.value.replace("_", " ") }}</dd>
@@ -48,9 +48,17 @@
         <h4>Committee vote status</h4>
         <p class="panel__hint">{{ vote_summary.approvals }} approvals · {{ vote_summary.rejections }} rejections · {{ vote_summary.deferred }} deferrals · {{ vote_summary.votes_cast }}/{{ vote_summary.votes_needed }} votes cast · Result: {{ vote_summary.result }}</p>
         {% endif %}
+        {% if (vote_summary_by_case | default({})).get(case.case_id, {}).votes_cast == 0 %}
+        <form hx-post="/intake/{{ case.case_id }}/request-information" hx-target="#committee-result">
+            <label class="field"><span class="field__label">Request information from {{ case.submitted_by }}</span><textarea name="rationale" required rows="2"></textarea></label>
+            <button class="button button--secondary" type="submit">Pause review and request information</button>
+        </form>
+        {% endif %}
         <form hx-post="/intake/{{ case.case_id }}/committee/decision" hx-target="#committee-result">
             <input name="rationale" required placeholder="Committee rationale">
-            <input name="conditions" placeholder="Conditions, if applicable">
+            <label class="field"><span class="field__label">Conditions (one per line, if applicable)</span><textarea name="conditions" rows="2"></textarea></label>
+            <label class="field"><span class="field__label">Condition owner</span><input name="conditions_owner" value="{{ case.submitted_by }}"></label>
+            <label class="field"><span class="field__label">Condition due date</span><input name="conditions_due_date" type="date"></label>
             <button class="button" name="decision" value="approve">Approve</button>
             <button class="button button--secondary" name="decision" value="reject">Reject</button>
             <button class="button button--secondary" name="decision" value="defer">Defer</button>

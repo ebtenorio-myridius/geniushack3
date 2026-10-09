@@ -17,8 +17,15 @@ def _pdf_bytes(text: str | None = None) -> bytes:
     return buffer.getvalue()
 
 
+def _owner_client() -> TestClient:
+    client = TestClient(app)
+    client.cookies.set("demo_user", "product-owner-1")
+    client.cookies.set("demo_role", "product_owner")
+    return client
+
+
 def test_upload_rejects_non_pdf():
-    response = TestClient(app).post(
+    response = _owner_client().post(
         "/intake/upload",
         files={"file": ("notes.txt", b"synthetic text", "text/plain")},
     )
@@ -29,7 +36,7 @@ def test_upload_rejects_non_pdf():
 
 def test_upload_rejects_file_over_size_limit():
     oversized_pdf = b"%PDF-" + b"x" * (10 * 1024 * 1024 + 1)
-    response = TestClient(app).post(
+    response = _owner_client().post(
         "/intake/upload",
         files={"file": ("large.pdf", oversized_pdf, "application/pdf")},
     )
@@ -39,7 +46,7 @@ def test_upload_rejects_file_over_size_limit():
 
 
 def test_upload_returns_extraction_error_for_textless_pdf():
-    response = TestClient(app).post(
+    response = _owner_client().post(
         "/intake/upload",
         files={"file": ("scanned.pdf", _pdf_bytes(), "application/pdf")},
     )
@@ -49,7 +56,7 @@ def test_upload_returns_extraction_error_for_textless_pdf():
 
 
 def test_upload_returns_extraction_error_for_malformed_pdf():
-    response = TestClient(app).post(
+    response = _owner_client().post(
         "/intake/upload",
         files={"file": ("broken.pdf", b"not a PDF", "application/pdf")},
     )
@@ -63,7 +70,7 @@ def test_upload_returns_gateway_error_when_extraction_provider_fails(monkeypatch
         raise RuntimeError("synthetic provider failure")
 
     monkeypatch.setattr(intake, "draft_extraction", fail_extraction)
-    response = TestClient(app).post(
+    response = _owner_client().post(
         "/intake/upload",
         files={"file": ("request.pdf", _pdf_bytes("Synthetic change request"), "application/pdf")},
     )
@@ -71,3 +78,12 @@ def test_upload_returns_gateway_error_when_extraction_provider_fails(monkeypatch
     assert response.status_code == 502
     assert "couldn&#39;t produce a valid extraction" in response.text
     assert "synthetic provider failure" not in response.text
+
+
+def test_upload_requires_product_owner_role():
+    response = TestClient(app).post(
+        "/intake/upload",
+        files={"file": ("request.pdf", _pdf_bytes("Synthetic change request"), "application/pdf")},
+    )
+
+    assert response.status_code == 403
