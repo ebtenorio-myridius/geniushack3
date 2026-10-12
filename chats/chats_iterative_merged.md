@@ -7401,3 +7401,29 @@ The user reported that a low-risk case submitted as product owner was not visibl
 - Ran the focused workflow, case-store, and analyst-review test files: `29 passed`.
 - Pylance reported no errors in the changed Python implementation or workflow test.
 - `git diff --check` passed.
+
+### 16:48 -04:00 - Workflow Explanation
+
+#### User request
+
+The user asked for an explanation of the Product Owner-to-Analyst, Analyst-to-Committee, and Product Owner-to-Committee flows, including the outcomes after approval.
+
+#### Assistant response
+
+Explained that upload creates a draft and product-owner submission places it in a risk-based queue: low/medium cases go to analyst review; high/critical cases go directly to committee and are not analyst-verified. Analysts may separately escalate finalized cases. Analyst finalization or committee outcomes do not close a case automatically; committee approval with conditions requires product-owner completion evidence before analyst closure. Three distinct committee votes determine the outcome under the current demo rules.
+
+### 16:51 -04:00 - Workflow Documentation Update
+
+#### User request
+
+The user asked whether the flow was stated in the project documentation and requested updating appropriate Markdown documentation if it was missing.
+
+#### Findings and actions
+
+- Found that the expanded requirements specification already described risk-based routing, but the user manual still instructed product owners to send high/critical cases through analyst review before committee.
+- Updated the user manual, requirements specification, architecture overview, and presentation deck to reflect direct-to-committee high/critical routing, low/medium analyst review, optional analyst escalation, committee vote outcomes, condition completion, and separate analyst closure.
+- Updated the manual's demo walkthrough and committee review guidance to note that directly submitted high/critical cases have not been analyst-verified.
+
+#### Validation
+
+- `git diff --check` passed.
