@@ -8,22 +8,29 @@
 
 ## Workflow
 
-`Submitted -> Extracted -> Risk-based review`
+```text
+Upload -> Draft extraction and risk score
+-> Product-owner submission
+   -> Low/medium risk: Analyst review -> Analyst finalized -> Closed
+   -> High/critical risk: Committee review -> Decisioned/conditions pending -> Closed
+```
 
 The happy path is implemented for valid uploads and successful extraction. A
 successful extraction creates a durable draft; invalid PDFs or failed provider
 calls return errors and do not create a case. On product-owner submission,
 low/medium-risk cases enter analyst review, while high/critical-risk cases go
 directly to committee review. Directly submitted high/critical cases have not
-had analyst verification of their extracted facts or score. In the user-facing
-committee route, three distinct demo usernames can vote once each: two
-approvals approve, two rejections reject, and no majority defers the case.
-The lower-level `CaseStore` still has a direct decision method used by a unit
-test, so the three-vote invariant is not enforced for every internal caller.
-
-High/critical cases are routed directly to committee review when the product
-owner submits them. This bypasses analyst verification; committee members are
-prompted to verify the extracted facts and score during their review.
+had analyst verification; committee members are prompted to verify the facts
+and score. Analysts can also escalate a case to the committee after finalizing
+it. An accepted low/medium analyst review is finalized but not closed
+automatically; an analyst closes it separately. In the user-facing committee
+route, three distinct demo usernames can vote once each: two approvals approve,
+two rejections reject, and no majority defers the case. Approval with
+conditions creates follow-up work owned by the product owner; all conditions
+must be completed before an analyst can close the case. Committee outcomes
+also require analyst closure. The lower-level `CaseStore` still has a direct
+decision method used by a unit test, so the three-vote invariant is not
+enforced for every internal caller.
 
 ## Acceptance criteria
 
@@ -32,6 +39,7 @@ prompted to verify the extracted facts and score during their review.
 - Analyst actions require an actor and rationale; demo actor values are not consistently bound to the signed-in identity.
 - Workflow events are timestamped and inserted by application code. The database does not enforce append-only immutability.
 - High and critical submissions are routed to the committee; low and medium submissions are routed to analysts.
+- Analyst finalization and committee outcomes do not automatically close a case; closure is a separate analyst action. Product-owner evidence is required for committee approval conditions.
 - The user-facing committee route records the three-vote human majority outcome. A lower-level direct-decision helper remains available to internal callers; the quorum is not a store-wide invariant.
 - Synthetic documents and data are the demo-use requirement. The upload endpoint does not technically detect or reject real data.
 

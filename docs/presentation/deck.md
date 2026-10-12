@@ -19,13 +19,20 @@
 
 **Workflow target**
 
-`Submitted -> Extracted -> Low/medium: Analyst Review -> Analyst Finalized`
-`                         -> High/critical: Committee Review -> Decisioned`
+`Upload -> Draft -> Product-owner submission`
+`  -> Low/medium: Analyst Review -> Analyst Finalized -> Analyst closes`
+`  -> High/critical: Committee Review -> Decisioned/conditions pending -> Analyst closes`
 
 **Current implementation**
 
-`Submitted -> Extracted -> Low/medium: Analyst Review -> Analyst Finalized`
-`                         -> High/critical: Committee Review -> Decisioned`
+`Upload -> Draft -> Product-owner submission`
+`  -> Low/medium: Analyst Review -> Analyst Finalized -> Analyst closes`
+`  -> High/critical: Committee Review -> Decisioned/conditions pending -> Analyst closes`
+
+Analysts may also escalate a finalized case to committee. Directly submitted
+high/critical cases have not been analyst-verified; committee members are
+prompted to verify the extracted facts and score. Committee approval with
+conditions requires product-owner evidence before analyst closure.
 
 The browser demo uses fixed username/role pairs and session cookies. This is a demo access gate, not production identity or authorization. See `docs/requirements/spec.md`.
 
@@ -65,7 +72,9 @@ flowchart LR
 - The extraction and score are drafts.
 - Analyst accept/reject actions require an actor and rationale.
 - Workflow events are timestamped and append-only through the application, but not protected by database-level immutability.
-- High and critical assessments are flagged for committee review.
+- Low/medium submissions go to analysts; high/critical submissions go directly to committee, without analyst verification.
+- Analyst finalization and committee outcomes are recorded before separate analyst closure.
+- Committee approvals with conditions require product-owner completion evidence before closure.
 - No approval or rejection is performed automatically.
 - The demo committee rule counts three distinct members; two approvals approve, two rejections reject, and no majority defers the case.
 

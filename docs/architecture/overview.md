@@ -18,9 +18,17 @@ flowchart LR
     SCORE --> STORE[(SQLite case store)]
     SEMANTIC --> STORE
     RULES --> STORE
-    STORE --> RESULT[Extraction result + analyst forms]
-    RESULT --> ANALYST[Analyst review/edit]
-    ANALYST -->|high or critical| COMMITTEE[Three committee votes]
+    STORE --> RESULT[Draft extraction result]
+    RESULT --> OWNER[Product owner checks and submits]
+    OWNER -->|low or medium| ANALYST[Analyst review/edit]
+    OWNER -->|high or critical| COMMITTEE[Committee review; verify unreviewed facts]
+    ANALYST -->|finalized; optional escalation| COMMITTEE
+    ANALYST -->|low/medium finalized| CLOSE[Analyst closes case]
+    COMMITTEE --> VOTE[Three distinct committee votes]
+    VOTE -->|approved, rejected, deferred| OUTCOME[Decisioned]
+    VOTE -->|approved with conditions| CONDITIONS[Product owner completes conditions]
+    CONDITIONS --> CLOSE
+    OUTCOME --> CLOSE
     STORE --> EVENTS[(Events, versions, votes, telemetry)]
     COMMITTEE --> EVENTS
 ```
@@ -44,6 +52,15 @@ index and API key are available; otherwise it uses a rule-based category
 fallback. The policy corpus is synthetic demonstration material, not approved
 supervisory guidance.
 
+On product-owner submission, low/medium-risk drafts enter analyst review and
+high/critical-risk drafts enter committee review directly. This direct
+high/critical route has no analyst verification; committee members are prompted
+to verify the extracted facts and score. Analysts can separately escalate a
+case after finalizing it. Analyst finalization and committee outcomes do not
+close cases automatically: an analyst closes a case after recording closure
+rationale, and approval conditions must be completed by the product owner
+first.
+
 SQLite stores case data, the current extraction and assessment, policy
 evidence, extraction versions, workflow events, committee votes, and telemetry.
 The uploaded PDF itself is not persisted. Workflow history is append-only by
@@ -51,7 +68,8 @@ application behavior, not protected by database-level immutability. Committee
 voting requires three distinct authenticated demo usernames at the voting
 route; two approvals approve, two rejections reject, and a full vote without
 either majority defers. This is prototype behavior, not an institutionally
-approved decision policy.
+approved decision policy. The current committee outcomes (approved, rejected,
+deferred, or approved with conditions) are recorded before analyst closure.
 
 SQLite is a deliberately small persistence choice for the synthetic demo. A
 production database migration would require a persistence adapter and

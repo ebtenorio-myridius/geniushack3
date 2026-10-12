@@ -61,30 +61,37 @@ The login page does not display the previous identity while switching roles.
 ### Product owner
 
 After signing in as `product-owner-1`, select **Upload case** from the Product
-Owner dashboard to open `/intake`. The extraction result is a draft; select
-**Submit complete request for review** only after checking the required title,
-business unit, and description. The product owner dashboard tracks owned cases,
-their next action, and elapsed waiting days. Product owners can respond to
-analyst or committee information requests and provide completion evidence for
-assigned decision conditions.
+Owner dashboard to open `/intake`. The extraction result is a draft. Check the
+required title, business unit, and description, then submit the case to the
+review queue indicated by its draft risk: low/medium-risk cases go to an
+analyst; high/critical-risk cases go directly to the committee. The product
+owner dashboard tracks owned cases, their next action, and elapsed waiting
+days. Product owners can respond to analyst or committee information requests
+and provide completion evidence for assigned decision conditions.
 
 ### FCRM analyst
 
-The analyst dashboard contains submitted cases awaiting review and cases
-paused for product-owner information. Open a case to verify the extracted
-fields and score, edit and rescore with a rationale, finalize or reject, or
-request additional information. Analyst actions use the signed-in demo identity.
+The analyst dashboard contains low/medium-risk cases submitted for analyst
+review and cases paused for product-owner information. Open a case to verify
+the extracted fields and score, edit and rescore with a rationale, finalize or
+reject, or request additional information. Finalizing an accepted low/medium
+case makes it eligible for closure by an analyst; it does not automatically
+close the case. Analysts can also submit a finalized case to committee review
+when escalation is needed. Analyst actions use the signed-in demo identity.
 The dashboard also links to committee cases and completed decisions.
 
 ### Risk committee member
 
 After signing in as a committee member, select **Cases to review** from the
-Committee dashboard. The committee packet includes the current assessment,
-policy evidence, analyst rationale, extraction-version changes, and vote
-status. Before voting starts, the committee may pause review and request
-information from the product owner. Three distinct committee demo identities
-must vote before a final outcome is recorded. Use **Sign in / switch role** to
-change identities between votes.
+Committee dashboard. The committee packet includes the current assessment, policy evidence,
+extraction-version changes, and vote status. A high/critical case submitted
+directly by its product owner has not had analyst verification; committee
+members are prompted to verify its extracted facts and score. For cases that
+were reviewed by an analyst, the packet also includes the analyst rationale.
+Before voting starts, the committee may pause review and request information
+from the product owner. Three distinct committee demo identities must vote
+before a final outcome is recorded. Use **Sign in / switch role** to change
+identities between votes.
 
 ## 4. Submit a Change Request
 
@@ -93,9 +100,10 @@ change identities between votes.
 3. From the Product Owner dashboard, select **Upload case**. Signed-out or invalid sessions at `/intake` are redirected to login.
 4. Select a PDF change request and select **Submit for extraction**.
 5. Wait while the system reads the document and drafts the extraction.
-6. Check the draft fields and select **Submit complete request for review**.
-   A request with a blank title, business unit, or description cannot be
-   submitted.
+6. Check the draft fields and select the submit button for the review queue
+   shown for its risk level: low/medium goes to analyst review; high/critical
+   goes directly to committee review. A request with a blank title, business
+   unit, or description cannot be submitted.
 
 The system performs these steps:
 
@@ -209,14 +217,15 @@ The extracted fields were checked against the synthetic source PDF. The geograph
 
 ## 9. Low- and Medium-Risk Workflow
 
-Use this path when the draft assessment does not require committee review.
+Use this path when the draft assessment is low or medium risk and does not
+require committee review.
 
 Use one of these sample files:
 
 - Low risk: `evals/data/pdfs/SYN-001.pdf` - online banking dashboard accessibility refresh.
 - Medium risk: `evals/data/pdfs/SYN-004.pdf` - vendor onboarding for document digitization.
 
-1. Sign in as the product owner, upload the PDF from `/intake`, check the extraction, and explicitly submit it for review.
+1. Sign in as the product owner, upload the PDF from `/intake`, check the extraction, and submit it for analyst review.
 2. Sign in as `analyst-1` with the FCRM analyst role and open the case detail.
 3. Review the extracted fields, score, rationales, and policy evidence.
 4. Enter a review rationale and select **Finalize assessment**.
@@ -232,37 +241,36 @@ Draft
 -> Closed
 ```
 
-The case is not automatically approved or rejected. The analyst action and
-rationale are recorded in SQLite as a workflow event.
+Analyst finalization records the assessment and rationale; it does not close
+the case automatically. An analyst closes the case separately with a closure
+rationale. The analyst action and rationale are recorded in SQLite as a
+workflow event.
 
 If the analyst does not support the assessment, select **Reject draft** instead. The case moves to `analyst_rejected` and the rejection rationale is retained.
 
 ## 10. High- and Critical-Risk Workflow
 
-Use this path when the draft is flagged for committee review.
+Use this path when the draft is high or critical risk and is flagged for
+committee review.
 
 Use one of these sample files:
 
 - Critical risk: `evals/data/pdfs/SYN-003.pdf` - cross-border remittance product with vendor and sanctions exposure.
 - High risk: `evals/data/pdfs/SYN-008.pdf` - new invoice-financing product across multiple channels.
 
-1. Sign in as the product owner, upload the PDF, check the extraction, and explicitly submit it.
-2. Sign in as `analyst-1` with the FCRM analyst role and open the case detail.
-3. Review the extraction, score, rationales, and policy evidence; edit and rescore if needed.
-4. Finalize the analyst review with a rationale.
-5. Enter the escalation rationale and select **Submit to committee**.
-6. A committee member signs in and opens **Cases to review** from the Committee dashboard.
-7. Review the assessment, policy evidence, analyst rationale, and extraction changes. Before any vote is cast, the committee may request information and pause the review.
-8. Each committee member signs in separately and casts one vote:
+1. Sign in as the product owner, upload the PDF, check the extraction, and select **Submit for committee review**.
+2. The case appears in the committee queue without analyst verification. The committee is prompted to verify the extracted facts and score.
+3. A committee member signs in and opens **Cases to review** from the Committee dashboard.
+4. Review the assessment, policy evidence, extraction changes, and vote status. Before any vote is cast, the committee may request information and pause the review.
+5. Each committee member signs in separately and casts one vote:
    - **Approve**
    - **Reject**
    - **Defer**
    - **Approve with conditions**
-9. Enter the committee rationale. For conditions, enter one condition per line, its owner, and due date.
-10. Repeat with `committee-1`, `committee-2`, and `committee-3` until three votes are recorded.
+6. Enter the committee rationale. For conditions, enter one condition per line, its owner, and due date.
+7. Repeat with `committee-1`, `committee-2`, and `committee-3` until three votes are recorded.
 
-The case remains pending until three distinct votes are recorded. After the
-third vote, two or more approvals (including **Approve with conditions**)
+The case remains pending until three distinct votes are recorded. After the third vote, two or more approvals (including **Approve with conditions**)
 produce approval; two or more rejections produce rejection; otherwise the
 result is deferred. This is prototype behavior, not an institutionally
 approved decision policy.
@@ -272,12 +280,21 @@ The case moves to:
 ```text
 Draft
 -> Product owner submission
--> Analyst review
--> Analyst finalized
--> Committee review
+-> Committee review (high/critical risk; no analyst verification)
 -> Decisioned or conditions pending
 -> Closed
 ```
+
+Analyst escalation is also available for a case that has completed analyst
+review and was finalized for committee review. This is separate from the
+direct-to-committee path for high/critical cases submitted by the product
+owner.
+
+After the committee vote, the case has a recorded approved, rejected, deferred,
+or approved-with-conditions outcome. A committee outcome does not close the
+case automatically: an analyst closes it separately. For approval with
+conditions, the product owner supplies completion evidence and open conditions
+must be completed before closure.
 
 Each vote's rationale, conditions, demo actor, and timestamp are recorded as
 workflow evidence. The final result follows the prototype vote-count rule; it
@@ -315,18 +332,23 @@ A case moves through the following states:
 
 ```text
 Draft
--> Analyst review (only after product-owner submission)
+-> Product-owner submission
+   -> Low/medium risk: Analyst review
+      -> Analyst finalized -> Closed (analyst closes separately)
+      -> Analyst rejected
+      -> Committee review (optional analyst escalation after finalization)
+   -> High/critical risk: Committee review (direct; not analyst-verified)
 -> Needs information (optional; returns to the stage that requested it)
--> Analyst review
--> Analyst finalized
 -> Committee review
--> Decisioned or Conditions pending
--> Closed
+   -> Decisioned (approved, rejected, or deferred) -> Closed (analyst closes separately)
+   -> Conditions pending (product owner supplies evidence) -> Closed
 ```
 
 A case may be rejected during analyst review. Analyst-finalized low/medium-risk
-cases may be closed without a committee decision. A closed or decisioned case
-may be reassessed; the new case links to the previous case.
+cases may be closed without a committee decision. A committee decision requires
+the configured number of distinct member votes; the current demo rules require
+three votes and a two-vote majority for approval or rejection. A closed or
+decisioned case may be reassessed; the new case links to the previous case.
 
 Invalid transitions are refused. For example, a case cannot be sent to the committee before analyst finalization.
 
@@ -407,12 +429,11 @@ Use `evals/data/pdfs/SYN-001.pdf` for a simple case or a higher-risk PDF such as
 1. Sign in as `product-owner-1` with the Product owner role.
 2. Open **Upload case** and submit the PDF.
 3. Show the extracted fields, category scores, policy evidence if present, case ID, and draft status.
-4. Explicitly submit the request and open the analyst workspace.
-5. Demonstrate a versioned correction or request information and respond as the submitting product owner.
-6. For a high/critical case, finalize it and submit it to committee review.
-7. Sign in as committee members and cast three votes; optionally approve with conditions and capture an owner and due date.
-8. Complete the condition with evidence, close the case, or create a linked reassessment.
-9. Explain the workflow history, vote rule, and the prototype's non-production audit limitations.
+4. Explicitly submit the request to the risk-appropriate queue: analyst for low/medium or committee for high/critical.
+5. For a low/medium case, open the analyst workspace and demonstrate analyst review, finalization, and separate closure. For a high/critical case, open the committee workspace and verify the extracted facts and score.
+6. For a high/critical case, sign in as committee members and cast three votes; optionally approve with conditions and capture an owner and due date.
+7. Complete any conditions with product-owner evidence, then close the case as an analyst; alternatively, create a linked reassessment.
+8. Explain the workflow history, vote rule, and the prototype's non-production audit limitations.
 
 ## 17. Important Limitations
 
