@@ -14,25 +14,24 @@
 **Users**
 
 - Product owner submits a change request.
-- FCRM analyst reviews low/medium-risk cases and owns the assessment.
-- Risk committee reviews high/critical-risk cases and makes the final decision.
+- FCRM analyst verifies facts and finalizes the assessment.
+- Risk committee votes on every finalized assessment and makes the final decision.
 
 **Workflow target**
 
 `Upload -> Draft -> Product-owner submission`
-`  -> Low/medium: Analyst Review -> Analyst Finalized -> Analyst closes`
-`  -> High/critical: Committee Review -> Decisioned/conditions pending -> Analyst closes`
+`  -> Analyst Review -> Analyst Finalized -> Committee Review`
+`  -> Decisioned/conditions pending -> Analyst closes`
 
 **Current implementation**
 
 `Upload -> Draft -> Product-owner submission`
-`  -> Low/medium: Analyst Review -> Analyst Finalized -> Analyst closes`
-`  -> High/critical: Committee Review -> Decisioned/conditions pending -> Analyst closes`
+`  -> Analyst Review -> Analyst Finalized -> Committee Review`
+`  -> Decisioned/conditions pending -> Analyst closes`
 
-Analysts may also escalate a finalized case to committee. Directly submitted
-high/critical cases have not been analyst-verified; committee members are
-prompted to verify the extracted facts and score. Committee approval with
-conditions requires product-owner evidence before analyst closure.
+Every case is verified and finalized by the analyst before the committee
+decision, regardless of risk level. Committee approval with conditions
+requires product-owner evidence before analyst closure.
 
 The browser demo uses fixed username/role pairs and session cookies. This is a demo access gate, not production identity or authorization. See `docs/requirements/spec.md`.
 
@@ -45,8 +44,10 @@ flowchart LR
     TEXT --> LLM[Structured LLM extraction]
     LLM --> SCORE[Deterministic risk scoring]
     SCORE --> CASE[(SQLite case record)]
-    CASE --> REVIEW[Analyst accept/reject]
-    REVIEW --> AUDIT[(Append-only workflow event)]
+    CASE --> REVIEW[Analyst finalizes assessment]
+    REVIEW --> COMMITTEE[Committee vote]
+    COMMITTEE --> DECISION[Decision: approve/reject/defer/conditions]
+    DECISION --> AUDIT[(Append-only workflow event)]
 ```
 
 - FastAPI and Jinja2/HTMX provide the application flow.
@@ -70,9 +71,9 @@ flowchart LR
 
 - Every upload receives a durable case ID.
 - The extraction and score are drafts.
-- Analyst accept/reject actions require an actor and rationale.
+- Analyst assessment finalization requires an actor and rationale; committee votes determine the case outcome.
 - Workflow events are timestamped and append-only through the application, but not protected by database-level immutability.
-- Low/medium submissions go to analysts; high/critical submissions go directly to committee, without analyst verification.
+- All risk levels go to the analyst first; every finalized assessment goes to committee for the final decision.
 - Analyst finalization and committee outcomes are recorded before separate analyst closure.
 - Committee approvals with conditions require product-owner completion evidence before closure.
 - No approval or rejection is performed automatically.
@@ -138,7 +139,7 @@ The scorer produces category scores, rationales, an overall score, risk level, a
 3. Show extracted fields, policy evidence, deterministic category scores, case ID, and draft status.
 4. Use Sign in / switch role; explicitly choose FCRM analyst and enter `analyst-1`.
 5. Review/edit the extraction, provide a rationale, and finalize the assessment.
-6. Submit a high/critical case for committee review.
+6. Submit the finalized assessment to the committee; this sequence applies to every risk level.
 7. Switch among `committee-1`, `committee-2`, and `committee-3`; cast approve, reject, defer, or approve-with-conditions votes. Three distinct votes are required; a full vote without an approval or rejection majority defers.
 8. Show the resulting status, version history, and timestamped workflow events. Describe them as application-enforced demo records, not tamper-proof audit storage.
 

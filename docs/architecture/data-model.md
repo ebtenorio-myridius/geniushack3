@@ -32,8 +32,10 @@ stored as a complete per-case immutable snapshot.
 ## Workflow and Conditions
 
 Lifecycle states include draft, analyst review, needs information, analyst
-finalized/rejected, committee review, decisioned, conditions pending, and
-closed. Information requests store the workflow stage to resume and pause
+finalized, committee review, decisioned, conditions pending, and closed.
+Legacy analyst-rejected records remain readable, but the current analyst
+workflow finalizes assessments and leaves the final outcome to the committee.
+Information requests store the workflow stage to resume and pause
 committee requests until the submitting product owner responds. Committee
 conditions are stored separately with owner, due date, completion evidence,
 and completion actor/time. Open conditions block closure; overdue conditions

@@ -10,25 +10,22 @@
 
 ```text
 Upload -> Draft extraction and risk score
--> Product-owner submission
-   -> Low/medium risk: Analyst review -> Analyst finalized -> Closed
-   -> High/critical risk: Committee review -> Decisioned/conditions pending -> Closed
+-> Product-owner submission -> Analyst review -> Analyst finalized
+-> Committee review -> Decisioned/conditions pending -> Closed
 ```
 
 The happy path is implemented for valid uploads and successful extraction. A
 successful extraction creates a durable draft; invalid PDFs or failed provider
-calls return errors and do not create a case. On product-owner submission,
-low/medium-risk cases enter analyst review, while high/critical-risk cases go
-directly to committee review. Directly submitted high/critical cases have not
-had analyst verification; committee members are prompted to verify the facts
-and score. Analysts can also escalate a case to the committee after finalizing
-it. An accepted low/medium analyst review is finalized but not closed
-automatically; an analyst closes it separately. In the user-facing committee
-route, three distinct demo usernames can vote once each: two approvals approve,
-two rejections reject, and no majority defers the case. Approval with
-conditions creates follow-up work owned by the product owner; all conditions
-must be completed before an analyst can close the case. Committee outcomes
-also require analyst closure. The lower-level `CaseStore` still has a direct
+calls return errors and do not create a case. Every product-owner submission
+enters analyst review, regardless of draft risk. The analyst verifies the
+extracted facts, finalizes the assessment, and submits it to the committee.
+The committee records the final approve, reject, defer, or approve-with-
+conditions outcome. In the user-facing committee route, three distinct demo
+usernames can vote once each: two approvals approve, two rejections reject,
+and no majority defers the case. Approval with conditions creates follow-up
+work owned by the product owner; all conditions must be completed before an
+analyst can close the case. Analyst finalization and committee outcomes do not
+close a case automatically. The lower-level `CaseStore` still has a direct
 decision method used by a unit test, so the three-vote invariant is not
 enforced for every internal caller.
 
@@ -38,7 +35,7 @@ enforced for every internal caller.
 - The extraction is schema validated and remains a draft until product-owner submission.
 - Analyst actions require an actor and rationale; demo actor values are not consistently bound to the signed-in identity.
 - Workflow events are timestamped and inserted by application code. The database does not enforce append-only immutability.
-- High and critical submissions are routed to the committee; low and medium submissions are routed to analysts.
+- All product-owner submissions are routed to analysts; every analyst-finalized assessment proceeds to committee decision, regardless of risk level.
 - Analyst finalization and committee outcomes do not automatically close a case; closure is a separate analyst action. Product-owner evidence is required for committee approval conditions.
 - The user-facing committee route records the three-vote human majority outcome. A lower-level direct-decision helper remains available to internal callers; the quorum is not a store-wide invariant.
 - Synthetic documents and data are the demo-use requirement. The upload endpoint does not technically detect or reject real data.
@@ -46,8 +43,8 @@ enforced for every internal caller.
 ## Scope decisions
 
 The demo covers synthetic PDF intake, structured extraction, deterministic
-inherent-risk scoring, policy evidence retrieval, risk-based analyst or
-committee review, and a three-member committee vote. Synthetic-only use
+inherent-risk scoring, policy evidence retrieval, analyst assessment followed
+by committee decision, and a three-member committee vote. Synthetic-only use
 remains an operating constraint but is not technically enforced. Production
 identity, residual-risk calculation, source-document retention, and
 institutionally approved scoring and committee rules are out of scope for the

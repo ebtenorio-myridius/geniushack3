@@ -31,7 +31,8 @@ def test_analyst_can_finalize_low_risk_case_from_case_detail(monkeypatch, tmp_pa
 
     assert detail.status_code == 200
     assert "Analyst review" in detail.text
-    assert "Finalize assessment" in detail.text
+    assert "Finalize assessment for committee" in detail.text
+    assert "Reject draft" not in detail.text
     assert "Read-only analyst view" not in detail.text
 
     response = client.post(
@@ -46,3 +47,6 @@ def test_analyst_can_finalize_low_risk_case_from_case_detail(monkeypatch, tmp_pa
     finalized = store.get_case(case.case_id)
     assert finalized.status == CaseStatus.analyst_finalized
     assert store.list_events(case.case_id)[-1]["actor"] == "analyst-1"
+    finalized_detail = client.get(f"/intake/analyst/cases/{case.case_id}")
+    assert "Submit finalized assessment for committee decision" in finalized_detail.text
+    assert "Close case" not in finalized_detail.text

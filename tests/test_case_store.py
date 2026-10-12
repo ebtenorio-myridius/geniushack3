@@ -24,6 +24,7 @@ def test_case_store_persists_and_audits_analyst_review(tmp_path):
     case = store.create_case("synthetic.pdf", _request(), score_change_request(_request()))
 
     assert store.get_case(case.case_id).status == CaseStatus.draft
+    store.submit_case(case.case_id, "product-owner-1")
 
     reviewed = store.review_case(
         case.case_id,
@@ -60,18 +61,36 @@ def test_case_store_rejects_second_review(tmp_path):
     store = CaseStore(str(tmp_path / "cases.db"))
     case = store.create_case("synthetic.pdf", _request(), score_change_request(_request()))
     review = AnalystReview(
-        decision=CaseStatus.analyst_rejected,
+        decision=CaseStatus.analyst_accepted,
         actor="synthetic-analyst",
-        rationale="The request needs clarification.",
+        rationale="The assessment was reviewed and finalized.",
     )
+    store.submit_case(case.case_id, "product-owner-1")
     store.review_case(case.case_id, review)
 
     try:
         store.review_case(case.case_id, review)
     except ValueError as exc:
-        assert "draft or analyst-review" in str(exc)
+        assert "submitted for analyst review" in str(exc)
     else:
         raise AssertionError("A finalized case must not be reviewed twice")
+
+
+def test_analyst_cannot_make_the_final_case_decision(tmp_path):
+    store = CaseStore(str(tmp_path / "cases.db"))
+    case = store.create_case("synthetic.pdf", _request(), score_change_request(_request()))
+    store.submit_case(case.case_id, "product-owner-1")
+
+    with pytest.raises(ValueError, match="committee makes the case decision"):
+        store.review_case(
+            case.case_id,
+            AnalystReview(
+                decision=CaseStatus.analyst_rejected,
+                actor="synthetic-analyst",
+                rationale="An analyst must not make the final decision.",
+            ),
+        )
+    assert store.get_case(case.case_id).status == CaseStatus.analyst_review
 
 
 def test_case_store_versions_edits_and_supports_committee_decision(tmp_path):
@@ -139,6 +158,7 @@ def test_product_owner_draft_correction_keeps_submission_gate_closed(tmp_path):
 def test_case_store_requires_three_committee_votes_for_final_decision(tmp_path):
     store = CaseStore(str(tmp_path / "cases.db"))
     case = store.create_case("synthetic.pdf", _request(), score_change_request(_request()))
+    store.submit_case(case.case_id, "product-owner-1")
     store.review_case(
         case.case_id,
         AnalystReview(decision=CaseStatus.analyst_accepted, actor="analyst", rationale="Ready."),
@@ -181,6 +201,7 @@ def test_case_uses_its_recorded_rules_snapshot_for_committee_quorum(tmp_path):
     case = store.create_case("synthetic.pdf", request, score_change_request(request, rules))
 
     assert case.ruleset_version == "test-quorum-2"
+    store.submit_case(case.case_id, "product-owner-1")
     store.review_case(
         case.case_id,
         AnalystReview(decision=CaseStatus.analyst_accepted, actor="analyst", rationale="Ready."),
@@ -202,6 +223,7 @@ def test_case_uses_its_recorded_rules_snapshot_for_committee_quorum(tmp_path):
 def test_case_store_rejects_duplicate_committee_vote(tmp_path):
     store = CaseStore(str(tmp_path / "cases.db"))
     case = store.create_case("synthetic.pdf", _request(), score_change_request(_request()))
+    store.submit_case(case.case_id, "product-owner-1")
     store.review_case(case.case_id, AnalystReview(decision=CaseStatus.analyst_accepted, actor="analyst", rationale="Ready."))
     store.submit_committee(case.case_id, "analyst", "Escalated.")
     vote = CommitteeReview(decision="approve", actor="committee-1", rationale="Approve.")
@@ -218,6 +240,7 @@ def test_case_store_rejects_duplicate_committee_vote(tmp_path):
 def test_case_store_defers_when_three_votes_have_no_approval_or_rejection_majority(tmp_path):
     store = CaseStore(str(tmp_path / "cases.db"))
     case = store.create_case("synthetic.pdf", _request(), score_change_request(_request()))
+    store.submit_case(case.case_id, "product-owner-1")
     store.review_case(case.case_id, AnalystReview(decision=CaseStatus.analyst_accepted, actor="analyst", rationale="Ready."))
     store.submit_committee(case.case_id, "analyst", "Escalated.")
 
@@ -243,6 +266,7 @@ def test_case_store_defers_when_three_votes_have_no_approval_or_rejection_majori
 def test_case_store_rejects_when_two_committee_members_vote_to_reject(tmp_path):
     store = CaseStore(str(tmp_path / "cases.db"))
     case = store.create_case("synthetic.pdf", _request(), score_change_request(_request()))
+    store.submit_case(case.case_id, "product-owner-1")
     store.review_case(case.case_id, AnalystReview(decision=CaseStatus.analyst_accepted, actor="analyst", rationale="Ready."))
     store.submit_committee(case.case_id, "analyst", "Escalated.")
 
@@ -266,6 +290,7 @@ def test_case_store_lists_cases_by_workflow_status(tmp_path):
     draft = store.create_case("draft.pdf", _request(), score_change_request(_request()))
     finalized_request = _request(change_title="Finalized case")
     finalized = store.create_case("finalized.pdf", finalized_request, score_change_request(finalized_request))
+    store.submit_case(finalized.case_id, "product-owner-1")
     store.review_case(
         finalized.case_id,
         AnalystReview(decision=CaseStatus.analyst_accepted, actor="analyst", rationale="Reviewed."),

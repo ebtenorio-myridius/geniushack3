@@ -72,24 +72,16 @@
             </table>
             <p class="overall-score">Overall: {{ assessment.overall_score }} / 5</p>
             {% if assessment.requires_committee_review %}
-            <p class="flag flag--warn">Flagged for committee review under current thresholds.</p>
+            <p class="flag flag--warn">High/critical draft score; the analyst verifies and finalizes the assessment before committee review.</p>
             {% endif %}
         </div>
     </div>
 
     {% include "partials/source_provenance.html" %}
 
-    {% if assessment.requires_committee_review %}
-    <p class="flag flag--warn">This is a draft. Submit it to place the high/critical-risk case in the committee queue. Its extracted facts and score have not been analyst-verified.</p>
-    {% else %}
-    <p class="flag flag--warn">This is a draft. Submit it to place the case in the analyst work queue; it is not yet under review.</p>
-    {% endif %}
+    <p class="flag flag--warn">This is a draft. Submit it to place the case in the analyst work queue. All cases are reviewed and finalized by an analyst before committee decision.</p>
     <form class="review-form" hx-post="/intake/{{ case_id }}/submit" hx-target="#submission-result">
-        {% if assessment.requires_committee_review %}
-        <button class="button" type="submit">Submit for committee review</button>
-        {% else %}
-        <button class="button" type="submit">Submit complete request for review</button>
-        {% endif %}
+        <button class="button" type="submit">Submit for analyst review</button>
         <a class="button button--secondary" href="/intake/product-owner/cases/{{ case_id }}">Open case details</a>
     </form>
     <div id="submission-result"></div>

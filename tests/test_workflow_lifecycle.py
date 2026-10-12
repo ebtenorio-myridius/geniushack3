@@ -72,7 +72,7 @@ def test_submission_gate_requires_complete_request_and_records_owner(tmp_path):
         store.submit_case(case.case_id, "another-owner")
 
 
-def test_product_owner_submission_routes_cases_by_risk_and_role_queues(monkeypatch, tmp_path):
+def test_all_product_owner_submissions_enter_analyst_queue_before_committee(monkeypatch, tmp_path):
     store = CaseStore(str(tmp_path / "workflow.db"))
     low_risk = _case(
         store,
@@ -104,11 +104,8 @@ def test_product_owner_submission_routes_cases_by_risk_and_role_queues(monkeypat
 
     high_submission = owner.post(f"/intake/{high_risk.case_id}/submit")
     assert high_submission.status_code == 200
-    committee_case = store.get_case(high_risk.case_id)
-    assert committee_case.status == CaseStatus.committee_review
-    assert committee_case.assigned_to is None
-    assert "not been analyst-verified" in store.list_events(high_risk.case_id)[-1]["rationale"]
-    assert "Committee review" in high_submission.text
+    assert store.get_case(high_risk.case_id).status == CaseStatus.analyst_review
+    assert "analyst review queue" in high_submission.text
 
     analyst = TestClient(app)
     analyst.cookies.set("demo_user", "analyst-1")
@@ -116,18 +113,54 @@ def test_product_owner_submission_routes_cases_by_risk_and_role_queues(monkeypat
     analyst_dashboard = analyst.get("/intake/analyst/dashboard/demo")
     assert analyst_dashboard.status_code == 200
     assert low_risk.case_id in analyst_dashboard.text
-    assert high_risk.case_id not in analyst_dashboard.text
+    assert high_risk.case_id in analyst_dashboard.text
 
     committee = TestClient(app)
     committee.cookies.set("demo_user", "committee-1")
     committee.cookies.set("demo_role", "committee")
     committee_dashboard = committee.get("/intake/committee/dashboard/demo")
     assert committee_dashboard.status_code == 200
-    assert high_risk.case_id in committee_dashboard.text
+    assert high_risk.case_id not in committee_dashboard.text
     assert low_risk.case_id not in committee_dashboard.text
+
+    finalized = store.review_case(
+        high_risk.case_id,
+        AnalystReview(
+            decision=CaseStatus.analyst_accepted,
+            actor="analyst-1",
+            rationale="Verified high-risk facts and finalized the assessment.",
+        ),
+    )
+    assert finalized.status == CaseStatus.analyst_finalized
+    with pytest.raises(ValueError, match="Only decided cases"):
+        store.close_case(high_risk.case_id, "analyst-1", "Cannot close before committee decision.")
+    submitted_to_committee = analyst.post(
+        f"/intake/{high_risk.case_id}/committee/submit",
+        data={"rationale": "Assessment is finalized; requesting committee decision."},
+    )
+    assert submitted_to_committee.status_code == 200
+    assert store.get_case(high_risk.case_id).status == CaseStatus.committee_review
+    assert "committee decision queue" in submitted_to_committee.text
+
+    committee_dashboard = committee.get("/intake/committee/dashboard/demo")
+    assert high_risk.case_id in committee_dashboard.text
     committee_detail = committee.get(f"/intake/committee/cases/{high_risk.case_id}")
     assert committee_detail.status_code == 200
-    assert "Verify the extracted facts and risk score" in committee_detail.text
+    assert "Verify the extracted facts and risk score" not in committee_detail.text
+
+    assert analyst.post(
+        f"/intake/{low_risk.case_id}/review",
+        data={
+            "decision": "analyst_accepted",
+            "rationale": "Verified low-risk facts and finalized the assessment.",
+        },
+    ).status_code == 200
+    assert analyst.post(
+        f"/intake/{low_risk.case_id}/committee/submit",
+        data={"rationale": "Submitting the finalized low-risk assessment for the required committee decision."},
+    ).status_code == 200
+    committee_dashboard = committee.get("/intake/committee/dashboard/demo")
+    assert low_risk.case_id in committee_dashboard.text
 
 
 def test_information_request_pauses_and_resumes_original_review_stage(tmp_path):
@@ -250,7 +283,7 @@ def test_case_closure_and_reassessment_require_terminal_workflow_state(tmp_path)
         stated_risk_factors=["rapid funds movement"],
     )
     submitted = store.submit_case(high_risk.case_id, "product-owner-1")
-    assert submitted.status == CaseStatus.committee_review
+    assert submitted.status == CaseStatus.analyst_review
     with pytest.raises(ValueError, match="Only decided cases"):
         store.close_case(high_risk.case_id, "analyst-1", "Premature closure.")
 
@@ -550,7 +583,7 @@ def test_examiner_style_export_contains_verification_manifest_and_source(monkeyp
     assert TestClient(app).get(f"/intake/{case.case_id}/source-document").status_code == 403
 
 
-def test_low_risk_analyst_finalization_completes_cycle_time_measurement(tmp_path):
+def test_analyst_finalization_is_not_a_completed_case_until_committee_decision(tmp_path):
     store = CaseStore(str(tmp_path / "workflow.db"))
     case = _case(store)
     store.submit_case(case.case_id, "product-owner-1")
@@ -564,9 +597,24 @@ def test_low_risk_analyst_finalization_completes_cycle_time_measurement(tmp_path
     )
 
     metrics = store.cycle_time_metrics(case.case_id)
+    assert metrics["status"] == "in_progress"
+    assert metrics["decided_at"] is None
+    assert metrics["decision_ready_hours"] is not None
+    assert metrics["sla_met"] is None
+    store.submit_committee(case.case_id, "analyst-1", "Finalized assessment submitted for committee decision.")
+    for actor, decision in (
+        ("committee-1", "approve"),
+        ("committee-2", "approve"),
+        ("committee-3", "defer"),
+    ):
+        store.cast_committee_vote(
+            case.case_id,
+            CommitteeReview(decision=decision, actor=actor, rationale="Committee decision."),
+        )
+
+    metrics = store.cycle_time_metrics(case.case_id)
     assert metrics["status"] == "complete"
     assert metrics["decided_at"] is not None
-    assert metrics["decision_ready_hours"] is not None
     assert metrics["sla_met"] is True
     report = store.cycle_time_report()
     assert report["completed_cases"] == 1

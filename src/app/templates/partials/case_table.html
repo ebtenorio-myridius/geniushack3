@@ -21,7 +21,7 @@
                 {% if case.status.value == 'draft' %}Complete and submit request
                 {% elif case.status.value == 'needs_information' %}Waiting for product owner
                 {% elif case.status.value == 'analyst_review' %}Analyst review
-                {% elif case.status.value == 'analyst_finalized' %}Committee submission or close
+                {% elif case.status.value == 'analyst_finalized' %}Committee submission
                 {% elif case.status.value == 'committee_review' %}Committee vote
                 {% elif case.status.value == 'conditions_pending' %}Complete decision conditions
                 {% elif case.status.value == 'decisioned' %}Close or reassess

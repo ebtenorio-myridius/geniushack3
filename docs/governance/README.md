@@ -5,8 +5,8 @@
 ### Extraction review
 
 The model prepares a structured draft. An analyst must verify fields against
-the source before the case is finalized. The analyst can reject the draft and
-must record why.
+the source before finalizing the assessment. The analyst records the rationale;
+the committee, not the analyst, records the final case decision.
 
 ### Risk review
 
@@ -16,13 +16,13 @@ changing history.
 
 ### Committee review
 
-High and critical cases are flagged for committee review. An analyst submits
-the finalized case, committee-role users can view the queue, and three distinct
-committee members must vote. Each vote records approve, reject, defer, or
-approve-with-conditions plus rationale and conditions. The case remains pending
-until three votes are recorded; two approvals or rejections decide the result,
-and a full vote without either majority is deferred. No automated approval or
-rejection is permitted.
+Every product-owner submission enters analyst review. The analyst verifies the
+facts, finalizes the assessment, and submits it to committee; committee-role
+users can view the queue and three distinct committee members must vote. Each
+vote records approve, reject, defer, or approve-with-conditions plus rationale
+and conditions. The case remains pending until three votes are recorded; two
+approvals or rejections decide the result, and a full vote without either
+majority is deferred. No automated approval or rejection is permitted.
 
 ### Audit requirement
 

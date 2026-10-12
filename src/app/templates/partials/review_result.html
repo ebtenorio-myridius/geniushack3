@@ -8,7 +8,13 @@
     </li>
 </ol>
 
-<section class="flag flag--{{ 'warn' if case.status.value == 'analyst_rejected' else 'success' }}">
-    Case {{ case.case_id }} is now {{ case.status.value.replace('_', ' ') }}. The workflow event was recorded.
+<section class="flag flag--success">
+    Case {{ case.case_id }} is now {{ case.status.value.replace('_', ' ') }}.
+    {% if case.status.value == 'analyst_review' %}It is in the analyst review queue.
+    {% elif case.status.value == 'analyst_finalized' %}Submit the finalized assessment to the committee for a decision.
+    {% elif case.status.value == 'committee_review' %}It is in the committee decision queue.
+    {% elif case.status.value in ('decisioned', 'conditions_pending') %}The committee outcome was recorded; an analyst must close the case after any conditions are complete.
+    {% endif %}
+    The workflow event was recorded.
 </section>
 <p><a href="/">Return to your workspace to refresh the case state.</a></p>

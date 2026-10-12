@@ -408,19 +408,6 @@ class CaseStore:
         missing = [label for label, value in required.items() if not value.strip()]
         if missing:
             raise ValueError(f"Complete the required fields before submitting: {', '.join(missing)}")
-        if case.assessment.requires_committee_review:
-            rationale = (
-                "Product owner submitted this high/critical case directly to committee review. "
-                "Extracted facts and risk score have not been analyst-verified."
-            )
-            return self._transition(
-                case_id,
-                CaseStatus.draft,
-                CaseStatus.committee_review,
-                actor,
-                rationale,
-                clear_assigned_to=True,
-            )
         return self._transition(
             case_id,
             CaseStatus.draft,
@@ -507,20 +494,20 @@ class CaseStore:
         return self.get_case(reassessment.case_id)
 
     def review_case(self, case_id: str, review: AnalystReview) -> CaseRecord:
-        if review.decision not in (CaseStatus.analyst_accepted, CaseStatus.analyst_rejected):
-            raise ValueError("Analyst review must accept or reject the draft")
+        if review.decision != CaseStatus.analyst_accepted:
+            raise ValueError("The analyst finalizes the assessment; the committee makes the case decision")
         now = datetime.now(timezone.utc)
         with closing(self._connect()) as connection:
             with connection:
                 row = connection.execute("SELECT status FROM cases WHERE case_id = ?", (case_id,)).fetchone()
                 if row is None:
                     raise KeyError(case_id)
-                if row["status"] not in (CaseStatus.draft.value, CaseStatus.analyst_review.value):
-                    raise ValueError("Only draft or analyst-review cases can be finalized")
+                if row["status"] != CaseStatus.analyst_review.value:
+                    raise ValueError("Only cases submitted for analyst review can be finalized")
                 next_status = CaseStatus.analyst_finalized
                 connection.execute(
                     "UPDATE cases SET status = ?, updated_at = ? WHERE case_id = ?",
-                    (CaseStatus.analyst_rejected.value if review.decision == CaseStatus.analyst_rejected else next_status.value, now.isoformat(), case_id),
+                    (next_status.value, now.isoformat(), case_id),
                 )
                 self._record_event(connection, case_id, review.decision.value, review.actor, review.rationale)
         return self.get_case(case_id)
@@ -762,15 +749,11 @@ class CaseStore:
         now = datetime.now(timezone.utc)
         with closing(self._connect()) as connection:
             with connection:
-                row = connection.execute("SELECT status, assessment_json FROM cases WHERE case_id = ?", (case_id,)).fetchone()
+                row = connection.execute("SELECT status FROM cases WHERE case_id = ?", (case_id,)).fetchone()
                 if row is None:
                     raise KeyError(case_id)
-                if row["status"] not in (CaseStatus.decisioned.value, CaseStatus.conditions_pending.value, CaseStatus.analyst_finalized.value):
+                if row["status"] not in (CaseStatus.decisioned.value, CaseStatus.conditions_pending.value):
                     raise ValueError("Only decided cases can be closed")
-                if row["status"] == CaseStatus.analyst_finalized.value:
-                    assessment = RiskAssessmentDraft.model_validate(json.loads(row["assessment_json"]))
-                    if assessment.requires_committee_review:
-                        raise ValueError("High/critical assessments must complete committee review before closure")
                 open_count = connection.execute(
                     "SELECT COUNT(*) FROM conditions WHERE case_id = ? AND status != 'completed'",
                     (case_id,),
@@ -826,8 +809,6 @@ class CaseStore:
         target: CaseStatus,
         actor: str,
         rationale: str,
-        *,
-        clear_assigned_to: bool = False,
     ) -> CaseRecord:
         now = datetime.now(timezone.utc)
         with closing(self._connect()) as connection:
@@ -837,16 +818,10 @@ class CaseStore:
                     raise KeyError(case_id)
                 if row["status"] != expected.value:
                     raise ValueError(f"Case must be {expected.value} before {target.value}")
-                if clear_assigned_to:
-                    connection.execute(
-                        "UPDATE cases SET status = ?, assigned_to = NULL, updated_at = ? WHERE case_id = ?",
-                        (target.value, now.isoformat(), case_id),
-                    )
-                else:
-                    connection.execute(
-                        "UPDATE cases SET status = ?, updated_at = ? WHERE case_id = ?",
-                        (target.value, now.isoformat(), case_id),
-                    )
+                connection.execute(
+                    "UPDATE cases SET status = ?, updated_at = ? WHERE case_id = ?",
+                    (target.value, now.isoformat(), case_id),
+                )
                 self._record_event(connection, case_id, target.value, actor, rationale)
         return self.get_case(case_id)
 
@@ -1031,7 +1006,6 @@ class CaseStore:
 
         timed_events = events[start_index:]
         start_at = datetime.fromisoformat(timed_events[0]["occurred_at"])
-        is_high_risk = case.assessment.requires_committee_review
         decision_ready_at = None
         decided_at = None
         stage_hours: dict[str, float] = {}
@@ -1042,15 +1016,11 @@ class CaseStore:
             event_at = datetime.fromisoformat(event["occurred_at"]).astimezone(timezone.utc)
             stage = event["stage"]
             if decision_ready_at is None and stage in (
-                CaseStatus.committee_review.value,
                 CaseStatus.analyst_finalized.value,
                 CaseStatus.analyst_rejected.value,
             ):
                 decision_ready_at = event_at
-            low_risk_analyst_decision = (
-                stage == CaseStatus.analyst_finalized.value and not is_high_risk
-            )
-            if stage == CaseStatus.analyst_rejected.value or stage in final_stages or low_risk_analyst_decision:
+            if stage == CaseStatus.analyst_rejected.value or stage in final_stages:
                 decided_at = event_at
                 end_at = event_at
                 timed_events = timed_events[: index + 1]

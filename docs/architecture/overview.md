@@ -20,13 +20,12 @@ flowchart LR
     RULES --> STORE
     STORE --> RESULT[Draft extraction result]
     RESULT --> OWNER[Product owner checks and submits]
-    OWNER -->|low or medium| ANALYST[Analyst review/edit]
-    OWNER -->|high or critical| COMMITTEE[Committee review; verify unreviewed facts]
-    ANALYST -->|finalized; optional escalation| COMMITTEE
-    ANALYST -->|low/medium finalized| CLOSE[Analyst closes case]
+    OWNER --> ANALYST[Analyst review/edit]
+    ANALYST -->|finalized| COMMITTEE[Committee decision]
     COMMITTEE --> VOTE[Three distinct committee votes]
     VOTE -->|approved, rejected, deferred| OUTCOME[Decisioned]
     VOTE -->|approved with conditions| CONDITIONS[Product owner completes conditions]
+    CLOSE[Analyst closes case]
     CONDITIONS --> CLOSE
     OUTCOME --> CLOSE
     STORE --> EVENTS[(Events, versions, votes, telemetry)]
@@ -52,14 +51,13 @@ index and API key are available; otherwise it uses a rule-based category
 fallback. The policy corpus is synthetic demonstration material, not approved
 supervisory guidance.
 
-On product-owner submission, low/medium-risk drafts enter analyst review and
-high/critical-risk drafts enter committee review directly. This direct
-high/critical route has no analyst verification; committee members are prompted
-to verify the extracted facts and score. Analysts can separately escalate a
-case after finalizing it. Analyst finalization and committee outcomes do not
-close cases automatically: an analyst closes a case after recording closure
-rationale, and approval conditions must be completed by the product owner
-first.
+Every product-owner submission enters analyst review, regardless of its draft
+risk level. The analyst verifies the extracted facts and finalizes the
+assessment before submitting it to the committee, which records the final
+decision for every finalized case. Analyst finalization and committee outcomes
+do not close cases automatically: an analyst closes a case after recording
+closure rationale, and approval conditions must be completed by the product
+owner first.
 
 SQLite stores case data, the current extraction and assessment, policy
 evidence, extraction versions, workflow events, committee votes, and telemetry.

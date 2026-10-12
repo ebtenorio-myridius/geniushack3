@@ -103,8 +103,7 @@
             <span class="field__label">Review rationale</span>
             <textarea name="rationale" required rows="3" placeholder="Explain your assessment or any disagreement"></textarea>
         </label>
-        <button class="button" name="decision" value="analyst_accepted" type="submit">Finalize assessment</button>
-        <button class="button button--secondary" name="decision" value="analyst_rejected" type="submit">Reject draft</button>
+        <button class="button" name="decision" value="analyst_accepted" type="submit">Finalize assessment for committee</button>
     </form>
     <form class="review-form" hx-post="/intake/{{ case.case_id }}/request-information" hx-target="#analyst-review-result">
         <h3>Request more information</h3>
@@ -112,21 +111,17 @@
         <button class="button button--secondary" type="submit">Pause review and request information</button>
     </form>
     <div id="analyst-review-result"></div>
-    {% elif case.status.value == 'analyst_finalized' and case.assessment.requires_committee_review %}
+    {% elif case.status.value == 'analyst_finalized' %}
     <form class="review-form" hx-post="/intake/{{ case.case_id }}/committee/submit" hx-target="#analyst-review-result">
-        <h3>Committee escalation</h3>
-        <p class="panel__hint">This high/critical case is finalized and flagged for committee review.</p>
+        <h3>Submit finalized assessment for committee decision</h3>
+        <p class="panel__hint">The committee makes the final approve, reject, defer, or approve-with-conditions decision for every case.</p>
         <label class="field">
-            <span class="field__label">Escalation rationale</span>
-            <textarea name="rationale" required rows="3" placeholder="Explain why committee review is needed"></textarea>
+            <span class="field__label">Committee submission rationale</span>
+            <textarea name="rationale" required rows="3" placeholder="Summarize the finalized assessment for committee review"></textarea>
         </label>
         <button class="button" type="submit">Submit to committee</button>
     </form>
     <div id="analyst-review-result"></div>
-    {% elif case.status.value == 'analyst_finalized' %}
-    <p class="flag flag--success">Analyst review is finalized. No committee decision is required for this risk level.</p>
-    {% elif case.status.value == 'analyst_rejected' %}
-    <p class="flag flag--warn">This draft was rejected by the analyst.</p>
     {% elif case.status.value == 'needs_information' %}
     <p class="flag flag--warn">Review is paused while waiting for the product owner.</p>
     <p><strong>Request:</strong> {{ case.information_request }}</p>
@@ -141,7 +136,7 @@
     {% endfor %}
     {% endif %}
 
-    {% if case.status.value in ['decisioned', 'conditions_pending'] or (case.status.value == 'analyst_finalized' and not case.assessment.requires_committee_review) %}
+    {% if case.status.value in ['decisioned', 'conditions_pending'] %}
     {% set open_conditions = conditions | selectattr('status', 'equalto', 'open') | list %}
     {% if not open_conditions %}
     <form class="review-form" hx-post="/intake/{{ case.case_id }}/close" hx-target="#workflow-result">

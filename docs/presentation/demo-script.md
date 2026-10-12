@@ -15,10 +15,11 @@
 2. **Extraction:** upload the sample PDF and point out that the model maps the document into the Pydantic fields.
 3. **Scoring:** show that category scores and the overall risk level come from deterministic Python rules, not an LLM decision.
 4. **Traceability:** point out the case ID, draft status, policy evidence, extraction version, and workflow events.
-5. **Human gate:** use Sign in / switch role, explicitly select FCRM analyst, enter `analyst-1`, and sign in. Review the case, edit if needed, enter a rationale, and finalize.
+5. **Human gate:** use Sign in / switch role, explicitly select FCRM analyst, enter `analyst-1`, and sign in. Review the case regardless of its risk level, verify/edit the extraction, enter a rationale, and finalize the assessment.
 6. **Safety:** explain that the prompt treats document text as untrusted and that the system never auto-approves or auto-rejects.
-7. **Committee:** submit a high/critical case, then switch among `committee-1`, `committee-2`, and `committee-3` to cast three distinct approve, reject, defer, or approve-with-conditions votes. Two approvals approve, two rejections reject, and no majority defers.
+7. **Committee:** submit the analyst-finalized case for committee decision, then switch among `committee-1`, `committee-2`, and `committee-3` to cast three distinct approve, reject, defer, or approve-with-conditions votes. Two approvals approve, two rejections reject, and no majority defers.
 8. **Auditability:** explain that actor, rationale, versions, and UTC events are persisted in SQLite. The event history is append-only through application behavior, not database-enforced immutability.
+9. **Closure:** committee outcomes are recorded before separate analyst closure. Product-owner evidence must complete any approval conditions before closure.
 
 ## Fallback demonstration
 

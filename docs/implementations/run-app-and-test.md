@@ -115,10 +115,11 @@ PDF
 ## 7. Analyst Review
 
 Sign in as `analyst-1` with the FCRM Analyst role and open the submitted case.
-The analyst can edit/rescore, request information from the submitting owner,
-finalize an eligible low/medium-risk case, or send a high/critical-risk case
-to committee review. Information requests pause the case and resume the same
-review stage when the owner responds.
+The analyst verifies the extracted facts, edits/rescores if needed, requests
+information from the submitting owner if needed, and finalizes the assessment
+for every risk level. The analyst then submits each finalized assessment to
+the committee, which makes the final case decision. Information requests pause
+the case and resume the same review stage when the owner responds.
 
 ### Edit and rescore
 

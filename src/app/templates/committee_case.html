@@ -15,9 +15,6 @@
             <h1>{{ case.extracted.change_title }}</h1>
             <p class="case-header__source">Case {{ case.case_id }} · {{ case.filename }} · Assessment version {{ case.extraction_version }}</p>
             <p class="panel__hint">Status: {{ case.status.value.replace("_", " ") }} · Request owner: {{ case.submitted_by }} · Assigned analyst: {{ case.assigned_to or "Unassigned" }}</p>
-            {% if case.assessment.requires_committee_review %}
-            <p class="flag flag--warn">High/critical-risk case. Verify the extracted facts and risk score during committee review.</p>
-            {% endif %}
             {% if case.parent_case_id %}<p class="panel__hint">Reassessment of <a href="/intake/committee/cases/{{ case.parent_case_id }}">{{ case.parent_case_id }}</a></p>{% endif %}
         </div>
         <span class="badge badge--{{ case.assessment.risk_level.value }}">{{ case.assessment.risk_level.value }} risk</span>
