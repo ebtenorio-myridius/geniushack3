@@ -11,10 +11,20 @@
 <section class="flag flag--success">
     Case {{ case.case_id }} is now {{ case.status.value.replace('_', ' ') }}.
     {% if case.status.value == 'analyst_review' %}It is in the analyst review queue.
-    {% elif case.status.value == 'analyst_finalized' %}Submit the finalized assessment to the committee for a decision.
+    {% elif case.status.value == 'analyst_finalized' %}The assessment is finalized, but it is not yet in the committee queue. Submit it below to send it for a decision.
     {% elif case.status.value == 'committee_review' %}It is in the committee decision queue.
     {% elif case.status.value in ('decisioned', 'conditions_pending') %}The committee outcome was recorded; an analyst must close the case after any conditions are complete.
     {% endif %}
     The workflow event was recorded.
 </section>
+{% if case.status.value == 'analyst_finalized' %}
+<form class="review-form" hx-post="/intake/{{ case.case_id }}/committee/submit" hx-target="#analyst-review-result">
+    <h3>Submit finalized assessment for committee decision</h3>
+    <label class="field">
+        <span class="field__label">Committee submission rationale</span>
+        <textarea name="rationale" required rows="3" placeholder="Summarize the finalized assessment for committee review"></textarea>
+    </label>
+    <button class="button" type="submit">Submit to committee</button>
+</form>
+{% endif %}
 <p><a href="/">Return to your workspace to refresh the case state.</a></p>

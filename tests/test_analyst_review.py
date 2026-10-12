@@ -46,7 +46,21 @@ def test_analyst_can_finalize_low_risk_case_from_case_detail(monkeypatch, tmp_pa
     assert response.status_code == 200
     finalized = store.get_case(case.case_id)
     assert finalized.status == CaseStatus.analyst_finalized
+    assert "not yet in the committee queue" in response.text
+    assert "Submit to committee" in response.text
     assert store.list_events(case.case_id)[-1]["actor"] == "analyst-1"
-    finalized_detail = client.get(f"/intake/analyst/cases/{case.case_id}")
-    assert "Submit finalized assessment for committee decision" in finalized_detail.text
-    assert "Close case" not in finalized_detail.text
+
+    submitted = client.post(
+        f"/intake/{case.case_id}/committee/submit",
+        data={"rationale": "The finalized low-risk assessment is ready for committee decision."},
+    )
+    assert submitted.status_code == 200
+    assert store.get_case(case.case_id).status == CaseStatus.committee_review
+    assert "committee decision queue" in submitted.text
+
+    committee = TestClient(app)
+    committee.cookies.set("demo_user", "committee-1")
+    committee.cookies.set("demo_role", "committee")
+    committee_dashboard = committee.get("/intake/committee/dashboard/demo")
+    assert committee_dashboard.status_code == 200
+    assert case.case_id in committee_dashboard.text
