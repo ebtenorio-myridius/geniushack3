@@ -72,6 +72,64 @@ def test_submission_gate_requires_complete_request_and_records_owner(tmp_path):
         store.submit_case(case.case_id, "another-owner")
 
 
+def test_product_owner_submission_routes_cases_by_risk_and_role_queues(monkeypatch, tmp_path):
+    store = CaseStore(str(tmp_path / "workflow.db"))
+    low_risk = _case(
+        store,
+        change_type="feature_change",
+        geographies_involved=["United States"],
+        products_involved=["Remittance"],
+        stated_risk_factors=[],
+    )
+    high_risk = _case(
+        store,
+        geographies_involved=["United States", "Iran"],
+        customer_segments_involved=["New customers"],
+        vendor_involved=True,
+        vendor_name="Synthetic vendor",
+        products_involved=["Remittance", "Wallet"],
+        stated_risk_factors=["rapid funds movement"],
+    )
+
+    assert low_risk.assessment.requires_committee_review is False
+    assert high_risk.assessment.requires_committee_review is True
+    monkeypatch.setattr(intake, "case_store", store)
+    owner = TestClient(app)
+    owner.cookies.set("demo_user", "product-owner-1")
+    owner.cookies.set("demo_role", "product_owner")
+
+    low_submission = owner.post(f"/intake/{low_risk.case_id}/submit")
+    assert low_submission.status_code == 200
+    assert store.get_case(low_risk.case_id).status == CaseStatus.analyst_review
+
+    high_submission = owner.post(f"/intake/{high_risk.case_id}/submit")
+    assert high_submission.status_code == 200
+    committee_case = store.get_case(high_risk.case_id)
+    assert committee_case.status == CaseStatus.committee_review
+    assert committee_case.assigned_to is None
+    assert "not been analyst-verified" in store.list_events(high_risk.case_id)[-1]["rationale"]
+    assert "Committee review" in high_submission.text
+
+    analyst = TestClient(app)
+    analyst.cookies.set("demo_user", "analyst-1")
+    analyst.cookies.set("demo_role", "analyst")
+    analyst_dashboard = analyst.get("/intake/analyst/dashboard/demo")
+    assert analyst_dashboard.status_code == 200
+    assert low_risk.case_id in analyst_dashboard.text
+    assert high_risk.case_id not in analyst_dashboard.text
+
+    committee = TestClient(app)
+    committee.cookies.set("demo_user", "committee-1")
+    committee.cookies.set("demo_role", "committee")
+    committee_dashboard = committee.get("/intake/committee/dashboard/demo")
+    assert committee_dashboard.status_code == 200
+    assert high_risk.case_id in committee_dashboard.text
+    assert low_risk.case_id not in committee_dashboard.text
+    committee_detail = committee.get(f"/intake/committee/cases/{high_risk.case_id}")
+    assert committee_detail.status_code == 200
+    assert "Verify the extracted facts and risk score" in committee_detail.text
+
+
 def test_information_request_pauses_and_resumes_original_review_stage(tmp_path):
     store = CaseStore(str(tmp_path / "workflow.db"))
     case = _case(store)
@@ -191,16 +249,9 @@ def test_case_closure_and_reassessment_require_terminal_workflow_state(tmp_path)
         products_involved=["Remittance", "Wallet"],
         stated_risk_factors=["rapid funds movement"],
     )
-    store.submit_case(high_risk.case_id, "product-owner-1")
-    store.review_case(
-        high_risk.case_id,
-        AnalystReview(
-            decision=CaseStatus.analyst_accepted,
-            actor="analyst-1",
-            rationale="High risk; must proceed to committee.",
-        ),
-    )
-    with pytest.raises(ValueError, match="must complete committee review"):
+    submitted = store.submit_case(high_risk.case_id, "product-owner-1")
+    assert submitted.status == CaseStatus.committee_review
+    with pytest.raises(ValueError, match="Only decided cases"):
         store.close_case(high_risk.case_id, "analyst-1", "Premature closure.")
 
 

@@ -408,7 +408,26 @@ class CaseStore:
         missing = [label for label, value in required.items() if not value.strip()]
         if missing:
             raise ValueError(f"Complete the required fields before submitting: {', '.join(missing)}")
-        return self._transition(case_id, CaseStatus.draft, CaseStatus.analyst_review, actor, "Submitted complete change request for analyst review.")
+        if case.assessment.requires_committee_review:
+            rationale = (
+                "Product owner submitted this high/critical case directly to committee review. "
+                "Extracted facts and risk score have not been analyst-verified."
+            )
+            return self._transition(
+                case_id,
+                CaseStatus.draft,
+                CaseStatus.committee_review,
+                actor,
+                rationale,
+                clear_assigned_to=True,
+            )
+        return self._transition(
+            case_id,
+            CaseStatus.draft,
+            CaseStatus.analyst_review,
+            actor,
+            "Submitted complete change request for analyst review.",
+        )
 
     def request_information(self, case_id: str, actor: str, rationale: str) -> CaseRecord:
         now = datetime.now(timezone.utc)
@@ -800,7 +819,16 @@ class CaseStore:
         snapshot = json.loads(snapshot_json) if snapshot_json else {}
         return GovernanceRules.model_validate(snapshot) if snapshot else self.governance_rules
 
-    def _transition(self, case_id: str, expected: CaseStatus, target: CaseStatus, actor: str, rationale: str) -> CaseRecord:
+    def _transition(
+        self,
+        case_id: str,
+        expected: CaseStatus,
+        target: CaseStatus,
+        actor: str,
+        rationale: str,
+        *,
+        clear_assigned_to: bool = False,
+    ) -> CaseRecord:
         now = datetime.now(timezone.utc)
         with closing(self._connect()) as connection:
             with connection:
@@ -809,7 +837,16 @@ class CaseStore:
                     raise KeyError(case_id)
                 if row["status"] != expected.value:
                     raise ValueError(f"Case must be {expected.value} before {target.value}")
-                connection.execute("UPDATE cases SET status = ?, updated_at = ? WHERE case_id = ?", (target.value, now.isoformat(), case_id))
+                if clear_assigned_to:
+                    connection.execute(
+                        "UPDATE cases SET status = ?, assigned_to = NULL, updated_at = ? WHERE case_id = ?",
+                        (target.value, now.isoformat(), case_id),
+                    )
+                else:
+                    connection.execute(
+                        "UPDATE cases SET status = ?, updated_at = ? WHERE case_id = ?",
+                        (target.value, now.isoformat(), case_id),
+                    )
                 self._record_event(connection, case_id, target.value, actor, rationale)
         return self.get_case(case_id)
 

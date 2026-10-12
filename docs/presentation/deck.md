@@ -14,16 +14,18 @@
 **Users**
 
 - Product owner submits a change request.
-- FCRM analyst verifies extracted facts and owns the assessment.
-- Risk committee makes the final decision for escalated cases.
+- FCRM analyst reviews low/medium-risk cases and owns the assessment.
+- Risk committee reviews high/critical-risk cases and makes the final decision.
 
 **Workflow target**
 
-`Submitted -> Extracted -> Analyst Review -> Analyst Finalized -> Committee Review -> Decisioned`
+`Submitted -> Extracted -> Low/medium: Analyst Review -> Analyst Finalized`
+`                         -> High/critical: Committee Review -> Decisioned`
 
 **Current implementation**
 
-`Submitted -> Extracted -> Analyst Review -> Analyst Finalized -> Committee Review -> Decisioned`
+`Submitted -> Extracted -> Low/medium: Analyst Review -> Analyst Finalized`
+`                         -> High/critical: Committee Review -> Decisioned`
 
 The browser demo uses fixed username/role pairs and session cookies. This is a demo access gate, not production identity or authorization. See `docs/requirements/spec.md`.
 

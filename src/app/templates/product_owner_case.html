@@ -67,8 +67,13 @@
     </form>
     <form class="review-form" hx-post="/intake/{{ case.case_id }}/submit" hx-target="#workflow-result">
         <h3>Submit request</h3>
+        {% if case.assessment.requires_committee_review %}
+        <p class="panel__hint">This high/critical-risk case will go directly to committee review. The extracted facts and score have not been analyst-verified.</p>
+        <button class="button" type="submit">Submit for committee review</button>
+        {% else %}
         <p class="panel__hint">Required fields—title, business unit, and description—must be complete before analyst review begins.</p>
         <button class="button" type="submit">Submit for analyst review</button>
+        {% endif %}
     </form>
     {% elif case.status.value == 'needs_information' %}
     <div class="review-form">

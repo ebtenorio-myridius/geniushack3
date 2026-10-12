@@ -1,7 +1,11 @@
 <ol id="steps" class="steps" hx-swap-oob="true">
     <li class="steps__item">1. Upload change request</li>
     <li class="steps__item">2. Review extraction</li>
-    <li class="steps__item steps__item--active">3. Analyst finalizes</li>
+    <li class="steps__item steps__item--active">
+        3. {% if case.status.value == 'committee_review' %}Committee review
+        {% elif case.status.value in ('decisioned', 'conditions_pending', 'closed') %}Committee decision
+        {% else %}Analyst finalizes{% endif %}
+    </li>
 </ol>
 
 <section class="flag flag--{{ 'warn' if case.status.value == 'analyst_rejected' else 'success' }}">
