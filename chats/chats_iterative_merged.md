@@ -7372,3 +7372,32 @@ The user asked to add the latest relevant conversations to this history file whi
 #### Action
 
 Added this dated summary of the local role-based test, the commit-message suggestions, the Render startup diagnosis and Dockerfile correction, and the associated validation.
+
+## 2026-10-12
+
+### 16:32 -04:00 - Risk-Based Case Routing and Queue Visibility
+
+#### User request
+
+The user reported that a low-risk case submitted as product owner was not visible after logging in as an analyst, and that a high-risk case was not visible to a committee member.
+
+#### Investigation and decision
+
+- Traced visibility to workflow state: the analyst dashboard lists analyst-review and information-request cases, while committee queues list committee-review cases.
+- Found that upload creates a draft; the product owner must submit it to enter a review queue.
+- The existing behavior routed every submitted case to analyst review, leaving high-risk cases out of the committee queue until an analyst finalized and separately escalated them.
+- Asked whether to preserve analyst-first review or route high-risk submissions directly to committee. The user selected direct committee routing.
+
+#### Changes
+
+- Routed low/medium-risk product-owner submissions to analyst review and high/critical-risk submissions directly to committee review.
+- Cleared the analyst assignment on direct committee routing and recorded an audit rationale stating that the facts and score have not been analyst-verified.
+- Updated intake, extraction-result, product-owner, committee-case, and post-submit status UI to show the appropriate destination and warn committee members to verify unreviewed extracted facts and scores.
+- Updated the requirements specification and presentation workflow description.
+- Added an integration test covering submissions, post-submit status text, analyst and committee queue visibility, and the committee review warning; updated an existing workflow expectation.
+
+#### Validation
+
+- Ran the focused workflow, case-store, and analyst-review test files: `29 passed`.
+- Pylance reported no errors in the changed Python implementation or workflow test.
+- `git diff --check` passed.
