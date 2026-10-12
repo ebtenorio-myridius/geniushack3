@@ -7427,3 +7427,30 @@ The user asked whether the flow was stated in the project documentation and requ
 #### Validation
 
 - `git diff --check` passed.
+
+### 17:09 -04:00 - Aligning the Review Workflow to the Challenge Brief
+
+#### User requests
+
+- The user asked whether the implemented workflow matched the published Genius Hacks Q3 2026 brief.
+- After the brief comparison, the user asked to align the current system behavior with the workflow described in the brief.
+
+#### Brief comparison
+
+- Compared the role responsibilities and decision process in the published brief with the application's then-current risk-based routing.
+- The brief describes the analyst finalizing the assessment before committee review, with the committee deciding outcomes such as approval, rejection, deferral, or approval with conditions.
+- The brief does not establish direct product-owner-to-committee routing based on risk level, nor does it prescribe the prototype's three-member voting quorum.
+
+#### Changes
+
+- Changed product-owner submission so every risk level enters analyst review; high- and critical-risk cases no longer bypass the analyst.
+- Restricted analysts to verifying and finalizing assessments. Final case approval or rejection is determined by the committee.
+- Required committee review before a case can be closed; committee conditions must be completed by the product owner before closure.
+- Updated the relevant intake, analyst, committee, and post-action UI and workflow documentation to explain the analyst-first sequence and role boundaries.
+- Updated workflow, case-store, and analyst-review tests for routing, decision authority, closure requirements, and cycle-time completion.
+
+#### Validation and result
+
+- The full test suite passed: `88 passed`; two dependency deprecation warnings were reported.
+- `git diff --check` passed, and a search for known stale direct-routing wording found no remaining matches in the checked templates and documentation.
+- The resulting workflow is Product Owner submission -> Analyst assessment and finalization -> Committee decision -> Analyst closure, with condition evidence required where applicable. The three-member voting rule remains a prototype setting not specified by the brief.
