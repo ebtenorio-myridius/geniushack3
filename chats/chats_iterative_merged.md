@@ -7477,3 +7477,32 @@ The user reported that a low-risk case was visible to the analyst after product-
 - Ran the focused analyst-review and workflow-lifecycle tests: `18 passed`; one existing Starlette deprecation warning was reported.
 - `git diff --check` passed.
 - The analyst workflow now clearly separates finalizing the assessment from submitting it, and confirms committee queue visibility after the latter action.
+
+### 17:32 -04:00 - Product Owner Dashboard Decision Status
+
+#### User report
+
+The user reported that the Product Owner dashboard showed the generic status `decisioned` without indicating whether the committee approved the case or whether it was still pending.
+
+#### Investigation and changes
+
+- Confirmed that the case record stores the committee outcome separately from the workflow status, and that the Product Owner dashboard did not receive decision-status labels.
+- Updated the dashboard to show explicit pending stages, including pending analyst review and pending committee decision, and to show recorded outcomes such as Approved, Rejected, Deferred, and Approved with conditions.
+- Added detail for approved-with-conditions cases when conditions are pending and for cases already closed.
+- Added regression coverage for the pending committee state and an approved outcome. Added a pending badge style using the existing muted background.
+
+#### Validation and result
+
+- Ran workflow lifecycle and case-store tests: `30 passed`; one existing Starlette deprecation warning was reported.
+- Pylance reported no diagnostics in the edited router; `git diff --check` passed.
+
+### 17:40 -04:00 - Product Owner Status Text Contrast
+
+#### User request
+
+The user reported that Product Owner dashboard status text was white against a very light blue background and asked to make it black.
+
+#### Change and validation
+
+- Changed `.status-badge` text color to black in the shared stylesheet.
+- `git diff --check` passed.
