@@ -7454,3 +7454,26 @@ The user asked whether the flow was stated in the project documentation and requ
 - The full test suite passed: `88 passed`; two dependency deprecation warnings were reported.
 - `git diff --check` passed, and a search for known stale direct-routing wording found no remaining matches in the checked templates and documentation.
 - The resulting workflow is Product Owner submission -> Analyst assessment and finalization -> Committee decision -> Analyst closure, with condition evidence required where applicable. The three-member voting rule remains a prototype setting not specified by the brief.
+
+### 17:19 -04:00 - Low-Risk Case Missing from Committee Queue
+
+#### User report
+
+The user reported that a low-risk case was visible to the analyst after product-owner submission, but was not visible to a committee member after the analyst approved it for committee review.
+
+#### Investigation
+
+- Confirmed that analyst finalization transitions a case to `analyst_finalized`, which is not included in the committee queue.
+- Found that committee routing requires a separate analyst action, “Submit to committee,” which transitions the case to `committee_review`.
+- The analyst detail page showed the separate submission form only after a page reload, while the finalize action updated only the review-result panel. This made the required next step easy to miss.
+
+#### Changes
+
+- Updated the review-result panel to state that a finalized assessment is not yet in the committee queue and to render the committee submission form immediately.
+- Extended the low-risk analyst-review test to submit the finalized assessment and verify that a committee member can see the case in the committee dashboard.
+
+#### Validation and result
+
+- Ran the focused analyst-review and workflow-lifecycle tests: `18 passed`; one existing Starlette deprecation warning was reported.
+- `git diff --check` passed.
+- The analyst workflow now clearly separates finalizing the assessment from submitting it, and confirms committee queue visibility after the latter action.
