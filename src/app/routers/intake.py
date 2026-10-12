@@ -196,30 +196,58 @@ async def product_owner_dashboard(request: Request):
     user, role = _identity(request)
     require_role(UserRole.product_owner, user, role)
     cases = case_store.list_cases()
+    owner_cases = [case for case in cases if case.submitted_by == user]
     return templates.TemplateResponse(
         request,
         "product_owner_dashboard.html",
-        _queue_context([case for case in cases if case.submitted_by == user]) | {"detail_base": "/intake/product-owner/cases"},
+        _queue_context(owner_cases)
+        | {
+            "detail_base": "/intake/product-owner/cases",
+            "status_labels": _decision_status_labels(owner_cases),
+        },
     )
 
 
 def _decision_status_labels(cases):
     labels = {}
     decision_labels = {
-        "approve": ("Approved", "approved"),
-        "reject": ("Rejected", "rejected"),
-        "defer": ("Deferred", "deferred"),
-        "approve_with_conditions": ("Approved with conditions", "approved-conditions"),
+        CommitteeDecision.approve: ("Approved", "approved"),
+        CommitteeDecision.reject: ("Rejected", "rejected"),
+        CommitteeDecision.defer: ("Deferred", "deferred"),
+        CommitteeDecision.approve_with_conditions: ("Approved with conditions", "approved-conditions"),
+    }
+    pending_status_labels = {
+        CaseStatus.draft: ("Draft", "pending"),
+        CaseStatus.analyst_review: ("Pending analyst review", "pending"),
+        CaseStatus.needs_information: ("Information requested", "pending"),
+        CaseStatus.analyst_finalized: ("Pending committee submission", "pending"),
+        CaseStatus.committee_review: ("Pending committee decision", "pending"),
     }
     for case in cases:
-        decision_events = [
-            event for event in case_store.list_events(case.case_id)
-            if event["event_type"] == CaseStatus.decisioned.value
-        ]
-        if not decision_events:
-            continue
-        decision = decision_events[-1]["rationale"].split(":", 1)[0]
-        label, css_class = decision_labels.get(decision, (CaseStatus.decisioned.value.replace("_", " "), "decisioned"))
+        decision = case.decision
+        if decision is None and case.status in (CaseStatus.decisioned, CaseStatus.conditions_pending, CaseStatus.closed):
+            decision_events = [
+                event for event in case_store.list_events(case.case_id)
+                if event["event_type"] == CaseStatus.decisioned.value
+            ]
+            if decision_events:
+                decision_value = decision_events[-1]["rationale"].split(":", 1)[0]
+                decision = next((item for item in decision_labels if item.value == decision_value), None)
+        if decision is not None:
+            label, css_class = decision_labels[decision]
+            if case.status == CaseStatus.conditions_pending:
+                label = f"{label} (conditions pending)"
+            elif case.status == CaseStatus.closed:
+                label = f"{label} (closed)"
+        elif case.status == CaseStatus.conditions_pending:
+            label, css_class = "Conditions pending", "pending"
+        elif case.status in (CaseStatus.decisioned, CaseStatus.closed):
+            label, css_class = "Decision recorded", "decisioned"
+        else:
+            label, css_class = pending_status_labels.get(
+                case.status,
+                (case.status.value.replace("_", " ").capitalize(), "pending"),
+            )
         labels[case.case_id] = {"label": label, "class": css_class}
     return labels
 

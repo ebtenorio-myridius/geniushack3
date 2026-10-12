@@ -163,6 +163,39 @@ def test_all_product_owner_submissions_enter_analyst_queue_before_committee(monk
     assert low_risk.case_id in committee_dashboard.text
 
 
+def test_product_owner_dashboard_shows_pending_and_committee_outcome(monkeypatch, tmp_path):
+    store = CaseStore(str(tmp_path / "workflow.db"))
+    case = _committee_ready(store)
+    monkeypatch.setattr(intake, "case_store", store)
+
+    owner = TestClient(app)
+    owner.cookies.set("demo_user", "product-owner-1")
+    owner.cookies.set("demo_role", "product_owner")
+
+    pending_dashboard = owner.get("/intake/product-owner/dashboard/demo")
+    assert pending_dashboard.status_code == 200
+    assert "Pending committee decision" in pending_dashboard.text
+
+    for actor, decision in (
+        ("committee-1", "approve"),
+        ("committee-2", "approve"),
+        ("committee-3", "defer"),
+    ):
+        store.cast_committee_vote(
+            case.case_id,
+            CommitteeReview(
+                decision=decision,
+                actor=actor,
+                rationale="Reviewed the finalized assessment.",
+            ),
+        )
+
+    decided_dashboard = owner.get("/intake/product-owner/dashboard/demo")
+    assert decided_dashboard.status_code == 200
+    assert "Approved" in decided_dashboard.text
+    assert "decisioned</span>" not in decided_dashboard.text
+
+
 def test_information_request_pauses_and_resumes_original_review_stage(tmp_path):
     store = CaseStore(str(tmp_path / "workflow.db"))
     case = _case(store)

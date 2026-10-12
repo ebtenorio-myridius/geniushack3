@@ -284,6 +284,7 @@ textarea, input[type="text"] {
 .status-badge--deferred { background: var(--accent); }
 .status-badge--approved-conditions { background: #0B6A3A; }
 .status-badge--decisioned { background: var(--ink-muted); }
+.status-badge--pending { background: var(--ink-muted); }
 
 .grid-two {
     display: grid;
