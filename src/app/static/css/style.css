@@ -54,6 +54,8 @@ h3 { font-size: 0.95rem; display: flex; justify-content: space-between; align-it
     box-shadow: 0 2px 8px rgba(0, 90, 156, 0.18);
 }
 
+.site-header--centered { text-align: center; }
+
 .site-header__title {
     display: block;
     font-family: Georgia, serif;

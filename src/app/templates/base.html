@@ -8,7 +8,7 @@
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
 </head>
 <body>
-    <header class="site-header">
+    <header class="site-header{% block header_class %}{% endblock %}">
         <div class="wrap">
             <span class="site-header__title">Risk Assessment Workbench</span>
             <span class="site-header__subtitle">Change request intake for Financial Crimes Risk Management</span>
