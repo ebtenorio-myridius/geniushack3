@@ -7527,3 +7527,39 @@ The user asked for an assessment of the entire app and updates to the presentati
 - The focused presentation-generation test passed: `1 passed`.
 - Verified the regenerated deck contains 10 slides and the updated workflow/evaluation claims.
 - `git diff --check` passed, and a scan found no stale evaluation numbers or incorrect upload-authorization claims in the presentation sources.
+
+## 2026-10-13
+
+### 11:01 -04:00 - Responsive Login Panel Centering
+
+#### User prompt
+
+> Seems like the Login page content is not centered on the page. Make sure that the content of this page is always centered even when the side of the browser is changed.
+
+The user attached a screenshot showing the sign-in panel offset to the left.
+
+#### Changes and results
+
+- Found that `.login-panel` had a maximum width but no centering margins, leaving it aligned to the left within the wider page container.
+- Added `margin-inline: auto` in `src/app/static/css/style.css`, preserving the 520px maximum width, existing top spacing, and narrow-screen side padding.
+- Updated `docs/manual/user-manual.md` to describe responsive horizontal centering.
+- Verified the rendered login panel in the browser at widths of 320, 375, 520, 768, 1024, 1440, and 1904 pixels: equal side margins at every size and no horizontal overflow.
+- The stylesheet had no editor diagnostics, and `git diff --check` passed.
+
+### 11:10 -04:00 - Responsive Login Header Centering
+
+#### User prompt
+
+> Look at the header of the login page, the one with the dark blue background. This is not centered. That top portion of the page needs fixing.
+
+The user attached a screenshot showing the centered sign-in panel below left-aligned header text.
+
+#### Changes and results
+
+- Added an overridable `header_class` block in `src/app/templates/base.html`.
+- Applied `site-header--centered` only from `src/app/templates/login.html`, with `text-align: center` in the shared stylesheet.
+- Centered the login header title, subtitle, and **Sign in / switch role** link without changing headers on other pages.
+- Updated the user manual to describe both the centered login header and sign-in panel.
+- Verified the header text, including wrapped mobile text, and the sign-in panel at the same seven browser widths from 320 to 1904 pixels, with no horizontal overflow.
+- Successfully signed in as `product-owner-1` and confirmed the Product Owner dashboard header retained its original alignment.
+- Edited templates and stylesheet had no editor diagnostics, and `git diff --check` passed.
