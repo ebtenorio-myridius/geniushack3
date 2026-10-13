@@ -250,12 +250,12 @@ def build_deck():
 
     # 2. Problem
     slide = new_slide(prs, state, "The problem", "Slow, variable, and hard to reconstruct",
-                      notes="0:20-0:50. State the pain in numbers, then the design stance: nothing is approved or rejected automatically. The brief was half a page; it was expanded into docs/requirements.")
+                      notes="0:20-0:50. Attribute the 15-20 business-day current-state figure to the brief and the two-day figure to the brief's target; neither is a measured app result. State the design stance: nothing is automatically approved or rejected.")
     rrect(slide, 0.5, 1.5, 3.0, 3.5, NAVY)
     text_box(slide, "15-20", 0.75, 1.65, 2.5, 0.8, 44, WHITE, True, HEAD_FONT)
-    text_box(slide, "business days per assessment today", 0.75, 2.45, 2.5, 0.5, 13, ICE)
+    text_box(slide, "business days: brief estimate", 0.75, 2.45, 2.5, 0.5, 13, ICE)
     text_box(slide, "~2", 0.75, 3.3, 2.5, 0.8, 44, SKY, True, HEAD_FONT)
-    text_box(slide, "days to decision-ready: the target in the brief", 0.75, 4.1, 2.5, 0.6, 13, ICE)
+    text_box(slide, "days: brief target, not measured", 0.75, 4.1, 2.5, 0.6, 13, ICE)
     card(slide, 3.7, 1.5, 2.85, 3.5)
     heading(slide, "Today", 3.9, 1.65, 2.5)
     bullet_box(slide, ["Email, Word, Excel, SharePoint", "Different analysts reach different conclusions", "Examiner asks why it was rated this way: evidence is scattered and slow to rebuild"], 3.9, 2.1, 2.5, 2.8, 14)
@@ -330,12 +330,12 @@ def build_deck():
 
     # 7. Governance
     slide = new_slide(prs, state, "Human-in-the-loop", "The system prepares; people decide",
-                      notes="4:15-5:15. For each gate say what risk it controls: the analyst gate stops a bad extraction reaching the committee; the committee vote keeps the decision human; audit events answer the examiner months later. Nothing is auto-approved.")
-    flow(slide, ["Draft", "Edit", "Finalize", "Committee", "Decision"], ["ai", "human", "human", "human", "human"], 0.5, 1.45, 1.5, 0.375, 0.55)
+                      notes="4:15-5:15. Every risk level goes through analyst review before committee decision. Explain the resume-after-information-request path and that conditions must be evidenced before analyst closure. The event hash chain and examiner export help reconstruct the record but are not immutable against a database owner.")
+    flow(slide, ["Owner draft", "Analyst review", "Committee", "Decision", "Close"], ["ai", "human", "human", "human", "human"], 0.5, 1.45, 1.5, 0.375, 0.55)
     gates = [
-        ("Analyst gate", ["Accept or reject the draft", "Edit and rescore", "Rationale required"]),
-        ("Committee rule", ["Three distinct votes required", "Approve / reject / defer / conditions", "Two approvals/rejections decide; otherwise defer"]),
-        ("Audit evidence", ["UTC timestamps", "Append-only workflow events", "Original and edited versions kept"]),
+        ("Analyst gate", ["Every risk level reviewed", "Edit/rescore with source citations", "Finalize with rationale"]),
+        ("Committee + lifecycle", ["Three distinct votes; 2-vote majority", "Information requests resume prior stage", "Conditions block closure; reassessments link"]),
+        ("Audit evidence", ["Versioned extractions and UTC events", "Verifiable event hash chain + source hashes", "Examiner ZIP with verification manifest"]),
     ]
     for index, (name, items) in enumerate(gates):
         x = 0.5 + index * 3.075
@@ -343,15 +343,15 @@ def build_deck():
         badge(slide, index + 1, x + 0.25, 2.42, 0.4, BLUE)
         text_box(slide, name, x + 0.95, 2.42, 1.8, 0.4, 15, NAVY, True, anchor=MSO_ANCHOR.MIDDLE)
         bullet_box(slide, items, x + 0.25, 3.0, 2.4, 1.6, 13)
-    text_box(slide, "Prototype only: demo identity, voting rule not approved as institutional policy, storage not tamper-proof.", 0.5, 4.8, 9, 0.3, 11, MUTED, italic=True)
+    text_box(slide, "Demo identities only; vote/scoring rules are unapproved. Hash-chain verification is not immutable storage.", 0.5, 4.8, 9, 0.3, 11, MUTED, italic=True)
 
     # 8. Demo
     slide = new_slide(prs, state, "Working demonstration", "One synthetic case, end to end",
-                      notes="5:15-7:45 (about 2.5 minutes). Rehearse this path on the network you will use on the day. If OpenAI is unreachable: play the backup screen recording and show the eval results and passing tests. Say aloud what each role sees.")
+                      notes="5:15-7:45 (about 2.5 minutes). Owner uploads, checks required draft fields, and submits. The analyst verifies/corrects with source citations, finalizes, and submits to committee. Use three separate committee identities. For a conditional outcome, show owner evidence followed by analyst closure; end with audit verification/export. If the provider is unavailable, use the recorded evaluation and local tests without implying offline extraction.")
     line = slide.shapes.add_connector(1, _emu(1.25), _emu(2.05), _emu(8.75), _emu(2.05))
     line.line.color.rgb = SKY
     line.line.width = Pt(2 * S)
-    steps = ["Sign in as product-owner-1", "Upload synthetic PDF", "Inspect fields and score", "Switch to analyst-1", "Finalize with rationale", "Three committee votes"]
+    steps = ["Owner uploads PDF", "Inspect draft + score", "Owner submits case", "Analyst finalizes", "Three committee votes", "Owner evidence; analyst closes"]
     for index, step in enumerate(steps):
         cx = 1.25 + index * 1.5
         shape(slide, MSO_SHAPE.OVAL, cx - 0.3, 1.75, 0.6, 0.6, NAVY if index < 3 else BLUE, WHITE, line_w=2)
@@ -359,11 +359,11 @@ def build_deck():
         text_box(slide, step, cx - 0.7, 2.5, 1.4, 0.8, 12, NAVY, True, align=PP_ALIGN.CENTER)
     card(slide, 0.5, 3.6, 9.0, 1.4)
     heading(slide, "Security boundary", 0.75, 3.72, 4)
-    text_box(slide, "Synthetic data only. Demo identity is not production authentication, and the upload endpoint is not role-gated. Extraction needs the OpenAI API and has no offline fallback.", 0.75, 4.1, 8.5, 0.8, 13)
+    text_box(slide, "Workflow routes check fixed demo roles, not production identities. Extraction needs the configured model provider; no offline extraction fallback. Source and audit hashes are verifiable, not immutable.", 0.75, 4.1, 8.5, 0.8, 13)
 
     # 9. Evaluation (numbers come from evals/results/latest.json)
     slide = new_slide(prs, state, "Testing and evidence", "We measure the model, not just the demo",
-                      notes="7:45-9:45. Lead with the iteration story: baseline, what was classified as wrong, what changed, new number. Then failure handling: the office-network block, how it was detected (APIConnectionError, 0/8), recovery, and the bounded runtime retry added after testing. Also mention malformed PDFs now return a controlled 422. Token line: gpt-4o-mini, bounded input, per-call latency and token telemetry; quote measured tokens per case from the iteration log.")
+                      notes="7:45-9:45. Quote the values generated from the latest recorded PDF evaluation and state that this is only eight synthetic cases. Risk agreement comes from deterministic scoring and does not establish field accuracy. Mention controlled errors for invalid PDFs and provider failures; do not suggest extraction has an offline fallback.")
     field_accuracy = f"{evaluation['field_accuracy']:.1%}" if evaluation["field_accuracy"] is not None else "N/A"
     risk_agreement = f"{evaluation['risk_agreement']:.0%}" if evaluation["risk_agreement"] is not None else "N/A"
     latency = f"{evaluation['mean_latency_ms'] / 1000:.1f} s" if evaluation["mean_latency_ms"] is not None else "N/A"
@@ -393,7 +393,7 @@ def build_deck():
     card(slide, 5.6, 2.55, 3.9, 2.55)
     heading(slide, "Failure handled, and how to read this", 5.8, 2.65, 3.6)
     bullet_box(slide, [
-        "Office-network incident: 0/8; recovered on an unblocked network. Runtime now retries transient provider failures up to three times",
+        "Invalid PDFs and provider failures return explicit errors; transient provider failures are retried up to three times",
         "Risk agreement comes from the deterministic scorer; it does not prove every field is right",
         f"Eight synthetic cases, not a production accuracy estimate. pytest: {test_result}",
     ], 5.8, 3.05, 3.55, 2.0, 11)
@@ -404,7 +404,7 @@ def build_deck():
     columns = [
         ("Current demo", ["Docker Compose", "SQLite named volume", "Synthetic data only", "OpenAI key for extraction"]),
         ("Free-first target", ["Ollama adapter", "PostgreSQL and MinIO", "Redis worker", "Prometheus and Grafana"]),
-        ("Production gate", ["Real identity and authorization", "TLS and secrets manager", "Migrations and backups", "Alerts and rollback"]),
+        ("Production gate", ["Real identity + hardened access", "Approved rules + residual-risk controls", "Protected storage + external audit anchor", "Migrations, backups, alerts, rollback"]),
     ]
     for index, (name, items) in enumerate(columns):
         x = 0.5 + index * 3.075

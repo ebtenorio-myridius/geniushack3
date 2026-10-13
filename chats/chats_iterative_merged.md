@@ -7506,3 +7506,24 @@ The user reported that Product Owner dashboard status text was white against a v
 
 - Changed `.status-badge` text color to black in the shared stylesheet.
 - `git diff --check` passed.
+
+### 07:32 -04:00 - Presentation Documents Aligned with Current App Flow
+
+#### User request
+
+The user asked for an assessment of the entire app and updates to the presentation documents in `docs/presentation` so they reflect the current system flow.
+
+#### Assessment and changes
+
+- Reviewed the app routes, workflow lifecycle, persistence, relevant tests, presentation sources, and PowerPoint generator.
+- Updated the presentation outline, live-demo script, evidence matrix, and presentation README to describe the current product-owner -> analyst -> committee flow, information requests, conditional approvals and closure, reassessment, retained source documents, cycle-time reporting, audit-chain verification, and examiner export.
+- Corrected outdated presentation claims: the upload route requires a product-owner demo role, and source PDFs/page text are retained with integrity checks.
+- Replaced stale evaluation figures with the latest recorded PDF evaluation: 8/8 successful cases, 80/80 fields correct, 8/8 risk-level agreement, and 3,615 ms mean latency. Preserved the caveat that the sample is small and synthetic.
+- Updated `tools/generate_presentation.py` and regenerated the 10-slide editable deck, aligning its workflow, evaluation, limitations, and production-gate copy with the current implementation.
+
+#### Validation and result
+
+- The full suite completed successfully during deck generation: `89 passed`.
+- The focused presentation-generation test passed: `1 passed`.
+- Verified the regenerated deck contains 10 slides and the updated workflow/evaluation claims.
+- `git diff --check` passed, and a scan found no stale evaluation numbers or incorrect upload-authorization claims in the presentation sources.
