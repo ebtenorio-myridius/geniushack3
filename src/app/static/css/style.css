@@ -97,7 +97,10 @@ select {
     font: inherit;
 }
 
-.login-panel { max-width: 520px; }
+.login-panel {
+    max-width: 520px;
+    margin-inline: auto;
+}
 
 .steps {
     position: sticky;

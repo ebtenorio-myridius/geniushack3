@@ -29,6 +29,9 @@ and role blank. Enter a username and explicitly select **Product owner**,
 the username. A successful login stores the demo identity in browser cookies
 and opens the matching workspace.
 
+The sign-in panel stays horizontally centered as the browser is resized,
+with side padding on narrow screens.
+
 Recommended demo usernames are:
 
 ```text
