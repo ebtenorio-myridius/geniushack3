@@ -332,9 +332,26 @@ def build_deck():
                        "Every rating traceable to inputs and reasoning"],
                x2 + 0.35, y + 0.95, cw - 0.7, h - 1.25, 16, gap=14)
 
-    # 3. Architecture
+    # 3. Specification expansion
+    slide = new_slide(prs, state, "From brief to specification", "We turned an open-ended problem into testable scope",
+                      notes="0:50-1:30. The brief describes scattered evidence, inconsistent decisions, and a slow review path. The expanded specification names the users, states, acceptance criteria, scope decisions, and unresolved assumptions. The brief's two-day target is not an application result.")
+    columns = [
+        ("Problem as given", ["Change evidence is fragmented", "Similar cases can be assessed inconsistently", "Rebuilding rationale is slow"]),
+        ("Specification added", ["Product owner, analyst, and committee personas", "Draft -> analyst -> committee -> follow-up workflow", "Acceptance criteria for citations, decisions, and closure"]),
+        ("Boundaries made explicit", ["Synthetic PDF intake and inherent-risk score", "Production identity and approved rules out of scope", "Residual-risk modeling and immutable audit storage remain gaps"]),
+    ]
+    cw, y, h = (W - 0.8) / 3, 1.95, 4.75
+    for index, (name, items) in enumerate(columns):
+        x = L + index * (cw + 0.4)
+        card(slide, x, y, cw, h, ICE if index == 0 else WHITE, LINE if index < 2 else GOLD)
+        text_box(slide, name, x + 0.35, y + 0.35, cw - 0.7, 0.55, 19, NAVY if index < 2 else GOLD_D, True, HEAD_FONT)
+        bullet_box(slide, items, x + 0.35, y + 1.15, cw - 0.7, h - 1.45, 15, gap=14)
+    text_box(slide, "Evidence: docs/requirements/spec.md + open-questions.md | Current-state and target turnaround figures belong to the brief, not measured results.",
+             L, 6.35, W, 0.42, 12, MUTED, italic=True, anchor=MSO_ANCHOR.MIDDLE)
+
+    # 4. Architecture
     slide = new_slide(prs, state, "Architecture", "A deliberately narrow AI boundary",
-                      notes="0:50-1:50. Walk the pipeline left to right. Extraction is a probabilistic problem, scoring is not, so scoring is plain Python a committee can reproduce. This is the engineering-judgement answer.")
+                      notes="1:30-2:10. Walk the pipeline left to right. Extraction is a probabilistic problem, scoring is not, so scoring is plain Python a committee can reproduce. This is the engineering-judgement answer.")
     plain = (ICE, INK, LINE)
     flow(slide, ["PDF", "pypdf", "LLM JSON", "Rules", "SQLite", "Review"],
          [plain, plain, (SKY, NAVY, None), (NAVY, WHITE, None), plain, (ROYAL, WHITE, None)], 2.0, 1.6, 0.85)
@@ -352,9 +369,9 @@ def build_deck():
         text_box(slide, name, x + 0.35, cy + 0.3, 1.9, 0.5, 16, color, True, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
         bullet_box(slide, items, x + 0.35, cy + 1.05, cw2 - 0.7, ch - 1.3, 16, gap=12)
 
-    # 4. Harness
+    # 5. Harness
     slide = new_slide(prs, state, "AI harness and context", "The document is data, not authority",
-                      notes="1:50-2:50. Context management: untrusted-document boundary, schema-constrained output, versioned prompts. If asked why no multi-agent orchestration: one narrow extraction step does not need it, and every extra agent is another probabilistic step to govern and evaluate.")
+                      notes="2:10-3:00. Context management: untrusted-document boundary, schema-constrained output, versioned prompts. Orchestration is a bounded single extraction call, followed by deterministic scoring and policy lookup. If asked why no multi-agent orchestration: one narrow extraction step does not need it, and every extra agent is another probabilistic step to govern and evaluate.")
     columns = [
         ("Context boundary", ["Source text is explicitly untrusted", "Embedded instructions cannot approve a case", "Prompt requires faithful extraction"]),
         ("Structured contract", ["Pydantic schema at the model boundary", "Malformed output fails loudly", "Extraction versions stay reconstructable"]),
@@ -368,7 +385,7 @@ def build_deck():
         text_box(slide, name, x + 0.35, y + 1.3, cw - 0.7, 0.5, 20, NAVY, True, HEAD_FONT)
         bullet_box(slide, items, x + 0.35, y + 2.0, cw - 0.7, h - 2.3, 16, gap=14)
 
-    # 5. Scoring (native chart)
+    # 6. Scoring (native chart)
     slide = new_slide(prs, state, "Engineering judgement", "Scoring is explainable by construction",
                       notes="2:50-3:30. Deterministic versus probabilistic, justified. Be upfront that the weights are a prototype choice awaiting FCRM approval.")
     y, h, cwid = 1.95, 4.75, 6.6
@@ -395,7 +412,7 @@ def build_deck():
         text_box(slide, name, rx + 0.35, cy + 0.25, rw - 0.7, 0.45, 20, color, True, HEAD_FONT)
         text_box(slide, body, rx + 0.35, cy + 0.8, rw - 0.7, hh - 1.0, 15, INK)
 
-    # 6. Six stages
+    # 7. Six stages
     slide = new_slide(prs, state, "Six stages", "AI is part of delivery, not only runtime code",
                       notes="3:30-4:15. One line per stage, naming the artifact: docs/requirements, docs/architecture, src and ai, tests and evals, ops. Point to docs/sdlc/ai-delivery-evidence.md. Move fast; the repo carries the detail.")
     stages = [("Requirements", "Brief → spec"), ("Design", "Options → decision"), ("Development", "Contract → code"),
@@ -413,7 +430,7 @@ def build_deck():
     text_box(slide, "Each stage has an AI instruction, a human gate, and a repository artifact.", L + 0.35, by, W - 0.7, 0.65,
              18, WHITE, True, anchor=MSO_ANCHOR.MIDDLE)
 
-    # 7. Governance
+    # 8. Governance
     slide = new_slide(prs, state, "Human-in-the-loop", "The system prepares; people decide",
                       notes="4:15-5:15. Every risk level goes through analyst review before committee decision. Explain the resume-after-information-request path and that conditions must be evidenced before analyst closure. The event hash chain and examiner export help reconstruct the record but are not immutable against a database owner.")
     flow(slide, ["Owner draft", "Analyst review", "Committee", "Decision", "Close"],
@@ -434,9 +451,9 @@ def build_deck():
     text_box(slide, "Demo identities only; vote/scoring rules are unapproved. Hash-chain verification is not immutable storage.",
              L, 6.4, W, 0.35, 13, MUTED, italic=True, anchor=MSO_ANCHOR.MIDDLE)
 
-    # 8. Demo
+    # 9. Demo
     slide = new_slide(prs, state, "Working demonstration", "One synthetic case, end to end",
-                      notes="5:15-7:45 (about 2.5 minutes). Owner uploads, checks required draft fields, and submits. The analyst verifies/corrects with source citations, finalizes, and submits to committee. Use three separate committee identities. For a conditional outcome, show owner evidence followed by analyst closure; end with audit verification/export. If the provider is unavailable, use the recorded evaluation and local tests without implying offline extraction.")
+                      notes="5:00-7:30 (about 2.5 minutes). Owner uploads, checks required draft fields, and submits. The analyst verifies/corrects with source citations, finalizes, and submits to committee. Use three separate committee identities. For a conditional outcome, show owner evidence followed by analyst closure; end with audit verification/export. If the provider is unavailable, use the recorded evaluation and local tests without implying offline extraction.")
     steps = ["Owner uploads PDF", "Inspect draft + score", "Owner submits case", "Analyst finalizes", "Three committee votes", "Owner evidence; analyst closes"]
     colw, d, cy = W / 6, 0.8, 2.1
     rule(slide, L + colw / 2, cy + d / 2, W - colw, SKY, 3)
@@ -450,9 +467,9 @@ def build_deck():
     text_box(slide, "Workflow routes check fixed demo roles, not production identities. Extraction needs the configured model provider; no offline extraction fallback. Source and audit hashes are verifiable, not immutable.",
              L + 0.5, by + 0.9, W - 1, 1.0, 17, WHITE)
 
-    # 9. Evaluation (numbers come from evals/results/latest.json)
+    # 10. Evaluation (numbers come from evals/results/latest.json)
     slide = new_slide(prs, state, "Testing and evidence", "We measure the model, not just the demo",
-                      notes="7:45-9:45. Quote the values generated from the latest recorded PDF evaluation and state that this is only eight synthetic cases. Risk agreement comes from deterministic scoring and does not establish field accuracy. Mention controlled errors for invalid PDFs and provider failures; do not suggest extraction has an offline fallback.")
+                      notes="7:30-8:20. Quote the values generated from the latest recorded PDF evaluation and state that this is only eight synthetic cases. Risk agreement comes from deterministic scoring and does not establish field accuracy.")
     field_accuracy = f"{evaluation['field_accuracy']:.1%}" if evaluation["field_accuracy"] is not None else "N/A"
     risk_agreement = f"{evaluation['risk_agreement']:.0%}" if evaluation["risk_agreement"] is not None else "N/A"
     latency = f"{evaluation['mean_latency_ms'] / 1000:.1f} s" if evaluation["mean_latency_ms"] is not None else "N/A"
@@ -484,16 +501,71 @@ def build_deck():
                  L + 0.35, y + 0.95, cwid - 0.7, 1.6, 16, INK)
     rx, rw = L + cwid + 0.4, W - cwid - 0.4
     card(slide, rx, y, rw, h, ICE, LINE, shadow=False)
-    text_box(slide, "Failure handled, and how to read this", rx + 0.35, y + 0.22, rw - 0.7, 0.45, 17, NAVY, True, HEAD_FONT)
+    text_box(slide, "What the result does and does not show", rx + 0.35, y + 0.22, rw - 0.7, 0.45, 17, NAVY, True, HEAD_FONT)
     bullet_box(slide, [
-        "Invalid PDFs and provider failures return explicit errors; transient provider failures are retried up to three times",
         "Risk agreement comes from the deterministic scorer; it does not prove every field is right",
-        f"Eight synthetic cases, not a production accuracy estimate. pytest: {test_result}",
+        "Eight synthetic cases; not a production accuracy estimate",
+        f"Local test suite: {test_result}",
     ], rx + 0.35, y + 0.8, rw - 0.7, h - 0.95, 14, gap=8)
 
-    # 10. Close
+    # 11. Failure handling and iteration
+    slide = new_slide(prs, state, "Failure handling and iteration", "Failures stop safely; the repo shows how the work evolved",
+                      notes="8:20-9:10. Describe the concrete failure behavior: invalid or textless PDFs fail before case creation, provider failure is visible with no offline extraction fallback, and transient errors receive bounded retries. Then point to selected commits as a trace of evolving prompts, workflow alignment, and delivery evidence, not as proof of complete SDLC automation.")
+    left_w, y, h = 5.55, 1.95, 4.75
+    card(slide, L, y, left_w, h, ICE, LINE, shadow=False)
+    text_box(slide, "Failure behavior", L + 0.35, y + 0.3, left_w - 0.7, 0.48, 20, NAVY, True, HEAD_FONT)
+    bullet_box(slide, [
+        "Reject non-PDF, oversized, malformed, and textless uploads",
+        "Provider error is explicit; no draft case is created and extraction has no offline fallback",
+        "Retry transient connection, timeout, and rate-limit errors up to three times",
+        "Source-integrity failures block downloads and examiner exports",
+    ], L + 0.35, y + 1.0, left_w - 0.7, h - 1.25, 15, gap=12)
+    rx, rw = L + left_w + 0.45, W - left_w - 0.45
+    card(slide, rx, y, rw, h)
+    text_box(slide, "Selected repository milestones", rx + 0.35, y + 0.3, rw - 0.7, 0.48, 20, NAVY, True, HEAD_FONT)
+    milestones = [
+        ("Oct 12", "a5fb733", "Prompt and flow re-aligned to the brief"),
+        ("Oct 13", "a88b252", "Presentation aligned to implemented workflow"),
+        ("Oct 13", "99834b9", "Prompt and evaluation evidence refreshed"),
+        ("Oct 21", "8f0d781 / 3250a6f", "UI and presentation generator iterated"),
+    ]
+    for index, (date, commit, detail) in enumerate(milestones):
+        item_y = y + 1.0 + index * 0.86
+        shape(slide, MSO_SHAPE.OVAL, rx + 0.38, item_y + 0.08, 0.16, 0.16, ROYAL if index % 2 else GOLD)
+        if index < len(milestones) - 1:
+            connector = slide.shapes.add_connector(MSO_CONNECTOR.STRAIGHT, Inches(rx + 0.46), Inches(item_y + 0.25), Inches(rx + 0.46), Inches(item_y + 0.95))
+            connector.line.color.rgb = LINE
+            connector.line.width = Pt(1)
+        text_box(slide, date, rx + 0.7, item_y, 0.8, 0.3, 13, GOLD_D, True, anchor=MSO_ANCHOR.MIDDLE)
+        text_box(slide, commit, rx + 1.48, item_y, rw - 1.85, 0.3, 12, ROYAL, True, anchor=MSO_ANCHOR.MIDDLE)
+        text_box(slide, detail, rx + 0.7, item_y + 0.32, rw - 1.0, 0.38, 14, INK)
+    text_box(slide, "History is supporting evidence; the commits are selected milestones, not a complete activity log.",
+             L, 6.4, W, 0.32, 12, MUTED, italic=True, anchor=MSO_ANCHOR.MIDDLE)
+
+    # 12. Token efficiency
+    slide = new_slide(prs, state, "Token consumption and efficiency", "Budget and telemetry exist; measured cost comparison does not",
+                      notes="9:10-9:45. The input is capped at 12,000 characters, which is not a token guarantee. Provider usage metadata captures input/output tokens when returned; the recorded PDF evaluation does not include token totals or per-case cost. One small model and one bounded extraction step are the current efficiency choices. Do not claim savings. The next experiment is a prompt/context comparison scored on both field accuracy and measured provider usage, including retries.")
+    token_cards = [
+        ("Current budget", "gpt-4o-mini\n12,000-character input cap", NAVY, WHITE),
+        ("What telemetry captures", "Input/output token fields when returned\nModel, prompt version, latency, outcome", ROYAL, WHITE),
+        ("What is not measured", "No token totals in the latest PDF report\nNo cost baseline or savings claim", ICE, INK),
+    ]
+    cw, y, h = (W - 0.8) / 3, 1.95, 2.2
+    for index, (name, body, fill, color) in enumerate(token_cards):
+        x = L + index * (cw + 0.4)
+        card(slide, x, y, cw, h, fill, LINE if fill == ICE else None)
+        text_box(slide, name, x + 0.3, y + 0.28, cw - 0.6, 0.42, 18, color, True, HEAD_FONT)
+        text_box(slide, body, x + 0.3, y + 0.92, cw - 0.6, 1.05, 15, color)
+    card(slide, L, 4.45, W, 1.75, WHITE, GOLD, shadow=False)
+    text_box(slide, "Efficiency experiment", L + 0.35, 4.72, 2.35, 0.4, 19, GOLD_D, True, HEAD_FONT)
+    text_box(slide, "Compare shorter prompt/context variants against field-level accuracy and provider-reported input/output tokens. Include retry attempts in cost accounting before claiming an improvement.",
+             L + 2.75, 4.65, W - 3.1, 1.0, 16, INK, anchor=MSO_ANCHOR.MIDDLE)
+    text_box(slide, "Exact spend requires provider-side usage records; the current evaluation stores latency and extraction outcomes, not token totals.",
+             L, 6.4, W, 0.32, 12, MUTED, italic=True, anchor=MSO_ANCHOR.MIDDLE)
+
+    # 13. Close
     slide = new_slide(prs, state, "Deployment and next steps", "Prototype-ready, with an honest path to production", dark=True,
-                      notes="9:45-10:00. Close on the tagline, then stop on time. Leave the five minutes of Q&A for the decisions: why deterministic scoring, why no multi-agent orchestration, why field accuracy and risk agreement differ.")
+                      notes="9:45-10:00. Close on the tagline, then stop on time. Leave Q&A for the decisions: why deterministic scoring, why no multi-agent orchestration, why field accuracy and risk agreement differ, and what is needed for measured token efficiency.")
     columns = [
         ("Current demo", ["Docker Compose", "SQLite named volume", "Synthetic data only", "OpenAI key for extraction"]),
         ("Free-first target", ["Ollama adapter", "PostgreSQL and MinIO", "Redis worker", "Prometheus and Grafana"]),

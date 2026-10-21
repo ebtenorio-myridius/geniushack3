@@ -27,6 +27,7 @@ def test_build_deck_when_latest_evaluation_has_no_successes(monkeypatch, tmp_pat
     generate_presentation.build_deck()
 
     presentation = Presentation(output_path)
+    assert len(presentation.slides) == 13
     slide_text = "\n".join(
         shape.text
         for slide in presentation.slides
@@ -36,3 +37,7 @@ def test_build_deck_when_latest_evaluation_has_no_successes(monkeypatch, tmp_pat
     assert "0/2" in slide_text
     assert "No successful extraction cases" in slide_text
     assert "N/A" in slide_text
+    assert "Problem as given" in slide_text
+    assert "Selected repository milestones" in slide_text
+    assert "TOKEN CONSUMPTION AND EFFICIENCY" in slide_text
+    assert "No cost baseline or savings claim" in slide_text

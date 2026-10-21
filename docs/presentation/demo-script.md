@@ -46,6 +46,33 @@
    verification result, and file-hash manifest. The hash chain is verifiable
    but not immutable against a database owner.
 
+## Panel Criteria Talk Track
+
+- **Problem and specification:** contrast the brief's scattered evidence and
+  slow reconstruction problem with the personas, workflow, acceptance
+  criteria, and explicit out-of-scope items in `docs/requirements/spec.md`.
+  Do not present the brief's two-day target as measured performance.
+- **Harness and context:** explain the bounded single extraction step, the
+  untrusted-document boundary, schema and citation validation, and the
+  deterministic scoring/workflow boundary. State plainly that this is not a
+  multi-agent orchestration system.
+- **AI, people, and gates:** the model extracts facts; owners submit; analysts
+  verify and finalize; three committee members vote. Each transition is a
+  distinct review gate, and the model cannot decide the case.
+- **Evaluation:** cite the 2026-10-02 run: 8/8 synthetic PDFs, 80/80 expected
+  fields, 8/8 risk-level agreement, and 3,615 ms mean latency. Keep the small
+  synthetic sample caveat prominent.
+- **Working demonstration:** walk the owner-to-analyst-to-committee path above
+  and show the retained evidence/export rather than only describing screens.
+- **Failure handling and iteration:** show explicit invalid-upload/provider
+  failure behavior and no offline extraction fallback. Use selected repository
+  commits as corroborating evidence of evolving prompts, workflow alignment,
+  and presentation/UI changes; do not imply the selected commits are complete.
+- **Token efficiency:** explain the 12,000-character input cap, usage fields
+  captured when the provider returns them, and that the PDF evaluation report
+  does not contain token totals or measured cost savings. The next experiment
+  compares shorter contexts against field accuracy and provider usage.
+
 ## Optional branch: request information
 
 During analyst review, or during committee review before any committee vote,
