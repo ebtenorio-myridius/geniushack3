@@ -6,6 +6,15 @@
     <title>{% block title %}Risk Assessment Workbench{% endblock %}</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script>
+        // htmx skips swapping 4xx responses by default, which hid validation errors.
+        document.addEventListener("htmx:beforeSwap", function (evt) {
+            if (evt.detail.xhr.status === 404 || evt.detail.xhr.status === 409) {
+                evt.detail.shouldSwap = true;
+                evt.detail.isError = false;
+            }
+        });
+    </script>
 </head>
 <body>
     <header class="site-header{% block header_class %}{% endblock %}">

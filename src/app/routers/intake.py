@@ -631,7 +631,9 @@ async def edit_change_request(
         return templates.TemplateResponse(request, "partials/error.html", {"message": "Case not found."}, status_code=404)
     except ValueError as exc:
         return templates.TemplateResponse(request, "partials/error.html", {"message": str(exc)}, status_code=409)
-    return templates.TemplateResponse(request, "partials/review_result.html", {"case": case})
+    response = templates.TemplateResponse(request, "partials/review_result.html", {"case": case})
+    response.headers["HX-Refresh"] = "true"
+    return response
 
 
 @router.post("/{case_id}/committee/submit", response_class=HTMLResponse)

@@ -668,3 +668,63 @@ def test_analyst_cycle_time_metrics_page_uses_recorded_report(monkeypatch, tmp_p
     assert case.case_id in response.text
     assert "does not establish a two-day performance claim" in response.text
     assert "Decision-ready hours" in response.text
+
+
+def test_analyst_edit_rescored_and_refreshes_page(monkeypatch, tmp_path):
+    store = CaseStore(str(tmp_path / "workflow.db"))
+    request = _request(
+        evidence=[
+            EvidenceCitation(field_name="change_title", page_number=1, quote="Synthetic cross-border payment change"),
+            EvidenceCitation(field_name="change_type", page_number=1, quote="new product"),
+            EvidenceCitation(field_name="description", page_number=1, quote="Synthetic launch with updated payment flows."),
+            EvidenceCitation(field_name="geographies_involved", page_number=1, quote="United States; Philippines"),
+            EvidenceCitation(field_name="products_involved", page_number=1, quote="Remittance"),
+            EvidenceCitation(field_name="business_unit", page_number=1, quote="Payments"),
+        ]
+    )
+    page_text = (
+        "Synthetic cross-border payment change; new product; "
+        "Synthetic launch with updated payment flows.; United States; Philippines; "
+        "Iran; Remittance; Payments"
+    )
+    case = store.create_case(
+        "synthetic.pdf",
+        request,
+        score_change_request(request),
+        source_document_bytes=b"synthetic source bytes",
+        source_pages=[page_text],
+    )
+    monkeypatch.setattr(intake, "case_store", store)
+    owner = TestClient(app)
+    owner.cookies.set("demo_user", "product-owner-1")
+    owner.cookies.set("demo_role", "product_owner")
+    submitted = owner.post(f"/intake/{case.case_id}/submit")
+    assert submitted.status_code == 200
+
+    before = store.get_case(case.case_id)
+    old_score = before.assessment.overall_score
+    analyst = TestClient(app)
+    analyst.cookies.set("demo_user", "analyst-1")
+    analyst.cookies.set("demo_role", "analyst")
+    data = {
+        "change_title": case.extracted.change_title,
+        "change_type": "new_product",
+        "business_unit": "Payments",
+        "description": case.extracted.description,
+        "geographies_involved": "United States, Philippines, Iran",
+        "products_involved": "Remittance",
+        "rationale": "Added Iran based on the source page.",
+        "source_citations": "geographies_involved | 1 | Iran",
+    }
+    response = analyst.post(f"/intake/{case.case_id}/edit", data=data)
+    assert response.status_code == 200
+    assert response.headers["HX-Refresh"] == "true"
+    updated = store.get_case(case.case_id)
+    assert updated.extraction_version == 2
+    assert updated.assessment.overall_score >= old_score
+
+    data["source_citations"] = ""
+    data["products_involved"] = "Remittance, Wallet"
+    missing_citation = analyst.post(f"/intake/{case.case_id}/edit", data=data)
+    assert missing_citation.status_code == 409
+    assert "citation" in missing_citation.text.lower()
