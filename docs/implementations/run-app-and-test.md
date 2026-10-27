@@ -145,6 +145,29 @@ role. Each distinct member records a vote and rationale; information requests
 are available before voting starts.
 
 Three distinct committee members are required for a final committee result.
+
+### Approval acceptance test
+
+For this testing scenario, all three members must select **Approve** on the
+same case. Do not mark the approval test as passed after only one or two votes.
+
+1. Sign in as `committee-1`, open the case, select **Approve**, and record a
+   rationale. Confirm the case remains in committee review with one vote.
+2. Switch roles and sign in as `committee-2`. Approve the same case with a
+   rationale. Confirm it remains in committee review with two votes.
+3. Switch roles and sign in as `committee-3`. Approve the same case with a
+   rationale. Confirm three distinct approval votes and the final **Approved**
+   outcome in the decisioned-case view and product-owner dashboard.
+
+The test passes only when all three approval votes are recorded and the final
+outcome is Approved. Test rejection, defer, and conditional approval separately.
+
+This is the required approval-test procedure, not a change to the application's
+decision rule: the current configuration waits for three distinct votes, then
+uses a two-vote majority. Unanimity is not enforced by the application.
+
+### Other committee outcomes
+
 Committee votes are:
 
 - approve;

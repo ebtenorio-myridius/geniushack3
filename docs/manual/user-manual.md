@@ -276,6 +276,15 @@ Use one of these sample files:
 8. Enter the committee rationale. For conditions, enter one condition per line, its owner, and due date.
 9. Repeat with `committee-1`, `committee-2`, and `committee-3` until three votes are recorded.
 
+**Approval testing:** for the approval acceptance test, all three committee
+members must select **Approve** for the same case and each provide a rationale.
+Check that the case remains pending after the first and second votes. Only
+mark this test as passed after the third distinct approval vote is recorded
+and the final outcome is **Approved**, including on the product-owner
+dashboard. Use separate cases for rejection, defer, or conditional-approval
+tests. This all-three-Approve test procedure does not change the application's
+configured two-of-three majority rule described below.
+
 The case remains pending until three distinct votes are recorded. After the third vote, two or more approvals (including **Approve with conditions**)
 produce approval; two or more rejections produce rejection; otherwise the
 result is deferred. This is prototype behavior, not an institutionally

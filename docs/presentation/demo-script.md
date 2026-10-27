@@ -31,10 +31,14 @@
    assessment and submit it to the committee. This analyst-first path applies
    to every risk level.
 5. **Committee decision:** switch among `committee-1`, `committee-2`, and
-   `committee-3` and cast three distinct votes. Two approvals approve, two
-   rejections reject, and no majority defers. The vote rule is prototype
-   configuration, not approved institutional policy.
-6. **Conditional closure (recommended end-to-end path):** include an
+  `committee-3`. For the approval acceptance test, each member must select
+  **Approve** on the same case and record a rationale. Check that the case
+  remains pending after the first two votes. Mark this test as passed only
+  after all three approval votes are recorded and the final **Approved**
+  outcome appears in the decisioned-case view and product-owner dashboard.
+  This testing procedure does not change the prototype rule: the app waits
+  for three votes, then applies a two-vote majority; unanimity is not enforced.
+6. **Conditional closure (separate test scenario):** on a separate case, include an
    approve-with-conditions vote, assign each condition to the product owner,
    and set a due date. After the final committee outcome, switch to the owner
    to record evidence for every condition, then switch back to the analyst
