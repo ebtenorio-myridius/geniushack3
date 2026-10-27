@@ -106,7 +106,7 @@ control effectiveness and residual risk are not modeled.
 
 **Deployment:** AI can help review Docker and environment configuration, secrets, persistence, and deployment risks. The team still runs the release checks and owns deployment and rollback decisions.
 
-**Operations:** AI can help interpret operational signals and suggest improvements to prompts, tests, or scoring rules. The app records telemetry such as latency and token usage; people review issues and decide what changes to make.
+**Operations:** The app records model telemetry, and the live evaluation reports extraction outcomes. People review these signals; findings have informed prompt, retry, and test improvements. There is no AI-powered operations monitor or automated alerting in the running product.
 
 ```text
 Evidence lives in `docs/`, `src/`, `ai/`, `tests/`, `.github/`, `evals/`, and
@@ -121,7 +121,7 @@ successful hosted run.
 | Development | Drafts and critiques implementation slices. The shipped code uses schema-constrained extraction but deterministic scoring and workflow. | The team reviews and merges. |
 | Testing | Generates synthetic scenarios and proposes expected results, such as the 8 synthetic PDFs in the evaluation set. | Analysts review expectations, and automated tests and the evaluation runner check behavior. |
 | Deployment | Reviews Docker and environment configuration, secrets, persistence, and risks. | The team runs release checks and owns rollback. |
-| Operations | Interprets telemetry (latency, token usage) and suggests prompt, test, or scoring changes. | People decide what to change. |
+| Operations | No AI-powered operations monitoring is implemented. The app records telemetry and evaluation results; people review them and use findings to improve prompts, retries, and tests. | People interpret the signals, decide what to change, and own remediation. |
 
 ### Slide 8 - Human-in-the-loop governance
 

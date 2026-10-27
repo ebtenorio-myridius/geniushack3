@@ -412,10 +412,10 @@ def build_deck():
         text_box(slide, body, rx + 0.35, cy + 0.8, rw - 0.7, hh - 1.0, 15, INK)
 
     # 7. Six stages
-    slide = new_slide(prs, state, "Six stages", "AI is part of delivery, not only runtime code",
-                      notes="3:30-4:15. One line per stage, naming the artifact: docs/requirements, docs/architecture, src and ai, tests and evals, ops. Point to docs/sdlc/ai-delivery-evidence.md. Move fast; the repo carries the detail.")
+    slide = new_slide(prs, state, "Six stages", "AI assists delivery; operations remain human-led",
+                      notes="3:30-4:15. One line per stage, naming the artifact: docs/requirements, docs/architecture, src and ai, tests and evals, ops. Be precise on Operations: the app records telemetry and evaluation results; people review them and have used findings to improve prompts, retries, and tests. There is no AI-powered monitoring or automated alerting. Point to docs/sdlc/ai-delivery-evidence.md. Move fast; the repo carries the detail.")
     stages = [("Requirements", "Brief → spec"), ("Design", "Options → decision"), ("Development", "Contract → code"),
-              ("Testing", "Cases → metrics"), ("Deployment", "Image → runbook"), ("Operations", "Telemetry → feedback")]
+              ("Testing", "Cases → metrics"), ("Deployment", "Image → runbook"), ("Operations", "People review telemetry")]
     cw, ch, y0 = (W - 0.8) / 3, 1.85, 1.95
     for index, (name, detail) in enumerate(stages):
         x = L + (index % 3) * (cw + 0.4)
@@ -426,7 +426,7 @@ def build_deck():
         text_box(slide, detail, x + 0.35, y + 1.2, cw - 0.7, 0.4, 17, MUTED, anchor=MSO_ANCHOR.MIDDLE)
     by = y0 + 2 * ch + 0.6
     rrect(slide, L, by, W, 0.65, NAVY)
-    text_box(slide, "Each stage has an AI instruction, a human gate, and a repository artifact.", L + 0.35, by, W - 0.7, 0.65,
+    text_box(slide, "AI-assisted delivery is human-reviewed and backed by repository evidence.", L + 0.35, by, W - 0.7, 0.65,
              18, WHITE, True, anchor=MSO_ANCHOR.MIDDLE)
 
     # 8. Governance

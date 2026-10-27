@@ -43,3 +43,6 @@ def test_build_deck_when_latest_evaluation_has_no_successes(monkeypatch, tmp_pat
     assert "Token use: budgeted and tracked" in slide_text
     assert "What telemetry captures" in slide_text
     assert "What is not measured" not in slide_text
+    assert "AI assists delivery; operations remain human-led" in slide_text
+    assert "People review telemetry" in slide_text
+    assert "Each stage has an AI instruction" not in slide_text
