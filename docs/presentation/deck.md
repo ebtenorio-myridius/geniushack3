@@ -114,6 +114,15 @@ Evidence lives in `docs/`, `src/`, `ai/`, `tests/`, `.github/`, `evals/`, and
 successful hosted run.
 ```
 
+| Stage | How AI is used | Who still owns the call |
+|---|---|---|
+| Requirements | Expands the short brief into personas (owner, analyst, committee), workflow states, acceptance criteria, and open questions. | Domain owners approve scope. |
+| Design | Compares architecture and data-model options, probes workflow boundaries and failure modes. | Engineering and risk owners choose and document the decision. |
+| Development | Drafts and critiques implementation slices. The shipped code uses schema-constrained extraction but deterministic scoring and workflow. | The team reviews and merges. |
+| Testing | Generates synthetic scenarios and proposes expected results, such as the 8 synthetic PDFs in the evaluation set. | Analysts review expectations, and automated tests and the evaluation runner check behavior. |
+| Deployment | Reviews Docker and environment configuration, secrets, persistence, and risks. | The team runs release checks and owns rollback. |
+| Operations | Interprets telemetry (latency, token usage) and suggests prompt, test, or scoring changes. | People decide what to change. |
+
 ### Slide 8 - Human-in-the-loop governance
 
 ```text
