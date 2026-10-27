@@ -40,4 +40,6 @@ def test_build_deck_when_latest_evaluation_has_no_successes(monkeypatch, tmp_pat
     assert "Problem as given" in slide_text
     assert "Selected repository milestones" in slide_text
     assert "TOKEN CONSUMPTION AND EFFICIENCY" in slide_text
-    assert "No cost baseline or savings claim" in slide_text
+    assert "Token use: budgeted and tracked" in slide_text
+    assert "What telemetry captures" in slide_text
+    assert "What is not measured" not in slide_text

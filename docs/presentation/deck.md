@@ -203,9 +203,6 @@ delivery step was automated.
   this is a character cap, not a measured token guarantee.
 - Telemetry captures model, prompt version, input/output token fields when
   returned by the provider, latency, and operation outcome.
-- The latest PDF evaluation report stores latency and extraction outcomes, not
-  token totals or per-case cost. There is no measured cost baseline or savings
-  comparison to claim.
 - Next experiment: compare shorter prompt/context variants using field-level
   accuracy and provider-reported token use, including retry attempts.
 

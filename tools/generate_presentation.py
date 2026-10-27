@@ -538,13 +538,12 @@ def build_deck():
              L, 6.42, W, 0.32, 12, MUTED, italic=True)
 
     # 12. Token consumption and efficiency
-    slide = new_slide(prs, state, "Token consumption and efficiency", "Token use: budgeted and tracked, not yet measured",
-                      notes="9:10-9:45. The input is capped at 12,000 characters, which is not a token guarantee. Provider usage metadata captures input/output tokens when returned; the recorded PDF evaluation does not include token totals or per-case cost. One small model and one bounded extraction step are the current efficiency choices. Do not claim savings. The next experiment is a prompt/context comparison scored on both field accuracy and measured provider usage, including retries.")
-    cw, y, h = (W - 0.8) / 3, 1.95, 2.2
+    slide = new_slide(prs, state, "Token consumption and efficiency", "Token use: budgeted and tracked",
+                      notes="9:10-9:45. The input is capped at 12,000 characters, which is not a token guarantee. Provider usage metadata captures input/output tokens when returned. One small model and one bounded extraction step are the current efficiency choices. The next experiment is a prompt/context comparison scored on both field accuracy and provider-reported usage, including retries.")
+    cw, y, h = (W - 0.4) / 2, 1.95, 2.2
     for index, (name, lines, fill, line, head_color, body_color, shadow) in enumerate([
         ("Current budget", ["gpt-4o-mini", "12,000-character input cap"], NAVY, None, WHITE, SOFT_2, True),
         ("What telemetry captures", ["Input/output token fields when returned", "Model, prompt version, latency, outcome"], ROYAL, None, WHITE, WHITE, True),
-        ("What is not measured", ["No token totals in the latest PDF report", "No cost baseline or savings claim"], ICE, LINE, NAVY, INK, False),
     ]):
         x = L + index * (cw + 0.4)
         card(slide, x, y, cw, h, fill, line, shadow=shadow)
@@ -552,10 +551,8 @@ def build_deck():
         text_box(slide, lines, x + 0.3, y + 0.92, cw - 0.6, 1.1, 15, body_color, spacing=5)
     card(slide, L, 4.45, W, 1.75, WHITE, GOLD)
     text_box(slide, "Efficiency experiment", L + 0.35, 4.72, 2.35, 0.8, 19, GOLD_D, True, HEAD_FONT)
-    text_box(slide, "Compare shorter prompt/context variants against field-level accuracy and provider-reported input/output tokens. Include retry attempts in cost accounting before claiming an improvement.",
+    text_box(slide, "Compare shorter prompt/context variants against field-level accuracy and provider-reported input/output tokens, including retry attempts.",
              L + 2.75, 4.65, 8.83, 1.0, 16, INK)
-    text_box(slide, "Exact spend requires provider-side usage records; the current evaluation stores latency and extraction outcomes, not token totals.",
-             L, 6.42, W, 0.32, 12, MUTED, italic=True)
 
     # 13. Close
     slide = new_slide(prs, state, "Deployment and next steps", "Prototype-ready, with an honest path to production", dark=True,
