@@ -72,6 +72,31 @@
   captured when the provider returns them, and that the PDF evaluation report
   does not contain token totals or measured cost savings. The next experiment
   compares shorter contexts against field accuracy and provider usage.
+- **Operations (slide 7):** show the implemented analyst-requested AI review
+  described below. Distinguish metric-linked advice from automated monitoring;
+  people verify the findings and own any changes. Provider integration is
+  covered by mocked tests; live-provider review quality has not been evaluated.
+
+## Optional branch: AI-assisted Operations review
+
+1. Sign in as `analyst-1` with the FCRM analyst role and open
+   `/intake/telemetry`. At least one non-review operation must be recorded.
+2. Select **Request AI review**. This makes a provider call and may incur
+   charges. The model receives aggregate counts, latency, reported tokens,
+   and missing-usage counts from up to 200 recent non-review operations;
+   case documents and raw telemetry text are not sent.
+3. Show the metric snapshot, findings, metric references with their values,
+   and suggested human checks. Explain that validated references do not
+   establish the correctness of the model's interpretation.
+4. Point out the `operations_review` telemetry record for the call's outcome,
+   latency, and provider usage when returned. Reviews are excluded from later
+   review samples. The advice itself is not retained after leaving the page.
+
+No scheduled analysis, automated alerts, or automatic changes are implemented.
+The snapshot cannot establish historical trends, extraction accuracy, exact
+spend, or retry-attempt costs. If there are no records or the provider fails,
+show the explicit error and the service/tests as implementation evidence;
+do not imply that advice was generated or that an offline AI fallback exists.
 
 ## Optional branch: request information
 

@@ -43,6 +43,13 @@ def test_build_deck_when_latest_evaluation_has_no_successes(monkeypatch, tmp_pat
     assert "Token use: budgeted and tracked" in slide_text
     assert "What telemetry captures" in slide_text
     assert "What is not measured" not in slide_text
-    assert "AI assists delivery; operations remain human-led" in slide_text
-    assert "People review telemetry" in slide_text
+    operations_slide = presentation.slides[6]
+    operations_text = "\n".join(shape.text for shape in operations_slide.shapes if shape.has_text_frame)
+    assert "AI assists delivery and operations; people decide" in operations_text
+    assert "Analyst-requested AI review" in operations_text
+    assert "People review telemetry" not in operations_text
+    notes = operations_slide.notes_slide.notes_text_frame.text
+    assert "up to 200 recent non-review operations" in notes
+    assert "no scheduled monitoring" in notes
+    assert "live-provider review quality has not been evaluated" in notes
     assert "Each stage has an AI instruction" not in slide_text

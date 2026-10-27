@@ -40,3 +40,11 @@ authentication. The event hash chain and source hashes are verifiable but are
 not immutable against a database owner. Policy guidance and risk/decision
 rules are not institutionally approved, and residual-risk controls are not
 modeled. See the evidence matrix for claim boundaries.
+
+Slide 7 includes the implemented analyst-requested AI-assisted Operations
+review at `/intake/telemetry`. It analyzes a bounded aggregate snapshot, links
+findings to available metrics, and suggests checks for a person to verify.
+It does not monitor continuously, send alerts, or change the system. The
+review's own provider usage is recorded when returned; the advice is not
+retained after leaving the page. Tests use mocked provider responses, not a
+live-provider quality evaluation.

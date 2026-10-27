@@ -93,7 +93,9 @@ control effectiveness and residual risk are not modeled.
 - Testing: synthetic contract/evaluation cases, lifecycle and failure tests,
   source-evidence, audit-chain, and export checks.
 - Deployment: container and environment-based configuration.
-- Operations: monitoring and token-usage plans.
+- Operations: implemented analyst-requested AI review of aggregate telemetry,
+  with metric-linked findings and suggested human checks. No scheduled
+  monitoring, automated alerting, or automatic remediation.
 
 
 **Requirements:** AI helps turn the initial brief into structured requirements: user roles, workflow states, acceptance criteria, assumptions, and open questions. Domain owners decide whether those requirements are correct and approve scope.
@@ -106,7 +108,7 @@ control effectiveness and residual risk are not modeled.
 
 **Deployment:** AI can help review Docker and environment configuration, secrets, persistence, and deployment risks. The team still runs the release checks and owns deployment and rollback decisions.
 
-**Operations:** The app records model telemetry, and the live evaluation reports extraction outcomes. People review these signals; findings have informed prompt, retry, and test improvements. There is no AI-powered operations monitor or automated alerting in the running product.
+**Operations:** Analysts can request an AI-assisted review from `/intake/telemetry`. The model receives aggregate counts, latency, reported tokens, and missing-usage counts from up to 200 recent non-review operations, not case documents. It returns findings linked to available metric keys and suggested human checks. Metric references are validated and displayed with their actual values, but people must verify the model's interpretation and approve any changes. The review records its own outcome, latency, and provider usage when returned; the advice itself is not retained after leaving the page. This is manual advisory assistance, not scheduled monitoring, automated alerting, or remediation. Tests use mocked provider responses; live-provider review quality has not been evaluated.
 
 ```text
 Evidence lives in `docs/`, `src/`, `ai/`, `tests/`, `.github/`, `evals/`, and
@@ -121,7 +123,7 @@ successful hosted run.
 | Development | Drafts and critiques implementation slices. The shipped code uses schema-constrained extraction but deterministic scoring and workflow. | The team reviews and merges. |
 | Testing | Generates synthetic scenarios and proposes expected results, such as the 8 synthetic PDFs in the evaluation set. | Analysts review expectations, and automated tests and the evaluation runner check behavior. |
 | Deployment | Reviews Docker and environment configuration, secrets, persistence, and risks. | The team runs release checks and owns rollback. |
-| Operations | No AI-powered operations monitoring is implemented. The app records telemetry and evaluation results; people review them and use findings to improve prompts, retries, and tests. | People interpret the signals, decide what to change, and own remediation. |
+| Operations | Analyst-requested AI review of up to 200 recent non-review operations, using aggregate metrics and checked metric references to suggest human checks. No scheduled analysis, automated alerts, or automatic changes. | Analysts request reviews, verify advice against displayed metrics, and decide what to change. Live-provider review quality remains unverified. |
 
 ### Slide 8 - Human-in-the-loop governance
 

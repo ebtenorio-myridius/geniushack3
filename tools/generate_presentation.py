@@ -412,10 +412,10 @@ def build_deck():
         text_box(slide, body, rx + 0.35, cy + 0.8, rw - 0.7, hh - 1.0, 15, INK)
 
     # 7. Six stages
-    slide = new_slide(prs, state, "Six stages", "AI assists delivery; operations remain human-led",
-                      notes="3:30-4:15. One line per stage, naming the artifact: docs/requirements, docs/architecture, src and ai, tests and evals, ops. Be precise on Operations: the app records telemetry and evaluation results; people review them and have used findings to improve prompts, retries, and tests. There is no AI-powered monitoring or automated alerting. Point to docs/sdlc/ai-delivery-evidence.md. Move fast; the repo carries the detail.")
+    slide = new_slide(prs, state, "Six stages", "AI assists delivery and operations; people decide",
+                      notes="3:30-4:15. One line per stage, naming the artifact: docs/requirements, docs/architecture, src and ai, tests and evals, ops. Operations now includes an implemented analyst-requested AI review on /intake/telemetry. It uses aggregate metrics from up to 200 recent non-review operations, returns findings with checked metric references and suggested human checks, and records its own provider usage when returned. People verify the interpretation and decide what to change. No case documents are sent for this review. There is no scheduled monitoring, automated alerting, or automatic remediation. Missing token usage, retry-attempt costs, and historical trends cannot be inferred. Validation uses mocked provider responses; live-provider review quality has not been evaluated. Point to docs/sdlc/ai-delivery-evidence.md. Move fast; the repo carries the detail.")
     stages = [("Requirements", "Brief → spec"), ("Design", "Options → decision"), ("Development", "Contract → code"),
-              ("Testing", "Cases → metrics"), ("Deployment", "Image → runbook"), ("Operations", "People review telemetry")]
+              ("Testing", "Cases → metrics"), ("Deployment", "Image → runbook"), ("Operations", "Analyst-requested AI review")]
     cw, ch, y0 = (W - 0.8) / 3, 1.85, 1.95
     for index, (name, detail) in enumerate(stages):
         x = L + (index % 3) * (cw + 0.4)
