@@ -21,6 +21,7 @@ from src.app.models.schemas import (
 )
 from src.app.services.dependencies import case_store
 from src.app.services.llm_service import draft_extraction
+from src.app.services.operations_service import review_operations, telemetry_snapshot
 from src.app.services.pdf_extraction import PdfExtractionError, extract_text_by_page_from_pdf
 from src.app.services.risk_scoring import score_change_request
 from src.app.services.policy_service import find_policy_evidence
@@ -275,6 +276,24 @@ async def analyst_cycle_time_metrics(request: Request):
     )
 
 
+def _telemetry_response(request: Request, records: list[dict], status_code: int = 200, **extra):
+    user, role = _identity(request)
+    return templates.TemplateResponse(
+        request,
+        "telemetry.html",
+        {
+            "records": records,
+            "total_input_tokens": sum(record["input_tokens"] or 0 for record in records),
+            "total_output_tokens": sum(record["output_tokens"] or 0 for record in records),
+            "demo_user": user,
+            "can_review_operations": bool(user and role == UserRole.analyst.value
+                                          and validate_demo_login(user, UserRole.analyst)),
+            **extra,
+        },
+        status_code=status_code,
+    )
+
+
 @router.get("/telemetry", response_class=HTMLResponse)
 async def token_usage_page(request: Request):
     user, role = _identity(request)
@@ -285,17 +304,29 @@ async def token_usage_page(request: Request):
     if not authenticated:
         return RedirectResponse("/intake/login")
 
+    return _telemetry_response(request, case_store.list_telemetry())
+
+
+@router.post("/telemetry/review", response_class=HTMLResponse)
+async def operations_review(request: Request):
+    user, role = _identity(request)
+    require_role(UserRole.analyst, user, role)
+    origin = request.headers.get("origin")
+    if origin and origin != str(request.base_url).rstrip("/"):
+        raise HTTPException(status_code=403, detail="Cross-origin reviews are not allowed")
     records = case_store.list_telemetry()
-    return templates.TemplateResponse(
-        request,
-        "telemetry.html",
-        {
-            "records": records,
-            "total_input_tokens": sum(record["input_tokens"] or 0 for record in records),
-            "total_output_tokens": sum(record["output_tokens"] or 0 for record in records),
-            "demo_user": user,
-        },
-    )
+    snapshot = telemetry_snapshot(records)
+    if not snapshot:
+        return _telemetry_response(request, records, 422, review_error="No recorded operations are available for review.")
+    try:
+        review = await review_operations(snapshot, case_store)
+    except Exception:
+        logger.warning("Operations review failed")
+        return _telemetry_response(
+            request, case_store.list_telemetry(), 502,
+            review_error="The AI provider could not produce a valid operations review. No changes were made.",
+        )
+    return _telemetry_response(request, case_store.list_telemetry(), review=review, snapshot=snapshot)
 
 
 @router.get("/committee/dashboard/demo", response_class=HTMLResponse)

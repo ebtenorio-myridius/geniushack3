@@ -9,7 +9,43 @@
 </nav>
 
 <section class="panel">
-    <h1>LLM token usage</h1>
+    <h1>Operations review</h1>
+    <p>AI-assisted, analyst-requested advice only. Not AI-powered monitoring or automated alerting.
+        No automatic changes are made. Provider calls may incur charges.</p>
+    {% if can_review_operations %}
+    <form method="post" action="/intake/telemetry/review" onsubmit="this.querySelector('button').disabled = true; this.querySelector('button').textContent = 'Reviewing...';">
+        <button class="button" type="submit">Request AI review</button>
+    </form>
+    {% endif %}
+    {% if review_error %}
+    <p role="alert" class="flag flag--error">{{ review_error }}</p>
+    {% endif %}
+    {% if review %}
+    <h2>Advisory findings</h2>
+    <p>{{ review.summary }}</p>
+    <p>Sample: up to 200 most recent non-review operations. No retry-attempt data, cost baseline,
+        accuracy measurements, or historical comparison. Missing tokens are unknown usage.
+        This review is not retained after leaving this page.</p>
+    <dl>
+        {% for metric, value in snapshot.items() %}
+        <dt>{{ metric }}</dt><dd>{{ value }}</dd>
+        {% endfor %}
+    </dl>
+    {% for finding in review.findings %}
+    <h3>{{ finding.observation }}</h3>
+    <ul>
+        {% for metric in finding.evidence_keys %}
+        <li>{{ metric }}: {{ snapshot[metric] }}</li>
+        {% endfor %}
+    </ul>
+    <p><strong>Suggested human check:</strong> {{ finding.suggested_check }}</p>
+    {% endfor %}
+    <p>Verify the observations against the records before deciding on any action.</p>
+    {% endif %}
+</section>
+
+<section class="panel">
+    <h2>LLM token usage</h2>
     <div class="grid-two">
         <p><strong>Total prompt tokens:</strong> {{ total_input_tokens }}</p>
         <p><strong>Total completion tokens:</strong> {{ total_output_tokens }}</p>

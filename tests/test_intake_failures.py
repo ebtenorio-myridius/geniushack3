@@ -109,6 +109,63 @@ def test_upload_returns_gateway_error_when_extraction_provider_fails(monkeypatch
     assert "synthetic provider failure" not in response.text
 
 
+def test_operations_review_rejects_non_analysts():
+    assert TestClient(app).post("/intake/telemetry/review").status_code == 403
+    assert _owner_client().post("/intake/telemetry/review").status_code == 403
+
+
+def test_operations_review_requires_data_and_same_origin(monkeypatch, tmp_path):
+    monkeypatch.setattr(intake, "case_store", CaseStore(str(tmp_path / "empty.db")))
+    client = TestClient(app)
+    client.cookies.set("demo_user", "analyst-1")
+    client.cookies.set("demo_role", "analyst")
+    assert client.post("/intake/telemetry/review", headers={"Origin": "https://other.example"}).status_code == 403
+    response = client.post("/intake/telemetry/review")
+    assert response.status_code == 422
+    assert "No recorded operations" in response.text
+
+
+def test_operations_review_renders_evidence_and_controls_provider_errors(monkeypatch, tmp_path):
+    from src.app.services.operations_service import OperationsFinding, OperationsReview
+
+    store = CaseStore(str(tmp_path / "operations.db"))
+    store.record_telemetry(TelemetryRecord(
+        operation="extraction", model="test-model", prompt_version="test",
+        latency_ms=125, success=False,
+    ))
+    monkeypatch.setattr(intake, "case_store", store)
+    client = TestClient(app)
+    client.cookies.set("demo_user", "analyst-1")
+    client.cookies.set("demo_role", "analyst")
+    assert "Request AI review" in client.get("/intake/telemetry").text
+    assert "Request AI review" not in _owner_client().get("/intake/telemetry").text
+
+    async def review(snapshot, supplied_store):
+        assert snapshot["failed_operations"] == 1
+        assert supplied_store is store
+        return OperationsReview(summary="<script>unsafe()</script>", findings=[OperationsFinding(
+            observation="Failure recorded", evidence_keys=["failed_operations"],
+            suggested_check="Check provider status",
+        )])
+
+    monkeypatch.setattr(intake, "review_operations", review)
+    response = client.post("/intake/telemetry/review")
+    assert response.status_code == 200
+    assert "failed_operations: 1" in response.text
+    assert "Check provider status" in response.text
+    assert "<script>unsafe()" not in response.text
+    assert "&lt;script&gt;" in response.text
+
+    async def fail_review(*_args):
+        raise RuntimeError("private provider details")
+
+    monkeypatch.setattr(intake, "review_operations", fail_review)
+    response = client.post("/intake/telemetry/review")
+    assert response.status_code == 502
+    assert "No changes were made" in response.text
+    assert "private provider details" not in response.text
+
+
 def test_upload_retains_source_pages_and_verifiable_extraction(monkeypatch, tmp_path):
     page_text = "Synthetic change request: New product for Payments. A synthetic change request."
     extraction = ExtractedChangeRequest(

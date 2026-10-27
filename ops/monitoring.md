@@ -3,11 +3,26 @@
 ## Current implementation
 
 The app records one telemetry row for each completed extraction operation and
-provides a read-only `/intake/telemetry` page with recorded request details and
-token totals when provider usage is returned. People must inspect the records
-and evaluation results themselves. There is no automated alerting, AI-based
-telemetry analysis or recommendation, or automated remediation. The measures
-and alerts below are a production plan, not implemented controls.
+provides an `/intake/telemetry` page with recorded request details and
+token totals when provider usage is returned. People review the records and
+evaluation results. Analysts can manually request an AI-assisted review on
+this page; the model receives aggregate counts, latency, reported tokens, and
+missing-usage counts from up to 200 recent non-review operations. Each finding
+references available metric keys, displayed with their actual values. These
+references are checked, but the model's interpretation still requires human
+verification. No case documents or raw telemetry text are sent for this review.
+
+The review is advisory and not retained after leaving the page. Its own
+latency, outcome, and provider-reported token usage are recorded under
+`operations_review`; these calls are excluded from subsequent review samples.
+Failures show a controlled error, not fabricated advice. Calls can incur API
+charges. Only the analyst demo role can request reviews; this is not production
+authentication or a rate-limiting control.
+
+Operations is not AI-powered monitoring: there is no scheduled analysis,
+automated alerting, or automated remediation. Retry-attempt counts, exact spend,
+historical comparisons, and extraction accuracy are not available in this
+snapshot. The measures and alerts below remain a production plan.
 
 Track request ID and case ID, PDF extraction failures, LLM latency, LLM failures, low-confidence extraction rate, analyst rejection/override rate, committee escalation rate, and workflow age.
 
