@@ -42,6 +42,12 @@ def _identity(request: Request) -> tuple[str | None, str | None]:
     )
 
 
+def _handoff_response(request: Request, case: CaseRecord, destination: str):
+    if request.headers.get("HX-Request") != "true" and "text/html" in request.headers.get("accept", ""):
+        return RedirectResponse(destination, status_code=303)
+    return templates.TemplateResponse(request, "partials/review_result.html", {"case": case})
+
+
 def _apply_edit_citations(
     extracted: ExtractedChangeRequest,
     case: CaseRecord,
@@ -257,7 +263,7 @@ def _decision_status_labels(cases):
 async def analyst_dashboard(request: Request):
     user, role = _identity(request)
     require_role(UserRole.analyst, user, role)
-    cases = case_store.list_cases((CaseStatus.analyst_review, CaseStatus.needs_information))
+    cases = case_store.list_cases((CaseStatus.analyst_review, CaseStatus.needs_information, CaseStatus.analyst_finalized))
     return templates.TemplateResponse(
         request,
         "analyst_dashboard.html",
@@ -626,11 +632,7 @@ async def review_change_request(
     except ValueError as exc:
         return templates.TemplateResponse(request, "partials/error.html", {"message": str(exc)}, status_code=409)
 
-    return templates.TemplateResponse(
-        request,
-        "partials/review_result.html",
-        {"case": case},
-    )
+    return _handoff_response(request, case, f"/intake/analyst/cases/{case.case_id}")
 
 
 @router.post("/{case_id}/edit", response_class=HTMLResponse)
@@ -700,7 +702,7 @@ async def submit_committee_review(request: Request, case_id: str, rationale: str
         return templates.TemplateResponse(request, "partials/error.html", {"message": "Case not found."}, status_code=404)
     except ValueError as exc:
         return templates.TemplateResponse(request, "partials/error.html", {"message": str(exc)}, status_code=409)
-    return templates.TemplateResponse(request, "partials/review_result.html", {"case": case})
+    return _handoff_response(request, case, "/intake/analyst/committee-cases")
 
 
 @router.get("/committee-queue", response_class=HTMLResponse)
@@ -776,7 +778,7 @@ async def submit_change_request(request: Request, case_id: str):
         return templates.TemplateResponse(request, "partials/error.html", {"message": "Case not found."}, status_code=404)
     except ValueError as exc:
         return templates.TemplateResponse(request, "partials/error.html", {"message": str(exc)}, status_code=409)
-    return templates.TemplateResponse(request, "partials/review_result.html", {"case": case})
+    return _handoff_response(request, case, f"/intake/product-owner/cases/{case.case_id}")
 
 
 @router.post("/{case_id}/draft/edit", response_class=HTMLResponse)

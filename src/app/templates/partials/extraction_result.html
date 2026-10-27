@@ -80,7 +80,7 @@
     {% include "partials/source_provenance.html" %}
 
     <p class="flag flag--warn">This is a draft. Submit it to place the case in the analyst work queue. All cases are reviewed and finalized by an analyst before committee decision.</p>
-    <form class="review-form" hx-post="/intake/{{ case_id }}/submit" hx-target="#submission-result">
+    <form class="review-form" method="post" action="/intake/{{ case_id }}/submit" hx-post="/intake/{{ case_id }}/submit" hx-target="#submission-result">
         <button class="button" type="submit">Submit for analyst review</button>
         <a class="button button--secondary" href="/intake/product-owner/cases/{{ case_id }}">Open case details</a>
     </form>

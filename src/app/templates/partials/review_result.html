@@ -18,7 +18,7 @@
     The workflow event was recorded.
 </section>
 {% if case.status.value == 'analyst_finalized' %}
-<form class="review-form" hx-post="/intake/{{ case.case_id }}/committee/submit" hx-target="#analyst-review-result">
+<form class="review-form" method="post" action="/intake/{{ case.case_id }}/committee/submit" hx-post="/intake/{{ case.case_id }}/committee/submit" hx-target="#analyst-review-result">
     <h3>Submit finalized assessment for committee decision</h3>
     <label class="field">
         <span class="field__label">Committee submission rationale</span>

@@ -98,11 +98,17 @@ def test_all_product_owner_submissions_enter_analyst_queue_before_committee(monk
     owner.cookies.set("demo_user", "product-owner-1")
     owner.cookies.set("demo_role", "product_owner")
 
-    low_submission = owner.post(f"/intake/{low_risk.case_id}/submit")
+    owner_detail = owner.get(f"/intake/product-owner/cases/{low_risk.case_id}")
+    assert f'method="post" action="/intake/{low_risk.case_id}/submit"' in owner_detail.text
+
+    low_submission = owner.post(f"/intake/{low_risk.case_id}/submit", headers={"Accept": "text/html"})
     assert low_submission.status_code == 200
+    assert low_submission.history[0].status_code == 303
+    assert low_submission.url.path == f"/intake/product-owner/cases/{low_risk.case_id}"
     assert store.get_case(low_risk.case_id).status == CaseStatus.analyst_review
 
-    high_submission = owner.post(f"/intake/{high_risk.case_id}/submit")
+    htmx_headers = {"HX-Request": "true", "Accept": "text/html"}
+    high_submission = owner.post(f"/intake/{high_risk.case_id}/submit", headers=htmx_headers)
     assert high_submission.status_code == 200
     assert store.get_case(high_risk.case_id).status == CaseStatus.analyst_review
     assert "analyst review queue" in high_submission.text
@@ -115,6 +121,9 @@ def test_all_product_owner_submissions_enter_analyst_queue_before_committee(monk
     assert low_risk.case_id in analyst_dashboard.text
     assert high_risk.case_id in analyst_dashboard.text
 
+    analyst_detail = analyst.get(f"/intake/analyst/cases/{low_risk.case_id}")
+    assert f'method="post" action="/intake/{low_risk.case_id}/review"' in analyst_detail.text
+
     committee = TestClient(app)
     committee.cookies.set("demo_user", "committee-1")
     committee.cookies.set("demo_role", "committee")
@@ -123,19 +132,27 @@ def test_all_product_owner_submissions_enter_analyst_queue_before_committee(monk
     assert high_risk.case_id not in committee_dashboard.text
     assert low_risk.case_id not in committee_dashboard.text
 
-    finalized = store.review_case(
-        high_risk.case_id,
-        AnalystReview(
-            decision=CaseStatus.analyst_accepted,
-            actor="analyst-1",
-            rationale="Verified high-risk facts and finalized the assessment.",
-        ),
+    finalization = analyst.post(
+        f"/intake/{high_risk.case_id}/review",
+        headers=htmx_headers,
+        data={
+            "decision": "analyst_accepted",
+            "rationale": "Verified high-risk facts and finalized the assessment.",
+        },
     )
+    assert finalization.status_code == 200
+    assert "The assessment is finalized" in finalization.text
+    assert f'method="post" action="/intake/{high_risk.case_id}/committee/submit"' in finalization.text
+    finalized = store.get_case(high_risk.case_id)
     assert finalized.status == CaseStatus.analyst_finalized
+    assert high_risk.case_id in analyst.get("/intake/analyst/dashboard/demo").text
+    finalized_detail = analyst.get(f"/intake/analyst/cases/{high_risk.case_id}")
+    assert f'method="post" action="/intake/{high_risk.case_id}/committee/submit"' in finalized_detail.text
     with pytest.raises(ValueError, match="Only decided cases"):
         store.close_case(high_risk.case_id, "analyst-1", "Cannot close before committee decision.")
     submitted_to_committee = analyst.post(
         f"/intake/{high_risk.case_id}/committee/submit",
+        headers=htmx_headers,
         data={"rationale": "Assessment is finalized; requesting committee decision."},
     )
     assert submitted_to_committee.status_code == 200
@@ -150,17 +167,24 @@ def test_all_product_owner_submissions_enter_analyst_queue_before_committee(monk
 
     assert analyst.post(
         f"/intake/{low_risk.case_id}/review",
+        headers={"Accept": "text/html"},
         data={
             "decision": "analyst_accepted",
             "rationale": "Verified low-risk facts and finalized the assessment.",
         },
     ).status_code == 200
+    assert low_risk.case_id in analyst.get("/intake/analyst/dashboard/demo").text
     assert analyst.post(
         f"/intake/{low_risk.case_id}/committee/submit",
+        headers={"Accept": "text/html"},
         data={"rationale": "Submitting the finalized low-risk assessment for the required committee decision."},
     ).status_code == 200
     committee_dashboard = committee.get("/intake/committee/dashboard/demo")
     assert low_risk.case_id in committee_dashboard.text
+    for member in ("committee-1", "committee-2", "committee-3"):
+        committee.cookies.set("demo_user", member)
+        assert low_risk.case_id in committee.get("/intake/committee/dashboard/demo").text
+        assert low_risk.case_id in committee.get("/intake/committee-queue/demo").text
 
 
 def test_product_owner_dashboard_shows_pending_and_committee_outcome(monkeypatch, tmp_path):

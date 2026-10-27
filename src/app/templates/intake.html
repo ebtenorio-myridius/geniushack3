@@ -31,6 +31,9 @@
     </p>
 
     <form
+        method="post"
+        action="/intake/upload"
+        enctype="multipart/form-data"
         hx-post="/intake/upload"
         hx-encoding="multipart/form-data"
         hx-target="#result"

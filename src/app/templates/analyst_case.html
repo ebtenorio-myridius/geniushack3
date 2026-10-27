@@ -96,7 +96,7 @@
         <button class="button button--secondary" type="submit">Save version and rescore</button>
     </form>
     <div id="analyst-edit-result"></div>
-    <form class="review-form" hx-post="/intake/{{ case.case_id }}/review" hx-target="#analyst-review-result">
+    <form class="review-form" method="post" action="/intake/{{ case.case_id }}/review" hx-post="/intake/{{ case.case_id }}/review" hx-target="#analyst-review-result">
         <h3>Analyst review</h3>
         <p class="panel__hint">Verify the extracted details and score. This case's rules require {{ workflow_rules.committee_votes_required }} distinct committee votes; {{ workflow_rules.committee_majority_required }} approvals or rejections determine that outcome, otherwise the result is deferred.</p>
         <label class="field">
@@ -112,7 +112,7 @@
     </form>
     <div id="analyst-review-result"></div>
     {% elif case.status.value == 'analyst_finalized' %}
-    <form class="review-form" hx-post="/intake/{{ case.case_id }}/committee/submit" hx-target="#analyst-review-result">
+    <form class="review-form" method="post" action="/intake/{{ case.case_id }}/committee/submit" hx-post="/intake/{{ case.case_id }}/committee/submit" hx-target="#analyst-review-result">
         <h3>Submit finalized assessment for committee decision</h3>
         <p class="panel__hint">The committee makes the final approve, reject, defer, or approve-with-conditions decision for every case.</p>
         <label class="field">
