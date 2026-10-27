@@ -108,6 +108,7 @@ control effectiveness and residual risk are not modeled.
 
 **Operations:** AI can help interpret operational signals and suggest improvements to prompts, tests, or scoring rules. The app records telemetry such as latency and token usage; people review issues and decide what changes to make.
 
+```text
 Evidence lives in `docs/`, `src/`, `ai/`, `tests/`, `.github/`, `evals/`, and
 `ops/`. Several delivery steps remain manual; configured CI is not proof of a
 successful hosted run.
