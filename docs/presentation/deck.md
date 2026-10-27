@@ -95,6 +95,7 @@ control effectiveness and residual risk are not modeled.
 - Deployment: container and environment-based configuration.
 - Operations: monitoring and token-usage plans.
 
+```text
 - Requirements: AI helps turn the initial brief into structured requirements: user roles, workflow states, acceptance criteria, assumptions, and open questions. Domain owners decide whether those requirements are correct and approve scope.
 
 - Design: AI can help compare architecture and data-model options, think through workflow boundaries, and identify failure modes. Engineering and risk owners choose the design and document the decision.
@@ -110,6 +111,7 @@ control effectiveness and residual risk are not modeled.
 Evidence lives in `docs/`, `src/`, `ai/`, `tests/`, `.github/`, `evals/`, and
 `ops/`. Several delivery steps remain manual; configured CI is not proof of a
 successful hosted run.
+```
 
 ### Slide 8 - Human-in-the-loop governance
 
