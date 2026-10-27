@@ -7,9 +7,10 @@
     <link rel="stylesheet" href="/static/css/style.css">
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <script>
-        // htmx skips swapping 4xx responses by default, which hid validation errors.
+        // Keep server-rendered error fragments visible instead of silently skipping them.
         document.addEventListener("htmx:beforeSwap", function (evt) {
-            if (evt.detail.xhr.status === 404 || evt.detail.xhr.status === 409) {
+            const contentType = evt.detail.xhr.getResponseHeader("Content-Type") || "";
+            if (evt.detail.xhr.status >= 400 && contentType.includes("text/html")) {
                 evt.detail.shouldSwap = true;
                 evt.detail.isError = false;
             }
