@@ -4,6 +4,18 @@ from fastapi.testclient import TestClient
 from src.app.main import app
 
 
+def test_analyst_dashboard_links_to_telemetry():
+    client = TestClient(app)
+    client.cookies.set("demo_user", "analyst-1")
+    client.cookies.set("demo_role", "analyst")
+
+    response = client.get("/intake/analyst/dashboard/demo")
+
+    assert response.status_code == 200
+    assert '<a href="/intake/telemetry">Telemetry</a>' in response.text
+    assert client.get("/intake/telemetry").status_code == 200
+
+
 @pytest.mark.parametrize(
     ("user", "role", "dashboard"),
     [
