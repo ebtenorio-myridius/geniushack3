@@ -9,7 +9,7 @@ This file maps the six delivery stages to the artifact, human gate, and measurab
 | 03 Development | Generates and critiques implementation slices; runtime LLM extracts structure while deterministic code scores and governs transitions. | Code review and automated tests. | `src/`, `ai/prompts/extract_change_request.md`, `tests/` |
 | 04 Testing | Generates synthetic cases and proposes expected labels; evaluation runner measures field accuracy and risk agreement. | Analyst approves labels and reviews failures. | `evals/data/`, `evals/run_extraction_eval.py`, `evals/results/` |
 | 05 Deployment | Reviews Docker configuration, secrets, persistence, health, and free-first/production migration paths. | Release gate checks tests, compilation, health, and data restrictions. | `Dockerfile`, `docker-compose.yml`, `.github/workflows/ci.yml`, `ops/` |
-| 06 Operations | Defines telemetry, token/cost tracking, error handling, and continuous-improvement triggers. | Operations owner reviews thresholds and remediation. | `src/app/services/llm_service.py`, `ops/monitoring.md`, `ops/token-usage.md` |
+| 06 Operations | No AI-driven monitoring or recommendations run in the product. The app records extraction telemetry; people inspect it and evaluation results, and have used findings to change prompts, retries, and tests. | People interpret the signals, approve changes, and verify outcomes. Alerting and remediation are not automated. | `src/app/services/llm_service.py`, `ops/monitoring.md`, `ops/token-usage.md`, `evals/results/` |
 
 ## Failure-to-improvement loop
 

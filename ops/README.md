@@ -10,8 +10,8 @@ Suggested contents:
   point
 - `monitoring.md` — what you'd watch in production: error rates on the
   extraction call, latency, low-confidence-extraction rate
-- `token-usage.md` — where consumption concentrated and what you did about
-  it (e.g. the 12k-token input truncation in `llm_service.py`, model choice
-  in `ai/agent_config.yaml`)
+- `token-usage.md` — what usage telemetry records and what remains unmeasured.
+  `llm_service.py` applies a 12,000-character cap; this is not a token limit.
+  See also the model choice in `ai/agent_config.yaml`.
 - `free-first-deployment.md` — zero-licence-cost local deployment, OpenAI cost
   boundary, Ollama target, security baseline, backup, and release gates
