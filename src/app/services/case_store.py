@@ -830,6 +830,13 @@ class CaseStore:
             with connection:
                 connection.execute("INSERT INTO telemetry (operation, model, prompt_version, latency_ms, input_tokens, output_tokens, success, error_type, occurred_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (telemetry.operation, telemetry.model, telemetry.prompt_version, telemetry.latency_ms, telemetry.input_tokens, telemetry.output_tokens, int(telemetry.success), telemetry.error_type, datetime.now(timezone.utc).isoformat()))
 
+    def list_telemetry(self) -> list[dict]:
+        with closing(self._connect()) as connection:
+            rows = connection.execute(
+                "SELECT telemetry_id, operation, model, prompt_version, latency_ms, input_tokens, output_tokens, success, error_type, occurred_at FROM telemetry ORDER BY telemetry_id DESC"
+            ).fetchall()
+        return [dict(row) for row in rows]
+
     def list_committee_cases(self) -> list[CaseRecord]:
         with closing(self._connect()) as connection:
             ids = [row[0] for row in connection.execute("SELECT case_id FROM cases WHERE status = ?", (CaseStatus.committee_review.value,))]

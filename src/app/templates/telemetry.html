@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Token Usage — Risk Assessment Workbench{% endblock %}
+
+{% block content %}
+<nav class="dashboard-nav">
+    <strong>Operations</strong>
+    <a href="/intake">Upload case</a>
+</nav>
+
+<section class="panel">
+    <h1>LLM token usage</h1>
+    <div class="grid-two">
+        <p><strong>Total prompt tokens:</strong> {{ total_input_tokens }}</p>
+        <p><strong>Total completion tokens:</strong> {{ total_output_tokens }}</p>
+    </div>
+
+    {% if records %}
+    <div class="case-table-wrap">
+        <table class="score-table case-table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Operation</th>
+                    <th>Model</th>
+                    <th>Prompt version</th>
+                    <th>Prompt tokens</th>
+                    <th>Completion tokens</th>
+                    <th>Latency</th>
+                    <th>Status</th>
+                    <th>Error</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for record in records %}
+                <tr>
+                    <td>{{ record.occurred_at }}</td>
+                    <td>{{ record.operation }}</td>
+                    <td>{{ record.model }}</td>
+                    <td>{{ record.prompt_version }}</td>
+                    <td>{{ record.input_tokens if record.input_tokens is not none else "Not reported" }}</td>
+                    <td>{{ record.output_tokens if record.output_tokens is not none else "Not reported" }}</td>
+                    <td>{{ record.latency_ms }} ms</td>
+                    <td>{{ "Success" if record.success else "Failed" }}</td>
+                    <td>{{ record.error_type or "-" }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="panel__hint">No model requests have been recorded yet.</p>
+    {% endif %}
+</section>
+{% endblock %}

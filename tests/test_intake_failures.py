@@ -5,7 +5,7 @@ from reportlab.pdfgen import canvas
 
 import src.app.routers.intake as intake
 from src.app.main import app
-from src.app.models.schemas import EvidenceCitation, ExtractedChangeRequest
+from src.app.models.schemas import EvidenceCitation, ExtractedChangeRequest, TelemetryRecord
 from src.app.services.case_store import CaseStore
 
 
@@ -65,6 +65,33 @@ def test_upload_returns_extraction_error_for_malformed_pdf():
 
     assert response.status_code == 422
     assert "not a readable PDF" in response.text
+
+
+def test_telemetry_page_shows_token_counts_for_each_request(monkeypatch, tmp_path):
+    store = CaseStore(str(tmp_path / "telemetry.db"))
+    store.record_telemetry(
+        TelemetryRecord(
+            operation="extraction",
+            model="test-model",
+            prompt_version="test-prompt",
+            latency_ms=125,
+            input_tokens=12,
+            output_tokens=7,
+            success=True,
+        )
+    )
+    monkeypatch.setattr(intake, "case_store", store)
+
+    response = _owner_client().get("/intake/telemetry")
+
+    assert response.status_code == 200
+    assert "Prompt tokens" in response.text
+    assert "Completion tokens" in response.text
+    assert "test-model" in response.text
+    assert "12" in response.text
+    assert "7" in response.text
+    assert "125 ms" in response.text
+    assert "Success" in response.text
 
 
 def test_upload_returns_gateway_error_when_extraction_provider_fails(monkeypatch):

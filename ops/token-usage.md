@@ -9,6 +9,10 @@ extraction may issue up to three requests after transient connection, timeout,
 or rate-limit failures; telemetry records the overall operation, not each
 attempt, so use provider-side usage records for exact cost accounting.
 
+To inspect recorded requests, sign in with a demo account and open
+`/intake/telemetry`. The read-only page lists each request and its prompt and
+completion token counts, plus the totals across recorded requests.
+
 The remaining optimization experiment is to compare shorter prompt/context
 variants against field-level accuracy and measured token cost before reducing
 context. Do not claim cost savings without recording provider usage and the

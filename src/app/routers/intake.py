@@ -275,6 +275,29 @@ async def analyst_cycle_time_metrics(request: Request):
     )
 
 
+@router.get("/telemetry", response_class=HTMLResponse)
+async def token_usage_page(request: Request):
+    user, role = _identity(request)
+    try:
+        authenticated = bool(user and role and validate_demo_login(user, UserRole(role)))
+    except ValueError:
+        authenticated = False
+    if not authenticated:
+        return RedirectResponse("/intake/login")
+
+    records = case_store.list_telemetry()
+    return templates.TemplateResponse(
+        request,
+        "telemetry.html",
+        {
+            "records": records,
+            "total_input_tokens": sum(record["input_tokens"] or 0 for record in records),
+            "total_output_tokens": sum(record["output_tokens"] or 0 for record in records),
+            "demo_user": user,
+        },
+    )
+
+
 @router.get("/committee/dashboard/demo", response_class=HTMLResponse)
 async def committee_dashboard(request: Request):
     user, role = _identity(request)
