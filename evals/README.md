@@ -63,6 +63,7 @@ The generator also creates one PDF per synthetic evaluation case under
 ```text
 data/pdfs/SYN-001.pdf
 data/pdfs/SYN-002.pdf
+data/pdfs/MALFORMED.pdf
 ...
 data/pdfs/SYN-008.pdf
 ```
@@ -74,6 +75,10 @@ files after changing `synthetic_cases.json`:
 ```bash
 python tools/generate_sample_pdf.py
 ```
+
+`data/pdfs/MALFORMED.pdf` is an intentionally truncated PDF for manually
+testing intake failure handling. It is not part of the eight-case evaluation
+dataset and is not recreated by the generator.
 
 How you know the extraction and scoring are actually good — 10% of the
 rubric, and it's what turns "we built AI features" into "we know they work."
