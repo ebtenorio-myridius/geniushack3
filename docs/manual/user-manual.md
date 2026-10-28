@@ -426,6 +426,15 @@ The app does not create a case or store the source PDF when extraction fails.
 
 ### Unauthorized action
 
+Uploads are Product-owner-only. Analysts and Committee members visiting
+`/intake` see an explanation and a **Sign in as a Product owner** link instead
+of an upload form. Use that link to switch to `product-owner-1` with the
+Product owner role, or return to your role dashboard to review submitted cases.
+Upload attempts without a valid Product owner session show a visible error
+with the same role-switch link.
+Analyst pages do not offer **Upload case**; the Analyst dashboard explains
+the upload restriction and provides a role-switch link instead.
+
 Sign in with a supported username/role pair. `/intake` redirects signed-out
 users to login. Workflow endpoints check the signed-in demo username and role,
 but those demo cookies are not production authentication or security controls.

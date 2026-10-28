@@ -1,3 +1,6 @@
 <section class="panel panel--error">
     <p class="flag flag--error" role="alert">{{ message }}</p>
+    {% if show_role_switch %}
+    <a class="button" href="/intake/switch-role">Sign in as a Product owner</a>
+    {% endif %}
 </section>

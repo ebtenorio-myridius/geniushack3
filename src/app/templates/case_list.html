@@ -6,7 +6,9 @@
 <nav class="dashboard-nav">
     <strong>{{ role|capitalize }} workspace</strong>
     <a href="/intake/{{ role }}/dashboard/demo">Dashboard</a>
+    {% if current_demo_role == "product_owner" %}
     <a href="/intake">Upload case</a>
+    {% endif %}
 </nav>
 <section class="panel">
     <h1>{{ title }}</h1>

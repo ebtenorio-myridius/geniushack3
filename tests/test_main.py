@@ -4,6 +4,40 @@ from fastapi.testclient import TestClient
 from src.app.main import app
 
 
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/intake/analyst/dashboard/demo",
+        "/intake/analyst/decisioned",
+        "/intake/analyst/committee-cases",
+        "/intake/telemetry",
+    ],
+)
+def test_analyst_navigation_does_not_offer_upload(path):
+    client = TestClient(app)
+    client.cookies.set("demo_user", "analyst-1")
+    client.cookies.set("demo_role", "analyst")
+
+    response = client.get(path)
+
+    assert response.status_code == 200
+    assert "Upload case" not in response.text
+    if path == "/intake/analyst/dashboard/demo":
+        assert "Product owners upload change requests" in response.text
+        assert 'href="/intake/switch-role">sign in as a Product owner</a>' in response.text
+
+
+def test_product_owner_dashboard_still_offers_upload():
+    client = TestClient(app)
+    client.cookies.set("demo_user", "product-owner-1")
+    client.cookies.set("demo_role", "product_owner")
+
+    response = client.get("/intake/product-owner/dashboard/demo")
+
+    assert response.status_code == 200
+    assert '<a href="/intake">Upload case</a>' in response.text
+
+
 def test_analyst_dashboard_links_to_telemetry():
     client = TestClient(app)
     client.cookies.set("demo_user", "analyst-1")
@@ -133,7 +167,7 @@ def test_intake_redirects_missing_or_invalid_session_to_login(cookies):
         ("committee-2", "committee", "/intake/committee/dashboard/demo"),
     ],
 )
-def test_intake_shows_upload_form_for_valid_signed_in_user(user, role, dashboard):
+def test_intake_limits_upload_form_to_product_owners(user, role, dashboard):
     client = TestClient(app)
     client.cookies.set("demo_user", user)
     client.cookies.set("demo_role", role)
@@ -143,7 +177,16 @@ def test_intake_shows_upload_form_for_valid_signed_in_user(user, role, dashboard
     assert response.status_code == 200
     assert "Submit a change request" in response.text
     assert dashboard in response.text
-    if role != "product_owner":
+    if role == "product_owner":
+        assert 'type="file"' in response.text
+        assert 'hx-post="/intake/upload"' in response.text
+        assert "Submit for extraction" in response.text
+    else:
+        assert "Only Product owners can upload change requests" in response.text
+        assert 'href="/intake/switch-role">Sign in as a Product owner</a>' in response.text
+        assert 'type="file"' not in response.text
+        assert 'hx-post="/intake/upload"' not in response.text
+        assert "Submit for extraction" not in response.text
         assert "Product owner dashboard" not in response.text
 
 

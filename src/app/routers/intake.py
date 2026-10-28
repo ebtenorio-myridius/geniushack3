@@ -540,7 +540,18 @@ async def upload_change_request(request: Request, file: UploadFile = File(...)):
     page, so the person never leaves the intake form while it processes.
     """
     user, role = _identity(request)
-    owner = require_role(UserRole.product_owner, user, role)
+    try:
+        owner = require_role(UserRole.product_owner, user, role)
+    except HTTPException as exc:
+        return templates.TemplateResponse(
+            request,
+            "partials/error.html",
+            {
+                "message": "Only Product owners can upload change requests and submit them for analyst review.",
+                "show_role_switch": True,
+            },
+            status_code=exc.status_code,
+        )
     if file.content_type != "application/pdf":
         return templates.TemplateResponse(
             request, "partials/error.html", {"message": "Only PDF documents are accepted."}, status_code=415

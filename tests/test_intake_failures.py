@@ -1,5 +1,6 @@
 import io
 
+import pytest
 from fastapi.testclient import TestClient
 from reportlab.pdfgen import canvas
 
@@ -24,6 +25,38 @@ def _owner_client() -> TestClient:
     client.cookies.set("demo_user", "product-owner-1")
     client.cookies.set("demo_role", "product_owner")
     return client
+
+
+@pytest.mark.parametrize(
+    "cookies",
+    [
+        {},
+        {"demo_user": "analyst-1", "demo_role": "analyst"},
+        {"demo_user": "committee-1", "demo_role": "committee"},
+        {"demo_user": "analyst-1", "demo_role": "product_owner"},
+    ],
+)
+@pytest.mark.parametrize("headers", [{}, {"HX-Request": "true"}])
+def test_upload_denial_is_visible_and_does_not_extract(monkeypatch, cookies, headers):
+    async def unexpected_extraction(_text):
+        pytest.fail("Unauthorized uploads must not invoke extraction")
+
+    monkeypatch.setattr(intake, "draft_extraction", unexpected_extraction)
+    client = TestClient(app)
+    for name, value in cookies.items():
+        client.cookies.set(name, value)
+
+    response = client.post(
+        "/intake/upload",
+        files={"file": ("request.pdf", _pdf_bytes("Synthetic request"), "application/pdf")},
+        headers=headers,
+    )
+
+    assert response.status_code == 403
+    assert response.headers["content-type"].startswith("text/html")
+    assert 'role="alert"' in response.text
+    assert "Only Product owners can upload change requests" in response.text
+    assert 'href="/intake/switch-role">Sign in as a Product owner</a>' in response.text
 
 
 def test_upload_rejects_non_pdf():

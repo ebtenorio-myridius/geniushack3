@@ -5,7 +5,6 @@
 {% block content %}
 <nav class="dashboard-nav">
     <strong>Analyst workspace</strong>
-    <a href="/intake">Upload case</a>
     <a href="/intake/analyst/decisioned">Decisioned cases</a>
     <a href="/intake/analyst/committee-cases">Cases for committee</a>
     <a href="/intake/analyst/metrics">Cycle-time metrics</a>
@@ -14,6 +13,7 @@
 <section class="panel">
     <h1>Submitted cases</h1>
     <p class="panel__hint">All submitted cases are shown here, regardless of risk level.</p>
+    <p class="panel__hint">Product owners upload change requests and submit them for analyst review. To upload a case, <a href="/intake/switch-role">sign in as a Product owner</a>.</p>
     {% include "partials/case_table.html" %}
 </section>
 {% endblock %}

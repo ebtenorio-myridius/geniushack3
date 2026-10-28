@@ -3,11 +3,13 @@
 {% block title %}Intake — Risk Assessment Workbench{% endblock %}
 
 {% block content %}
+{% if demo_role == "product_owner" %}
 <ol id="steps" class="steps">
     <li class="steps__item steps__item--active">1. Upload change request</li>
     <li class="steps__item">2. Review extraction</li>
     <li class="steps__item">3. Analyst finalizes</li>
 </ol>
+{% endif %}
 
 <section class="panel">
     <nav class="dashboard-nav">
@@ -23,6 +25,7 @@
         {% endif %}
     </nav>
     <h1>Submit a change request</h1>
+    {% if demo_role == "product_owner" %}
     <p class="panel__hint">
         Upload the change-request document as a PDF. The system will extract
         the relevant fields and produce a draft risk score. After product-owner
@@ -47,7 +50,17 @@
         <button type="submit" class="button">Submit for extraction</button>
         <span id="submitting" class="htmx-indicator">Reading document and drafting extraction…</span>
     </form>
+    {% else %}
+    <p class="flag flag--warn" role="status">
+        Only Product owners can upload change requests and submit them for analyst review.
+        You are signed in as {% if demo_role == "analyst" %}an Analyst{% else %}a Committee member{% endif %}.
+        Use your dashboard to review submitted cases.
+    </p>
+    <a class="button" href="/intake/switch-role">Sign in as a Product owner</a>
+    {% endif %}
 </section>
 
+{% if demo_role == "product_owner" %}
 <div id="result"></div>
+{% endif %}
 {% endblock %}
